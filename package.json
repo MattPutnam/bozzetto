@@ -1,0 +1,64 @@
+{
+  "name": "bozzetto",
+  "version": "0.1.0",
+  "description": "Seeded placeholder images as tiny SVGs: landscapes, modern-art homages, faces and animals, drawn from a handful of shapes.",
+  "keywords": [
+    "placeholder",
+    "placeholder-image",
+    "svg",
+    "data-uri",
+    "generative",
+    "seeded",
+    "mock",
+    "fixtures",
+    "avatar",
+    "illustration"
+  ],
+  "homepage": "https://github.com/MattPutnam/bozzetto#readme",
+  "bugs": {
+    "url": "https://github.com/MattPutnam/bozzetto/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/MattPutnam/bozzetto.git"
+  },
+  "license": "MIT",
+  "author": "Matt Putnam",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "sideEffects": false,
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit -p .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "dev": "vite demo",
+    "gallery": "npm run build && node scripts/gallery.mjs",
+    "release": "npm run build && npm run typecheck && npm test && npm publish"
+  },
+  "devDependencies": {
+    "tsup": "^8.3.5",
+    "typescript": "^5.6.3",
+    "vite": "^5.4.11",
+    "vitest": "^2.1.8"
+  }
+}
