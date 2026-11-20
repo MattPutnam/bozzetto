@@ -25,7 +25,26 @@ export { portrait } from "./faces";
 export { city, dunes, forest, hills, mountains, night, sea } from "./landscapes";
 
 /** Every built-in kind, grouped by family. */
-export const kinds = [hills, mountains, sea, dunes, forest, night, city, field, grid, squares, orbits, cutouts, bauhaus, portrait, cat, bird, fish, owl] as const;
+export const kinds = [
+  hills,
+  mountains,
+  sea,
+  dunes,
+  forest,
+  night,
+  city,
+  field,
+  grid,
+  squares,
+  orbits,
+  cutouts,
+  bauhaus,
+  portrait,
+  cat,
+  bird,
+  fish,
+  owl,
+] as const;
 
 export type KindId = (typeof kinds)[number]["id"];
 
@@ -46,7 +65,10 @@ function pool(choice: KindChoice | undefined): readonly Kind[] {
   if (typeof choice === "string") {
     if ((families as readonly string[]).includes(choice)) return kinds.filter(k => k.family === choice);
     const kind = byId.get(choice);
-    if (!kind) throw new Error(`bozzetto: unknown kind "${choice}". Known kinds: ${[...byId.keys()].join(", ")}; families: ${families.join(", ")}.`);
+    if (!kind)
+      throw new Error(
+        `bozzetto: unknown kind "${choice}". Known kinds: ${[...byId.keys()].join(", ")}; families: ${families.join(", ")}.`,
+      );
     return [kind];
   }
   if (Array.isArray(choice)) {
@@ -85,5 +107,7 @@ export interface PlaceholdersOptions extends Omit<PlaceholderOptions, "label"> {
 export function placeholders(count: number, options: PlaceholdersOptions = {}): string[] {
   const { numbered, seed, ...rest } = options;
   const base = seedToInt(seed);
-  return Array.from({ length: count }, (_, k) => placeholder({ ...rest, seed: (base + k) >>> 0, label: numbered ? k + 1 : undefined }));
+  return Array.from({ length: count }, (_, k) =>
+    placeholder({ ...rest, seed: (base + k) >>> 0, label: numbered ? k + 1 : undefined }),
+  );
 }

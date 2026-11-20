@@ -99,25 +99,50 @@ export function s(strings: TemplateStringsArray, ...values: (string | number)[])
   return out;
 }
 
+/** An attribute value: numbers are rounded with `n`, and `undefined` or `false` leaves the attribute out. */
+export type AttrValue = string | number | undefined | false;
+
+/**
+ * One SVG element. Attributes are written in the order given, numbers rounded, and runs of
+ * whitespace in string values collapsed, so path data can be laid out over several lines.
+ * With children it is written as an open/close pair, otherwise self-closed.
+ */
+export function el(tag: string, attrs: Record<string, AttrValue>, ...children: string[]): string {
+  let out = `<${tag}`;
+  for (const [name, value] of Object.entries(attrs)) {
+    if (value === undefined || value === false) continue;
+    out += ` ${name}="${typeof value === "number" ? n(value) : value.replace(/\s+/g, " ").trim()}"`;
+  }
+  return children.length ? `${out}>${children.join("")}</${tag}>` : `${out}/>`;
+}
+
 const clamp = (v: number) => Math.round(Math.max(0, Math.min(100, v)));
 
 /** CSS `hsl()` with the hue wrapped and saturation and lightness clamped. */
-export const hsl = (h: number, sat: number, light: number): string => `hsl(${Math.round(((h % 360) + 360) % 360)} ${clamp(sat)}% ${clamp(light)}%)`;
+export const hsl = (h: number, sat: number, light: number): string =>
+  `hsl(${Math.round(((h % 360) + 360) % 360)} ${clamp(sat)}% ${clamp(light)}%)`;
 
 /** A top-to-bottom linear gradient with evenly spaced stops. */
 export const lin = (id: string, stops: readonly string[]): string =>
-  `<linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1">${stops
-    .map((c, k) => `<stop offset="${n(k / (stops.length - 1))}" stop-color="${c}"/>`)
-    .join("")}</linearGradient>`;
+  el(
+    "linearGradient",
+    { id, x1: 0, y1: 0, x2: 0, y2: 1 },
+    ...stops.map((color, k) => el("stop", { offset: k / (stops.length - 1), "stop-color": color })),
+  );
 
 /** A rectangle filling the whole picture. */
-export const fill = (w: number, h: number, paint: string): string => s`<rect width="${w}" height="${h}" fill="${paint}"/>`;
+export const fill = (w: number, h: number, paint: string): string => el("rect", { width: w, height: h, fill: paint });
 
 /** Mixes two `#rrggbb` colors; t = 0 gives `a`, t = 1 gives `b`. */
 export function mix(a: string, b: string, t: number): string {
   const parse = (x: string) => [1, 3, 5].map(k => parseInt(x.slice(k, k + 2), 16));
-  const pa = parse(a), pb = parse(b);
-  return "#" + pa.map((v, k) => Math.round(v + (pb[k] - v) * t).toString(16).padStart(2, "0")).join("");
+  const from = parse(a);
+  const to = parse(b);
+  const channel = (v: number, k: number) =>
+    Math.round(v + (to[k] - v) * t)
+      .toString(16)
+      .padStart(2, "0");
+  return "#" + from.map(channel).join("");
 }
 
 export type Point = readonly [number, number];
@@ -131,19 +156,50 @@ export const qpt = (p0: Point, p1: Point, p2: Point, t: number): Point => [
 /** `points` attribute text for a polygon. */
 export const pts = (points: readonly Point[]): string => points.map(p => `${n(p[0])},${n(p[1])}`).join(" ");
 
-/** Mirrors a group left to right around x = cx when dir is -1. */
-export const facing = (cx: number, dir: number): string => s`<g transform="translate(${cx} 0) scale(${dir} 1) translate(${-cx} 0)">`;
+/**
+ * Opens a group that mirrors its contents left to right around x = cx when dir is -1.
+ * The caller closes it with `</g>` after drawing the contents.
+ */
+export const facing = (cx: number, dir: number): string =>
+  s`<g transform="translate(${cx} 0) scale(${dir} 1) translate(${-cx} 0)">`;
 
 /** The full SVG markup for one picture. */
 export function toSvg(kind: Kind, options: RenderOptions = {}): string {
-  const width = options.width ?? 400, height = options.height ?? 300, seed = seedToInt(options.seed);
+  const width = options.width ?? 400;
+  const height = options.height ?? 300;
+  const seed = seedToInt(options.seed);
   const prefix = `bz${hash(`${kind.id}:${seed}:${width}x${height}`).toString(36)}-`;
   let body = kind.draw(makeRand(seed, prefix), width, height);
   if (options.label !== undefined && options.label !== "") {
-    const size = Math.min(width, height) * 0.093, pad = size * 0.57;
-    body += s`<text x="${width - pad}" y="${height - pad}" text-anchor="end" font-family="system-ui,sans-serif" font-size="${size}" font-weight="600" fill="#fff" opacity="0.85">${escapeXml(String(options.label))}</text>`;
+    const size = Math.min(width, height) * 0.093;
+    const pad = size * 0.57;
+    body += el(
+      "text",
+      {
+        x: width - pad,
+        y: height - pad,
+        "text-anchor": "end",
+        "font-family": "system-ui,sans-serif",
+        "font-size": size,
+        "font-weight": 600,
+        fill: "#fff",
+        opacity: "0.85",
+      },
+      escapeXml(String(options.label)),
+    );
   }
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" preserveAspectRatio="xMidYMid slice">${body}</svg>`;
+  // The size is written as given, not rounded, so it matches the caller's numbers exactly.
+  return el(
+    "svg",
+    {
+      xmlns: "http://www.w3.org/2000/svg",
+      width: String(width),
+      height: String(height),
+      viewBox: `0 0 ${width} ${height}`,
+      preserveAspectRatio: "xMidYMid slice",
+    },
+    body,
+  );
 }
 
 /** The picture as a `data:image/svg+xml` URI, ready for an `<img src>` or CSS `url()`. */

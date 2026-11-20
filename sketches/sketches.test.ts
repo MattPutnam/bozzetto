@@ -7,12 +7,18 @@ import { objects } from "./objects";
 
 const SKETCHES = [...animals, ...food, ...objects];
 const SEEDS = Array.from({ length: 150 }, (_, k) => k * 7919 + 1);
-const SIZES: [number, number][] = [[400, 300], [300, 400], [256, 256], [960, 240]];
+const SIZES: [number, number][] = [
+  [400, 300],
+  [300, 400],
+  [256, 256],
+  [960, 240],
+];
 const BAD = /NaN|undefined|Infinity|\[object/;
 
 describe.each(SKETCHES.map(k => [k.id, k] as const))("sketch %s", (_, kind) => {
   it("draws clean markup at every size and seed", () => {
-    for (const [width, height] of SIZES) for (const seed of SEEDS) expect(toSvg(kind, { width, height, seed })).not.toMatch(BAD);
+    for (const [width, height] of SIZES)
+      for (const seed of SEEDS) expect(toSvg(kind, { width, height, seed })).not.toMatch(BAD);
   });
   it("varies with the seed and stays small", () => {
     const svgs = SEEDS.slice(0, 20).map(seed => toSvg(kind, { seed }));

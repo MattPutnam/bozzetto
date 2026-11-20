@@ -4,14 +4,20 @@ import { food } from "./food";
 import { MOODS, PALETTES, stylize, type Mood, type StyleOptions, type Texture } from "./moods";
 import { objects } from "./objects";
 
-const W = 400, H = 300;
+const W = 400;
+const H = 300;
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 
 const FAMILIES: { name: string; note: string; isNew: boolean; kinds: readonly Kind[] }[] = [
   { name: "Animals", note: "Seven new animals beside the cat, bird, fish and owl.", isNew: true, kinds: animals },
   { name: "Food", note: "Seen from above or on a plate, with toppings that vary.", isNew: true, kinds: food },
   { name: "Objects", note: "Still lifes on a table or shelf.", isNew: true, kinds: objects },
-  { name: "Already in the package", note: "The first 18 kinds, so you can see the styles on them too.", isNew: false, kinds: builtIn },
+  {
+    name: "Already in the package",
+    note: "The first 18 kinds, so you can see the styles on them too.",
+    isNew: false,
+    kinds: builtIn,
+  },
 ];
 const ALL = FAMILIES.flatMap(f => f.kinds);
 const byId = new Map(ALL.map(k => [k.id, k]));
@@ -22,13 +28,30 @@ const state = {
   selected: { id: animals[0].id, i: 0 },
 };
 
-const render = (kind: Kind, seed: number, style: StyleOptions = state.style) => stylize(toSvg(kind, { width: W, height: H, seed }), style);
+const render = (kind: Kind, seed: number, style: StyleOptions = state.style) =>
+  stylize(toSvg(kind, { width: W, height: H, seed }), style);
 const uri = (svg: string) => `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
 const shapes = (svg: string) => (svg.match(/<(rect|circle|ellipse|path|polygon|polyline|line)\b/g) ?? []).length;
 const kb = (n: number) => (n < 1024 ? `${n} B` : `${(n / 1024).toFixed(1)} KB`);
-const styleText = (o: StyleOptions) => [o.palette ? `palette ${Object.entries(PALETTES).find(([, p]) => p === o.palette)?.[0]} (${o.mapping ?? "ramp"})` : o.mood ? `mood ${o.mood}` : "original", o.texture ? `${o.texture} texture` : ""].filter(Boolean).join(", ");
+const styleText = (o: StyleOptions) =>
+  [
+    o.palette
+      ? `palette ${Object.entries(PALETTES).find(([, p]) => p === o.palette)?.[0]} (${o.mapping ?? "ramp"})`
+      : o.mood
+        ? `mood ${o.mood}`
+        : "original",
+    o.texture ? `${o.texture} texture` : "",
+  ]
+    .filter(Boolean)
+    .join(", ");
 
-function thumb(kind: Kind, seed: number, style: StyleOptions | undefined, onPick: () => void, pressed = false): HTMLButtonElement {
+function thumb(
+  kind: Kind,
+  seed: number,
+  style: StyleOptions | undefined,
+  onPick: () => void,
+  pressed = false,
+): HTMLButtonElement {
   const b = document.createElement("button");
   b.className = "thumb";
   b.setAttribute("aria-pressed", String(pressed));
@@ -57,8 +80,19 @@ for (const fam of FAMILIES) {
 }
 
 function drawKind(kind: Kind) {
-  const box = $(`thumbs-${kind.id}`), base = state.seeds[kind.id];
-  box.replaceChildren(...[0, 1, 2, 3].map(i => thumb(kind, base + i, undefined, () => select(kind.id, i), state.selected.id === kind.id && state.selected.i === i)));
+  const box = $(`thumbs-${kind.id}`);
+  const base = state.seeds[kind.id];
+  box.replaceChildren(
+    ...[0, 1, 2, 3].map(i =>
+      thumb(
+        kind,
+        base + i,
+        undefined,
+        () => select(kind.id, i),
+        state.selected.id === kind.id && state.selected.i === i,
+      ),
+    ),
+  );
   const svg = toSvg(kind, { width: W, height: H, seed: base });
   $(`count-${kind.id}`).textContent = `${shapes(svg)} shapes · ${kb(uri(svg).length)}`;
 }
@@ -72,7 +106,10 @@ function select(id: string, i: number) {
 }
 
 function drawBench() {
-  const kind = byId.get(state.selected.id)!, seed = state.seeds[kind.id] + state.selected.i, svg = render(kind, seed), u = uri(svg);
+  const kind = byId.get(state.selected.id)!;
+  const seed = state.seeds[kind.id] + state.selected.i;
+  const svg = render(kind, seed);
+  const u = uri(svg);
   $<HTMLImageElement>("big").src = u;
   $<HTMLImageElement>("big").alt = `${kind.name}, seed ${seed}`;
   $("big-name").textContent = kind.name;
@@ -81,12 +118,15 @@ function drawBench() {
   $("f-style").textContent = styleText(state.style);
   $("f-shapes").textContent = String(shapes(svg));
   $("f-bytes").textContent = `${kb(u.length)} as a data URI`;
-  const o = state.style, extra = [
+  const o = state.style;
+  const extra = [
     o.palette ? `  palette: [${o.palette.map(c => `"${c}"`).join(", ")}],` : "",
     o.palette && o.mapping === "nearest" ? `  mapping: "nearest",` : "",
     !o.palette && o.mood ? `  mood: "${o.mood}",` : "",
     o.texture ? `  texture: "${o.texture}",` : "",
-  ].filter(Boolean).join("\n");
+  ]
+    .filter(Boolean)
+    .join("\n");
   $("f-call").textContent = `placeholder({\n  kind: "${kind.id}",\n  seed: ${seed},${extra ? "\n" + extra : ""}\n})`;
 }
 
@@ -98,14 +138,23 @@ function matrix(tableId: string, columns: { label: string; style: StyleOptions }
   table.innerHTML = `<thead>${head}</thead><tbody></tbody>`;
   const body = table.querySelector("tbody")!;
   for (const id of SAMPLES) {
-    const kind = byId.get(id)!, seed = state.seeds[id], tr = document.createElement("tr");
+    const kind = byId.get(id)!;
+    const seed = state.seeds[id];
+    const tr = document.createElement("tr");
     const th = document.createElement("th");
     th.scope = "row";
     th.textContent = id;
     tr.append(th);
     for (const c of columns) {
       const td = document.createElement("td");
-      td.append(thumb(kind, seed, c.style, () => { state.style = c.style; syncControls(); redrawAll(); select(id, 0); }));
+      td.append(
+        thumb(kind, seed, c.style, () => {
+          state.style = c.style;
+          syncControls();
+          redrawAll();
+          select(id, 0);
+        }),
+      );
       tr.append(td);
     }
     body.append(tr);
@@ -116,14 +165,25 @@ function drawMatrices() {
   const palettes = Object.entries(PALETTES);
   matrix("palettes", [
     ...palettes.map(([name, palette]) => ({ label: name, style: { palette } })),
-    ...palettes.slice(0, 3).map(([name, palette]) => ({ label: `${name} · nearest`, style: { palette, mapping: "nearest" as const } })),
+    ...palettes
+      .slice(0, 3)
+      .map(([name, palette]) => ({ label: `${name} · nearest`, style: { palette, mapping: "nearest" as const } })),
   ]);
 }
 
 // ---------- controls ----------
-const moodSel = $<HTMLSelectElement>("mood"), palSel = $<HTMLSelectElement>("palette"), mapSel = $<HTMLSelectElement>("mapping"), texSel = $<HTMLSelectElement>("texture");
-moodSel.innerHTML = `<option value="">Original</option>` + MOODS.map(m => `<option value="${m}">${m[0].toUpperCase() + m.slice(1)}</option>`).join("");
-palSel.innerHTML = `<option value="">None</option>` + Object.keys(PALETTES).map(p => `<option value="${p}">${p[0].toUpperCase() + p.slice(1)}</option>`).join("");
+const moodSel = $<HTMLSelectElement>("mood");
+const palSel = $<HTMLSelectElement>("palette");
+const mapSel = $<HTMLSelectElement>("mapping");
+const texSel = $<HTMLSelectElement>("texture");
+moodSel.innerHTML =
+  `<option value="">Original</option>` +
+  MOODS.map(m => `<option value="${m}">${m[0].toUpperCase() + m.slice(1)}</option>`).join("");
+palSel.innerHTML =
+  `<option value="">None</option>` +
+  Object.keys(PALETTES)
+    .map(p => `<option value="${p}">${p[0].toUpperCase() + p.slice(1)}</option>`)
+    .join("");
 
 function readControls() {
   const palette = palSel.value ? PALETTES[palSel.value] : undefined;
@@ -141,13 +201,24 @@ function syncControls() {
   mapSel.value = state.style.mapping ?? "ramp";
   texSel.value = state.style.texture ?? "";
 }
-function redrawAll() { ALL.forEach(drawKind); drawBench(); }
+function redrawAll() {
+  ALL.forEach(drawKind);
+  drawBench();
+}
 for (const el of [moodSel, palSel, mapSel, texSel]) el.addEventListener("change", readControls);
 
 for (const kind of ALL) {
-  $(`reseed-${kind.id}`).onclick = () => { state.seeds[kind.id] = Math.floor(Math.random() * 99999) + 1; drawKind(kind); if (state.selected.id === kind.id) drawBench(); };
+  $(`reseed-${kind.id}`).onclick = () => {
+    state.seeds[kind.id] = Math.floor(Math.random() * 99999) + 1;
+    drawKind(kind);
+    if (state.selected.id === kind.id) drawBench();
+  };
 }
-$("shuffle").onclick = () => { for (const k of ALL) state.seeds[k.id] = Math.floor(Math.random() * 99999) + 1; redrawAll(); drawMatrices(); };
+$("shuffle").onclick = () => {
+  for (const k of ALL) state.seeds[k.id] = Math.floor(Math.random() * 99999) + 1;
+  redrawAll();
+  drawMatrices();
+};
 
 drawMatrices();
 redrawAll();

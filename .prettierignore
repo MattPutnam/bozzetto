@@ -1,0 +1,6 @@
+# Generated
+dist/
+demo/dist/
+sketches/out/
+media/
+package-lock.json

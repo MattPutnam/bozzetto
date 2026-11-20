@@ -1,8 +1,25 @@
 import { describe, expect, it } from "vitest";
-import { families, hills, kinds, owl, placeholder, placeholders, placeholderSvg, resolveKind, seedToInt, toDataUri, toSvg } from "../src";
+import {
+  families,
+  hills,
+  kinds,
+  owl,
+  placeholder,
+  placeholders,
+  placeholderSvg,
+  resolveKind,
+  seedToInt,
+  toDataUri,
+  toSvg,
+} from "../src";
 
 const SEEDS = Array.from({ length: 200 }, (_, k) => k * 7919 + 1);
-const SIZES: [number, number][] = [[400, 300], [300, 400], [256, 256], [960, 240]];
+const SIZES: [number, number][] = [
+  [400, 300],
+  [300, 400],
+  [256, 256],
+  [960, 240],
+];
 
 describe.each(kinds.map(k => [k.id, k] as const))("%s", (_, kind) => {
   it("draws clean markup at every size and seed", () => {

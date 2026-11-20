@@ -19,7 +19,9 @@ function draw() {
       const card = document.createElement("div");
       card.className = "card";
       const seeds = [0, 1, 2, 3].map(k => base + k);
-      const uris = seeds.map((seed, k) => toDataUri(kind, { width, height, seed, label: numbered ? k + 1 : undefined }));
+      const uris = seeds.map((seed, k) =>
+        toDataUri(kind, { width, height, seed, label: numbered ? k + 1 : undefined }),
+      );
       const svg = toSvg(kind, { width, height, seed: seeds[0] });
       card.innerHTML = `<h3>${kind.name}</h3><div class="meta"><span>${kind.id}</span><span>${shapes(svg)} shapes · ${kb(uris[0].length)}</span></div><div class="thumbs"></div>`;
       const thumbs = card.querySelector(".thumbs")!;
@@ -36,6 +38,9 @@ function draw() {
   }
 }
 
-$("shuffle").onclick = () => { base = Math.floor(Math.random() * 99999) + 1; draw(); };
+$("shuffle").onclick = () => {
+  base = Math.floor(Math.random() * 99999) + 1;
+  draw();
+};
 for (const id of ["width", "height", "numbered"]) $(id).addEventListener("change", draw);
 draw();

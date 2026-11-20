@@ -5,24 +5,118 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>bozzetto</title>
     <style>
-      :root { --bg: #f1f3ee; --surface: #fafbf8; --ink: #1b211e; --muted: #5d6761; --line: #d7dcd3; --accent: #2f6b58; color-scheme: light dark; }
-      @media (prefers-color-scheme: dark) { :root { --bg: #121614; --surface: #1a1f1c; --ink: #e5eae6; --muted: #9aa49e; --line: #2c332f; --accent: #82c7ac; } }
-      body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.5 system-ui, sans-serif; }
-      main { max-width: 1180px; margin: 0 auto; padding: 32px 16px 64px; display: grid; gap: 32px; }
-      h1 { margin: 0; font-size: 40px; letter-spacing: -0.02em; }
-      h2 { margin: 0; font-size: 22px; text-transform: capitalize; border-bottom: 1px solid var(--line); padding-bottom: 8px; }
-      h3 { margin: 0; font-size: 15px; font-weight: 600; }
-      .bar { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
-      .bar label { display: inline-flex; gap: 6px; align-items: center; color: var(--muted); }
-      .bar input[type="number"] { width: 5em; }
-      button { font: inherit; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 6px 14px; cursor: pointer; }
-      button:hover { border-color: var(--accent); color: var(--accent); }
-      section { display: grid; gap: 14px; }
-      .sheet { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px 16px; }
-      .card { display: grid; gap: 6px; }
-      .meta { display: flex; justify-content: space-between; gap: 8px; color: var(--muted); font: 12px ui-monospace, Menlo, monospace; }
-      .thumbs { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
-      .thumbs img { width: 100%; display: block; border-radius: 4px; }
+      :root {
+        --bg: #f1f3ee;
+        --surface: #fafbf8;
+        --ink: #1b211e;
+        --muted: #5d6761;
+        --line: #d7dcd3;
+        --accent: #2f6b58;
+        color-scheme: light dark;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #121614;
+          --surface: #1a1f1c;
+          --ink: #e5eae6;
+          --muted: #9aa49e;
+          --line: #2c332f;
+          --accent: #82c7ac;
+        }
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--ink);
+        font:
+          15px/1.5 system-ui,
+          sans-serif;
+      }
+      main {
+        max-width: 1180px;
+        margin: 0 auto;
+        padding: 32px 16px 64px;
+        display: grid;
+        gap: 32px;
+      }
+      h1 {
+        margin: 0;
+        font-size: 40px;
+        letter-spacing: -0.02em;
+      }
+      h2 {
+        margin: 0;
+        font-size: 22px;
+        text-transform: capitalize;
+        border-bottom: 1px solid var(--line);
+        padding-bottom: 8px;
+      }
+      h3 {
+        margin: 0;
+        font-size: 15px;
+        font-weight: 600;
+      }
+      .bar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        align-items: center;
+      }
+      .bar label {
+        display: inline-flex;
+        gap: 6px;
+        align-items: center;
+        color: var(--muted);
+      }
+      .bar input[type="number"] {
+        width: 5em;
+      }
+      button {
+        font: inherit;
+        color: var(--ink);
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        padding: 6px 14px;
+        cursor: pointer;
+      }
+      button:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+      section {
+        display: grid;
+        gap: 14px;
+      }
+      .sheet {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+        gap: 20px 16px;
+      }
+      .card {
+        display: grid;
+        gap: 6px;
+      }
+      .meta {
+        display: flex;
+        justify-content: space-between;
+        gap: 8px;
+        color: var(--muted);
+        font:
+          12px ui-monospace,
+          Menlo,
+          monospace;
+      }
+      .thumbs {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 4px;
+      }
+      .thumbs img {
+        width: 100%;
+        display: block;
+        border-radius: 4px;
+      }
     </style>
   </head>
   <body>
