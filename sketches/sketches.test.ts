@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { hills, kinds, toSvg } from "../src";
 import { animals } from "./animals";
 import { food } from "./food";
-import { MOODS, PALETTES, stylize } from "./moods";
+import { ADJUSTMENTS, MAPPINGS, PALETTES, stylize } from "./style";
 import { objects } from "./objects";
 
 const SKETCHES = [...animals, ...food, ...objects];
@@ -35,21 +35,24 @@ describe.each(SKETCHES.map(k => [k.id, k] as const))("sketch %s", (_, kind) => {
 
 describe("stylize", () => {
   const every = [...kinds, ...SKETCHES];
-  it("recolors every kind with every mood and palette without breaking markup", () => {
+  it("recolors every kind with every adjustment, palette and mapping without breaking markup", () => {
     for (const kind of every) {
       const svg = toSvg(kind, { seed: 3 });
-      for (const mood of MOODS) expect(stylize(svg, { mood })).not.toMatch(BAD);
-      for (const palette of Object.values(PALETTES)) {
-        expect(stylize(svg, { palette })).not.toMatch(BAD);
-        expect(stylize(svg, { palette, mapping: "nearest" })).not.toMatch(BAD);
+      for (const palette of ADJUSTMENTS) expect(stylize(svg, { palette })).not.toMatch(BAD);
+      for (const palette of Object.keys(PALETTES)) {
+        for (const mapping of MAPPINGS) expect(stylize(svg, { palette, mapping })).not.toMatch(BAD);
       }
     }
   });
+  it("treats adjustments the same whatever the mapping", () => {
+    const svg = toSvg(kinds[0], { seed: 3 });
+    expect(stylize(svg, { palette: "pastel", mapping: "nearest" })).toBe(stylize(svg, { palette: "pastel" }));
+  });
   it("changes colors and leaves masks alone", () => {
     const svg = toSvg(hills, { seed: 1 });
-    expect(stylize(svg, { mood: "grayscale" })).not.toBe(svg);
+    expect(stylize(svg, { palette: "grayscale" })).not.toBe(svg);
     const masked = '<svg width="10" height="10"><mask id="m"><rect fill="#fff"/></mask><rect fill="#ff0000"/></svg>';
-    expect(stylize(masked, { mood: "grayscale" })).toContain('<mask id="m"><rect fill="#fff"/></mask>');
+    expect(stylize(masked, { palette: "grayscale" })).toContain('<mask id="m"><rect fill="#fff"/></mask>');
   });
   it("uses only palette colors with nearest mapping", () => {
     const palette = PALETTES.riso;
@@ -59,5 +62,13 @@ describe("stylize", () => {
   it("adds a texture layer", () => {
     expect(stylize(toSvg(hills), { texture: "grain" })).toContain("feTurbulence");
     expect(stylize(toSvg(hills), { texture: "paper" })).toContain("feDiffuseLighting");
+  });
+});
+
+describe("default mapping", () => {
+  it("is balanced for color palettes", () => {
+    const svg = toSvg(kinds[0], { seed: 3 });
+    expect(stylize(svg, { palette: "riso" })).toBe(stylize(svg, { palette: "riso", mapping: "balanced" }));
+    expect(stylize(svg, { palette: "riso" })).not.toBe(stylize(svg, { palette: "riso", mapping: "ramp" }));
   });
 });

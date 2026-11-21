@@ -1,3 +1,4 @@
+<meta charset="utf-8" />
 <title>Bozzetto Sketchbook</title>
 <meta name="claude:viewport-fit-sides" content="cover" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -6,7 +7,7 @@
   href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"
 />
 <style>
-  /* Layout: a specimen bench, a sticky style bar that restyles everything, a mood matrix, then contact sheets per family. */
+  /* Layout: a specimen bench, a sticky style bar that restyles everything, a palette matrix, then contact sheets per family. */
   :root {
     --bg: #f1f3ee;
     --surface: #fafbf8;
@@ -334,7 +335,7 @@
   <header>
     <h1>Bozzetto Sketchbook</h1>
     <p class="lede">
-      Candidates for the next bozzetto release: nineteen new kinds of animals, food and still-life objects, plus moods,
+      Candidates for the next bozzetto release: nineteen new kinds of animals, food and still-life objects, plus
       palettes and paper textures that restyle any picture after it is drawn. Pick a style in the bar and every picture
       on the page follows it. Click any picture to inspect it.
     </p>
@@ -361,11 +362,11 @@
   </div>
 
   <div class="stylebar" role="group" aria-label="Style for every picture">
-    <label for="mood">Mood<select id="mood"></select></label>
     <label for="palette">Palette<select id="palette"></select></label>
     <label for="mapping"
       >Palette mapping<select id="mapping">
-        <option value="ramp">Ramp (keep light and dark)</option>
+        <option value="balanced">Balanced (exact colors)</option>
+        <option value="ramp">Ramp (blend, keep light and dark)</option>
         <option value="nearest">Nearest color</option>
       </select></label
     >
@@ -382,10 +383,13 @@
 
   <section>
     <div class="section-head">
-      <h2>Moods and palettes<span class="tag">new</span></h2>
-      <p>Each column restyles the same picture. These ignore the style bar.</p>
+      <h2>Palettes<span class="tag">new</span></h2>
+      <p>
+        Each column restyles the same picture. The first table adjusts each picture's own colors; the second replaces
+        them with a palette. These ignore the style bar.
+      </p>
     </div>
-    <div class="matrix-scroll"><table class="matrix" id="moods"></table></div>
+    <div class="matrix-scroll"><table class="matrix" id="adjustments"></table></div>
     <div class="matrix-scroll"><table class="matrix" id="palettes"></table></div>
   </section>
 

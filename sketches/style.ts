@@ -1,33 +1,37 @@
 /**
- * Palettes, moods and textures, applied to a finished picture by rewriting its colors.
+ * Styles a finished picture by rewriting its colors: with a palette of colors, or with an
+ * adjustment of the picture's own colors (such as pastel or grayscale), plus an optional texture.
  * Because this works on the markup, every kind gets it for free, built-in or custom.
  */
 
 import { el } from "../src/core";
+import { rgbToOklab } from "./color";
+import { ADJUSTMENTS, resolvePalette, type Adjustment, type PaletteSpec } from "./palettes";
 
-export type Mood = "vivid" | "pastel" | "muted" | "dusk" | "mono" | "sepia" | "grayscale";
+export { ADJUSTMENTS, PALETTES } from "./palettes";
+
 export type Texture = "grain" | "paper";
+export type Mapping = "ramp" | "balanced" | "nearest";
+
+export const MAPPINGS: readonly Mapping[] = ["balanced", "ramp", "nearest"];
 
 export interface StyleOptions {
-  mood?: Mood;
-  /** Recolor with these colors instead. */
-  palette?: readonly string[];
-  /** How a palette is applied. `ramp` keeps light and dark where they were; `nearest` snaps each color to its closest match. */
-  mapping?: "ramp" | "nearest";
-  /** Hue for the `mono` mood. Default: blue-green. */
-  hue?: number;
+  /**
+   * The colors to use: an adjustment's name (`vivid`, `pastel`, `muted`, `dusk`, `grayscale`),
+   * a built-in palette's name, a palette code, or a list of colors.
+   */
+  palette?: PaletteSpec;
+  /**
+   * How a list of colors is applied (adjustments ignore it):
+   * - `balanced` (default) uses only the exact palette colors. It keeps light and dark where they
+   *   were and chooses among similar lightnesses by hue, so differently colored areas stay different.
+   * - `ramp` keeps light and dark where they were too, but blends between palette colors, adding
+   *   in-between shades for a softer look.
+   * - `nearest` snaps each color to its closest palette color. Bold, but areas can merge.
+   */
+  mapping?: Mapping;
   texture?: Texture;
 }
-
-export const MOODS: readonly Mood[] = ["vivid", "pastel", "muted", "dusk", "mono", "sepia", "grayscale"];
-
-export const PALETTES: Record<string, readonly string[]> = {
-  sunset: ["#2d1e2f", "#7a3b52", "#d1495b", "#edae49", "#f9e0a8"],
-  "sea glass": ["#0b2e3b", "#1b6a73", "#4fa3a5", "#a7d7c5", "#eef6ee"],
-  riso: ["#1f2a44", "#ff4f5e", "#ffb000", "#f5f0e6"],
-  orchard: ["#283618", "#606c38", "#dda15e", "#bc6c25", "#fefae0"],
-  candy: ["#3d2c8d", "#916bbf", "#c996cc", "#f2a7c3", "#fff1e6"],
-};
 
 type RGB = [number, number, number];
 
@@ -122,6 +126,35 @@ function nearest(colors: readonly string[]): (c: RGB) => string {
   };
 }
 
+/**
+ * Picks an exact palette color for each picture color. The picture's lightness range is stretched
+ * over the palette's, then the closest palette color in OKLab wins, so lightness decides most of
+ * the choice and hue settles it between palette colors of similar lightness.
+ */
+function balanced(svg: string, colors: readonly string[]): (c: RGB) => string {
+  const swatches = colors.map(c => ({ hex: c, lab: rgbToOklab(parse(c)) }));
+  const swatchLs = swatches.map(s => s.lab[0]);
+  const paletteLo = Math.min(...swatchLs);
+  const paletteHi = Math.max(...swatchLs);
+  const pictureLs = (svg.match(COLOR) ?? []).map(m => rgbToOklab(parse(m))[0]);
+  const lo = Math.min(...pictureLs);
+  const span = Math.max(...pictureLs) - lo || 1;
+  return c => {
+    const [L, a, b] = rgbToOklab(c);
+    const target = paletteLo + ((L - lo) / span) * (paletteHi - paletteLo);
+    let best = swatches[0];
+    let bestDistance = Infinity;
+    for (const s of swatches) {
+      const distance = (target - s.lab[0]) ** 2 + (a - s.lab[1]) ** 2 + (b - s.lab[2]) ** 2;
+      if (distance < bestDistance) {
+        bestDistance = distance;
+        best = s;
+      }
+    }
+    return best.hex;
+  };
+}
+
 /** Recolors a picture's markup. Masks are left alone, since their black and white are structural. */
 export function stylize(svg: string, options: StyleOptions = {}): string {
   const masks: string[] = [];
@@ -133,47 +166,37 @@ export function stylize(svg: string, options: StyleOptions = {}): string {
 }
 
 function recolorer(svg: string, o: StyleOptions): ((c: RGB) => string) | undefined {
-  const rampWith = (colors: readonly string[]) => {
-    // Stretch the picture's own lightness range across the whole palette.
-    const ls = (svg.match(COLOR) ?? []).map(m => lightness(parse(m)));
-    const lo = Math.min(...ls);
-    const hi = Math.max(...ls);
-    const span = hi - lo || 1;
-    const at = ramp(colors);
-    return (c: RGB) => at((lightness(c) - lo) / span);
-  };
-  if (o.palette?.length) return o.mapping === "nearest" ? nearest(o.palette) : rampWith(o.palette);
-  switch (o.mood) {
-    case undefined:
-      return undefined;
-    case "mono": {
-      const h = o.hue ?? 175;
-      return rampWith([hslText(h, 45, 10), hslText(h, 40, 42), hslText(h, 35, 72), hslText(h, 30, 95)]);
-    }
-    case "sepia":
-      return rampWith(["#2a1d10", "#7a5634", "#c9a46e", "#f4e8cf"]);
-    case "grayscale":
-      return c => {
-        const l = lightness(c);
-        return hslText(0, 0, l);
-      };
-    default:
-      return c => {
-        const [h, sat, l] = rgbToHsl(c);
-        switch (o.mood) {
-          case "vivid":
-            return hslText(h, sat * 1.3 + 8, 50 + (l - 50) * 0.92);
-          case "pastel":
-            return hslText(h, Math.min(65, sat * 0.6 + 12), 74 + (l - 50) * 0.42);
-          case "muted":
-            return hslText(h, sat * 0.42, 52 + (l - 50) * 0.8);
-          case "dusk":
-            return hslText(h + (h > 60 && h < 200 ? 18 : 0) - (h <= 60 ? 6 : 0), sat * 0.8, l * 0.52 + 4);
-          default:
-            return hex(c);
-        }
-      };
+  if (o.palette === undefined) return undefined;
+  if (typeof o.palette === "string" && (ADJUSTMENTS as readonly string[]).includes(o.palette)) {
+    return adjust(o.palette as Adjustment);
   }
+  const colors = resolvePalette(o.palette);
+  if (o.mapping === "nearest") return nearest(colors);
+  if (o.mapping !== "ramp") return balanced(svg, colors);
+  // Ramp: stretch the picture's own lightness range across the whole palette.
+  const ls = (svg.match(COLOR) ?? []).map(m => lightness(parse(m)));
+  const lo = Math.min(...ls);
+  const span = Math.max(...ls) - lo || 1;
+  const at = ramp(colors);
+  return c => at((lightness(c) - lo) / span);
+}
+
+/** Adjustments change the picture's own colors instead of replacing them. */
+function adjust(adjustment: Adjustment): (c: RGB) => string {
+  return c => {
+    if (adjustment === "grayscale") return hslText(0, 0, lightness(c));
+    const [h, sat, l] = rgbToHsl(c);
+    switch (adjustment) {
+      case "vivid":
+        return hslText(h, sat * 1.3 + 8, 50 + (l - 50) * 0.92);
+      case "pastel":
+        return hslText(h, Math.min(65, sat * 0.6 + 12), 74 + (l - 50) * 0.42);
+      case "muted":
+        return hslText(h, sat * 0.42, 52 + (l - 50) * 0.8);
+      case "dusk":
+        return hslText(h + (h > 60 && h < 200 ? 18 : 0) - (h <= 60 ? 6 : 0), sat * 0.8, l * 0.52 + 4);
+    }
+  };
 }
 
 function addTexture(svg: string, texture: Texture): string {

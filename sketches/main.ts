@@ -1,7 +1,7 @@
 import { kinds as builtIn, toSvg, type Kind } from "../src";
 import { animals } from "./animals";
 import { food } from "./food";
-import { MOODS, PALETTES, stylize, type Mood, type StyleOptions, type Texture } from "./moods";
+import { ADJUSTMENTS, PALETTES, stylize, type Mapping, type StyleOptions, type Texture } from "./style";
 import { objects } from "./objects";
 
 const W = 400;
@@ -33,13 +33,15 @@ const render = (kind: Kind, seed: number, style: StyleOptions = state.style) =>
 const uri = (svg: string) => `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
 const shapes = (svg: string) => (svg.match(/<(rect|circle|ellipse|path|polygon|polyline|line)\b/g) ?? []).length;
 const kb = (n: number) => (n < 1024 ? `${n} B` : `${(n / 1024).toFixed(1)} KB`);
+const isAdjustment = (p: StyleOptions["palette"]) =>
+  typeof p === "string" && (ADJUSTMENTS as readonly string[]).includes(p);
 const styleText = (o: StyleOptions) =>
   [
-    o.palette
-      ? `palette ${Object.entries(PALETTES).find(([, p]) => p === o.palette)?.[0]} (${o.mapping ?? "ramp"})`
-      : o.mood
-        ? `mood ${o.mood}`
-        : "original",
+    o.palette === undefined
+      ? "original colors"
+      : isAdjustment(o.palette)
+        ? `palette ${o.palette}`
+        : `palette ${o.palette} (${o.mapping ?? "balanced"})`,
     o.texture ? `${o.texture} texture` : "",
   ]
     .filter(Boolean)
@@ -120,9 +122,10 @@ function drawBench() {
   $("f-bytes").textContent = `${kb(u.length)} as a data URI`;
   const o = state.style;
   const extra = [
-    o.palette ? `  palette: [${o.palette.map(c => `"${c}"`).join(", ")}],` : "",
-    o.palette && o.mapping === "nearest" ? `  mapping: "nearest",` : "",
-    !o.palette && o.mood ? `  mood: "${o.mood}",` : "",
+    o.palette !== undefined ? `  palette: "${o.palette}",` : "",
+    o.palette !== undefined && !isAdjustment(o.palette) && o.mapping && o.mapping !== "balanced"
+      ? `  mapping: "${o.mapping}",`
+      : "",
     o.texture ? `  texture: "${o.texture}",` : "",
   ]
     .filter(Boolean)
@@ -130,7 +133,7 @@ function drawBench() {
   $("f-call").textContent = `placeholder({\n  kind: "${kind.id}",\n  seed: ${seed},${extra ? "\n" + extra : ""}\n})`;
 }
 
-// ---------- mood and palette matrices ----------
+// ---------- palette matrices ----------
 const SAMPLES = ["hills", "grid", "portrait", "cat", "fruit-bowl", "donut"];
 function matrix(tableId: string, columns: { label: string; style: StyleOptions }[]) {
   const table = $(tableId);
@@ -161,51 +164,46 @@ function matrix(tableId: string, columns: { label: string; style: StyleOptions }
   }
 }
 function drawMatrices() {
-  matrix("moods", [{ label: "original", style: {} }, ...MOODS.map(m => ({ label: m, style: { mood: m } }))]);
-  const palettes = Object.entries(PALETTES);
+  matrix("adjustments", [
+    { label: "original", style: {} },
+    ...ADJUSTMENTS.map(a => ({ label: a, style: { palette: a } })),
+  ]);
+  const names = Object.keys(PALETTES);
   matrix("palettes", [
-    ...palettes.map(([name, palette]) => ({ label: name, style: { palette } })),
-    ...palettes
-      .slice(0, 3)
-      .map(([name, palette]) => ({ label: `${name} · nearest`, style: { palette, mapping: "nearest" as const } })),
+    ...names.map(palette => ({ label: palette, style: { palette } })),
+    ...names.slice(0, 3).map(palette => ({ label: `${palette} · ramp`, style: { palette, mapping: "ramp" as const } })),
   ]);
 }
 
 // ---------- controls ----------
-const moodSel = $<HTMLSelectElement>("mood");
 const palSel = $<HTMLSelectElement>("palette");
 const mapSel = $<HTMLSelectElement>("mapping");
 const texSel = $<HTMLSelectElement>("texture");
-moodSel.innerHTML =
-  `<option value="">Original</option>` +
-  MOODS.map(m => `<option value="${m}">${m[0].toUpperCase() + m.slice(1)}</option>`).join("");
+const option = (name: string) => `<option value="${name}">${name[0].toUpperCase() + name.slice(1)}</option>`;
 palSel.innerHTML =
-  `<option value="">None</option>` +
-  Object.keys(PALETTES)
-    .map(p => `<option value="${p}">${p[0].toUpperCase() + p.slice(1)}</option>`)
-    .join("");
+  `<option value="">Original colors</option>` +
+  `<optgroup label="Adjust the picture's colors">${ADJUSTMENTS.map(option).join("")}</optgroup>` +
+  `<optgroup label="Color palettes">${Object.keys(PALETTES).map(option).join("")}</optgroup>`;
 
 function readControls() {
-  const palette = palSel.value ? PALETTES[palSel.value] : undefined;
+  const palette = palSel.value || undefined;
   state.style = {
-    mood: (moodSel.value || undefined) as Mood | undefined,
     palette,
-    mapping: palette ? (mapSel.value as "ramp" | "nearest") : undefined,
+    mapping: palette ? (mapSel.value as Mapping) : undefined,
     texture: (texSel.value || undefined) as Texture | undefined,
   };
   redrawAll();
 }
 function syncControls() {
-  moodSel.value = state.style.mood ?? "";
-  palSel.value = Object.entries(PALETTES).find(([, p]) => p === state.style.palette)?.[0] ?? "";
-  mapSel.value = state.style.mapping ?? "ramp";
+  palSel.value = typeof state.style.palette === "string" ? state.style.palette : "";
+  mapSel.value = state.style.mapping ?? "balanced";
   texSel.value = state.style.texture ?? "";
 }
 function redrawAll() {
   ALL.forEach(drawKind);
   drawBench();
 }
-for (const el of [moodSel, palSel, mapSel, texSel]) el.addEventListener("change", readControls);
+for (const el of [palSel, mapSel, texSel]) el.addEventListener("change", readControls);
 
 for (const kind of ALL) {
   $(`reseed-${kind.id}`).onclick = () => {
