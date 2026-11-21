@@ -7,6 +7,7 @@
  *     await writeFile("owl.png", await toPng(render(owl, { seed: 3 }), { scale: 2 }));
  */
 import { sizeOf } from "./raster";
+import { forResvg } from "./resvg-fix";
 import type { Picture } from "./render";
 
 export interface PngOptions {
@@ -30,7 +31,7 @@ function resvg(): Promise<Resvg> {
 
 /** A picture as PNG bytes. */
 export async function toPng(input: Picture | string, options: PngOptions = {}): Promise<Uint8Array> {
-  const svg = typeof input === "string" ? input : input.svg;
+  const svg = forResvg(typeof input === "string" ? input : input.svg);
   const { width } = sizeOf(input);
   const scale = options.scale ?? 1;
   if (!(scale > 0)) throw new Error("bozzetto: scale must be more than 0.");

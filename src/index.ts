@@ -73,6 +73,10 @@ import { daisy, hibiscus, lotus, poppy, rose, sunflower, tulip } from "./blooms"
 import { chicken, flamingo, hummingbird, parrot } from "./birds";
 import { bridge, castle, cottage, greenhouse, rowHouses, windmill } from "./buildings";
 import { portrait } from "./faces";
+import { cds, drums, guitar, notes, piano, record } from "./music";
+import { baseball, basketball, football, hockey, skateboard, surfboard, tennis } from "./sports";
+import { eggBasket, gifts, holidayTree, pumpkins, snowman } from "./holidays";
+import { astronaut, moon, nebula, planets } from "./space";
 import { backpack, handbag, perfume, sneakers, sunglasses, watch } from "./products";
 import { controller, headphones, laptop, phone, speaker } from "./gadgets";
 import { cafe, group, pair, reader, walker, worker } from "./people";
@@ -103,6 +107,7 @@ import {
   watermelon,
 } from "./food";
 import {
+  aquarium,
   aurora,
   autumn,
   beach,
@@ -115,12 +120,14 @@ import {
   forest,
   hills,
   island,
+  kelp,
   lake,
   lighthouse,
   mountains,
   night,
   rainbow,
   rainyStreet,
+  reef,
   savanna,
   sea,
   terraces,
@@ -211,6 +218,10 @@ export { daisy, hibiscus, lotus, poppy, rose, sunflower, tulip } from "./blooms"
 export { chicken, flamingo, hummingbird, parrot } from "./birds";
 export { bridge, castle, cottage, greenhouse, rowHouses, windmill } from "./buildings";
 export { portrait } from "./faces";
+export { cds, drums, guitar, notes, piano, record } from "./music";
+export { baseball, basketball, football, hockey, skateboard, surfboard, tennis } from "./sports";
+export { eggBasket, gifts, holidayTree, pumpkins, snowman } from "./holidays";
+export { astronaut, moon, nebula, planets } from "./space";
 export { backpack, handbag, perfume, sneakers, sunglasses, watch } from "./products";
 export { controller, headphones, laptop, phone, speaker } from "./gadgets";
 export { cafe, group, pair, reader, walker, worker } from "./people";
@@ -241,6 +252,7 @@ export {
   watermelon,
 } from "./food";
 export {
+  aquarium,
   aurora,
   autumn,
   beach,
@@ -253,12 +265,14 @@ export {
   forest,
   hills,
   island,
+  kelp,
   lake,
   lighthouse,
   mountains,
   night,
   rainbow,
   rainyStreet,
+  reef,
   savanna,
   sea,
   terraces,
@@ -340,6 +354,9 @@ export const landscapes = [
   campsite,
   terraces,
   canal,
+  reef,
+  kelp,
+  aquarium,
 ] as const;
 export const art = [
   field,
@@ -455,6 +472,10 @@ export const products = [
 ] as const;
 export const patterns = [terrazzo, marble, gingham, plaid, topography, gradient] as const;
 export const buildings = [cottage, windmill, castle, bridge, rowHouses, greenhouse] as const;
+export const music = [guitar, piano, drums, record, cds, notes] as const;
+export const sports = [baseball, basketball, football, hockey, tennis, skateboard, surfboard] as const;
+export const holidays = [pumpkins, snowman, holidayTree, gifts, eggBasket] as const;
+export const space = [planets, nebula, astronaut, moon] as const;
 export const vehicles = [car, bicycle, sailboat, hotAirBalloon, rocket, train, bus, airplane] as const;
 
 /** Every category by name, for listing them (in a demo, say). */
@@ -469,6 +490,10 @@ export const categories = {
   buildings,
   vehicles,
   products,
+  music,
+  sports,
+  holidays,
+  space,
   patterns,
 } as const;
 
@@ -484,6 +509,10 @@ export const kinds = [
   ...buildings,
   ...vehicles,
   ...products,
+  ...music,
+  ...sports,
+  ...holidays,
+  ...space,
   ...patterns,
 ] as const;
 
@@ -533,6 +562,8 @@ export const faces = [
   dolphin,
   shark,
   seal,
+  snowman,
+  astronaut,
 ] as const;
 
 /**

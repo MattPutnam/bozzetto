@@ -213,6 +213,22 @@ const clamp = (v: number) => Math.round(Math.max(0, Math.min(100, v)));
 export const hsl = (h: number, sat: number, light: number): string =>
   `hsl(${Math.round(((h % 360) + 360) % 360)} ${clamp(sat)}% ${clamp(light)}%)`;
 
+/** An hsl color written as #rrggbb, so it can be mixed and stays short in a data URI. */
+export function hex(hue: number, sat: number, light: number): string {
+  const sv = Math.max(0, Math.min(100, sat)) / 100;
+  const lv = Math.max(0, Math.min(100, light)) / 100;
+  const hv = (((hue % 360) + 360) % 360) / 30;
+  const a = sv * Math.min(lv, 1 - lv);
+  const channel = (k: number) => {
+    const t = (k + hv) % 12;
+    const v = lv - a * Math.max(-1, Math.min(t - 3, 9 - t, 1));
+    return Math.round(v * 255)
+      .toString(16)
+      .padStart(2, "0");
+  };
+  return "#" + channel(0) + channel(8) + channel(4);
+}
+
 /** A top-to-bottom linear gradient with evenly spaced stops. */
 export const lin = (id: string, stops: readonly string[]): string =>
   el(

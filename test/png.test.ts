@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { hills, kinds, night, render, toImageBlob } from "../src";
+import { avatar, faces, hills, kinds, night, render, toImageBlob } from "../src";
 import { toPng } from "../src/node";
+import { forResvg } from "../src/resvg-fix";
 
 /** The width and height in a PNG's header. */
 function pngSize(bytes: Uint8Array): { width: number; height: number } {
@@ -34,6 +35,39 @@ describe("toPng", () => {
       const png = await toPng(render(kind, { seed: 3, size: "120x90", palette: "riso", texture: "grain", label: 1 }));
       expect(pngSize(png), kind.id).toEqual({ width: 120, height: 90 });
     }
+  });
+
+  // resvg 2.6 aborts the process on a layer (opacity, clip or mask) wholly outside the canvas, so a
+  // crash here takes the test run down with it rather than failing politely.
+  it("survives layers outside the canvas", async () => {
+    const offCanvas =
+      '<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><defs><clipPath id="c"><circle cx="50" cy="350" r="40"/></clipPath></defs>' +
+      '<rect width="100" height="100" fill="#ccc"/><rect y="300" width="100" height="3" opacity="0.2"/>' +
+      '<g opacity="0.5"><rect y="300" width="100" height="3"/></g><g clip-path="url(#c)"><rect y="300" width="100" height="100"/></g></svg>';
+    expect(pngSize(await toPng(offCanvas))).toEqual({ width: 100, height: 100 });
+  });
+
+  it("renders every face kind as an avatar", async () => {
+    for (const kind of faces) {
+      for (const seed of [1, 2, 3, 5, 8]) {
+        expect(pngSize(await toPng(avatar({ kind, seed, size: 48 }))), `${kind.id} ${seed}`).toEqual({
+          width: 48,
+          height: 48,
+        });
+      }
+    }
+  });
+
+  it("draws the same once rewritten for resvg", () => {
+    const svg = forResvg(
+      '<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100">' +
+        '<rect width="10" height="10" fill="#000" opacity="0.5"/><path d="M0 0H9" stroke="#000" opacity="0.4" stroke-opacity="0.5"/>' +
+        '<g transform="translate(50 0) scale(-1 1)" opacity="0.3"><rect width="5" height="5"/></g></svg>',
+    );
+    expect(svg).toContain('<rect width="10" height="10" fill="#000" fill-opacity="0.5" stroke-opacity="0.5"/>');
+    expect(svg).toContain('stroke-opacity="0.2"');
+    // The group keeps its opacity, and gets an invisible copy of the canvas in its own (mirrored) space.
+    expect(svg).toContain('opacity="0.3"><polygon points="50,0 -50,0 -50,100 50,100" fill="#000" fill-opacity="0"/>');
   });
 
   it("rejects a bad scale", async () => {

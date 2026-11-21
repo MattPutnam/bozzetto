@@ -3071,3 +3071,879 @@ export const canal = defineKind("canal", "Canal houses", (g, w, h, note) => {
   note.focus(gx, base - hump);
   return out;
 });
+
+const ARGS: Record<string, number> = { m: 2, l: 2, h: 1, v: 1, q: 4, t: 2, c: 6, s: 4, a: 7, z: 0 };
+
+/**
+ * Path data rewritten in short form, for shapes too many to afford the usual tenths: every point
+ * rounded to a whole px and written relative to the one before it (arc radii keep their tenths).
+ */
+function whole(d: string): string {
+  const tokens = d.match(/[A-Za-z]|-?\d*\.?\d+(?:e-?\d+)?/g) ?? [];
+  // Where the pen is exactly, where it is in the rounded output, and where the subpath began.
+  let x = 0;
+  let y = 0;
+  let rx = 0;
+  let ry = 0;
+  let start: Point = [0, 0];
+  let cmd = "M";
+  let out = "";
+  const write = (v: number, sep: boolean) => (sep && v >= 0 ? " " : "") + v;
+  for (let i = 0; i < tokens.length;) {
+    if (/[A-Za-z]/.test(tokens[i])) cmd = tokens[i++];
+    const lower = cmd.toLowerCase();
+    const absolute = cmd !== lower;
+    if (lower === "z") {
+      out += "z";
+      [x, y] = start;
+      [rx, ry] = [Math.round(x), Math.round(y)];
+      continue;
+    }
+    const args = tokens.slice(i, i + ARGS[lower]).map(Number);
+    i += ARGS[lower];
+    // Each point as an exact absolute position, then written as a rounded step from the pen.
+    const point = (px: number, py: number): Point => (absolute ? [px, py] : [x + px, y + py]);
+    const nums: number[] = [];
+    let end: Point;
+    if (lower === "h") end = [absolute ? args[0] : x + args[0], y];
+    else if (lower === "v") end = [x, absolute ? args[0] : y + args[0]];
+    else end = point(args[args.length - 2], args[args.length - 1]);
+    if (lower === "h") nums.push(Math.round(end[0]) - rx);
+    else if (lower === "v") nums.push(Math.round(end[1]) - ry);
+    else {
+      if (lower === "a") nums.push(...args.slice(0, 5).map(v => Math.round(v * 10) / 10));
+      else
+        for (let k = 0; k < args.length - 2; k += 2) {
+          const [cx, cy] = point(args[k], args[k + 1]);
+          nums.push(Math.round(cx) - rx, Math.round(cy) - ry);
+        }
+      nums.push(Math.round(end[0]) - rx, Math.round(end[1]) - ry);
+    }
+    out += lower + nums.map((v, k) => write(v, k > 0)).join("");
+    [x, y] = end;
+    [rx, ry] = [Math.round(x), Math.round(y)];
+    if (lower === "m") start = end;
+  }
+  return out;
+}
+
+/** Open water with light falling from the surface. */
+function underwater(g: Rand, w: number, h: number, top: string, bottom: string): string {
+  const water = g.id("water");
+  let out = el("defs", {}, lin(water, [top, bottom])) + fill(w, h, `url(#${water})`);
+  // Shimmer at the surface, and rays slanting down from it.
+  out += el("rect", { width: w, height: h * 0.04, fill: "#fff", opacity: "0.12" });
+  const slant = g.f(-0.25, 0.25) * h;
+  let rays = "";
+  for (let k = g.i(3, 5); k > 0; k--) {
+    const x = w * g.f(-0.05, 1);
+    const spread = w * g.f(0.03, 0.08);
+    rays += s`M${x} 0L${x + spread} 0L${x + spread * 2.2 + slant} ${h}L${x + slant} ${h}Z`;
+  }
+  out += el("path", { d: rays, fill: "#fff", opacity: "0.09" });
+  return out;
+}
+
+/** A few bubbles rising above (x, y). */
+function bubbles(g: Rand, x: number, y: number, spread: number, r: number): string {
+  let out = "";
+  for (let k = g.i(2, 4); k > 0; k--)
+    out += el("circle", { cx: x + g.f(-0.5, 0.5) * spread, cy: y - k * r * 4.5, r: r * g.f(0.6, 1.2) });
+  return el("g", { fill: "none", stroke: "#fff", "stroke-width": "1.5", opacity: "0.6" }, out);
+}
+
+/** A small fish at (x, y), `r` from its middle to its nose, facing `dir`; sometimes with a band. */
+function smallFish(x: number, y: number, r: number, dir: number, body: string, fin: string, band = ""): string {
+  const u = r * dir;
+  let out = el("path", {
+    d: whole(s`M${x - u * 0.75} ${y}L${x - u * 1.45} ${y - r * 0.55}L${x - u * 1.28} ${y}L${x - u * 1.45} ${y + r * 0.55}Z
+         M${x - u * 0.5} ${y - r * 0.45}Q${x - u * 0.15} ${y - r * 0.95} ${x + u * 0.3} ${y - r * 0.5}Z`),
+    fill: fin,
+  });
+  out += el("ellipse", { cx: x, cy: y, rx: r, ry: r * 0.62, fill: body });
+  if (band) out += el("ellipse", { cx: x + u * 0.12, cy: y, rx: r * 0.15, ry: r * 0.54, fill: band });
+  return out + el("circle", { cx: x + u * 0.55, cy: y - r * 0.12, r: r * 0.12, fill: "#1a1a22" });
+}
+
+/** A school of tiny fish drawn as one path: `count` of them around (x, y), all facing `dir`. */
+function school(g: Rand, x: number, y: number, count: number, r: number, dir: number, paint: string): string {
+  let d = "";
+  for (let k = 0; k < count; k++) {
+    const a = g.f(0, Math.PI * 2);
+    const dist = Math.sqrt(g.f(0, 1));
+    const fx = x + Math.cos(a) * dist * r * 9;
+    const fy = y + Math.sin(a) * dist * r * 4;
+    d += s`M${fx - r} ${fy}a${r} ${r * 0.45} 0 1 0 ${2 * r} 0a${r} ${r * 0.45} 0 1 0 ${-2 * r} 0`;
+    d += s`M${fx - dir * r * 0.8} ${fy}l${-dir * r * 0.8} ${-r * 0.45}v${r * 0.9}Z`;
+  }
+  return el("path", { d: whole(d), fill: paint });
+}
+
+/** A copy of `items` in a random order. */
+function shuffled<T>(g: Rand, items: readonly T[]): T[] {
+  const out = [...items];
+  for (let k = out.length - 1; k > 0; k--) {
+    const j = g.i(0, k);
+    [out[k], out[j]] = [out[j], out[k]];
+  }
+  return out;
+}
+
+type Hsl = readonly [number, number, number];
+const tone = ([hh, ss, ll]: Hsl, dl: number, ds = 0) => hsl(hh, ss + ds, ll + dl);
+
+const CORAL: readonly Hsl[] = [
+  [350, 70, 66],
+  [12, 78, 64],
+  [28, 85, 62],
+  [45, 80, 62],
+  [285, 45, 64],
+  [315, 55, 68],
+  [170, 45, 55],
+  [200, 55, 60],
+  [80, 45, 55],
+];
+
+/** Branching coral growing up from (x, y), about `ht` tall: forked limbs with round tips. */
+function branchCoral(g: Rand, x: number, y: number, ht: number, c: Hsl): string {
+  const d = ["", "", ""];
+  const grow = (px: number, py: number, len: number, angle: number, depth: number) => {
+    const bend = g.f(-0.3, 0.3);
+    const ex = px + Math.cos(angle) * len;
+    const ey = py + Math.sin(angle) * len;
+    const cx = px + Math.cos(angle + bend) * len * 0.55;
+    const cy = py + Math.sin(angle + bend) * len * 0.55;
+    d[depth] += s`M${px} ${py}Q${cx} ${cy} ${ex} ${ey}`;
+    if (depth < 2)
+      for (let k = g.i(2, 3 - depth); k > 0; k--) {
+        const turn = Math.max(-Math.PI + 0.35, Math.min(-0.35, angle + g.f(-0.75, 0.75)));
+        grow(ex, ey, len * g.f(0.65, 0.85), turn, depth + 1);
+      }
+  };
+  for (let k = g.i(1, 2); k > 0; k--) grow(x + g.f(-0.05, 0.05) * ht, y, ht * 0.4, -Math.PI / 2 + g.f(-0.35, 0.35), 0);
+  return d
+    .map((path, k) =>
+      el("path", {
+        d: whole(path),
+        fill: "none",
+        stroke: tone(c, -k * 3),
+        "stroke-width": ht * (0.1 - k * 0.025),
+        "stroke-linecap": "round",
+      }),
+    )
+    .join("");
+}
+
+/** A brain coral: a low dome on (x, y), `rw` wide each side, with winding grooves. */
+function brainCoral(g: Rand, x: number, y: number, rw: number, c: Hsl): string {
+  const rh = rw * g.f(0.6, 0.8);
+  let out = el("path", { d: s`M${x - rw} ${y}A${rw} ${rh} 0 0 1 ${x + rw} ${y}Z`, fill: tone(c, 0) });
+  let grooves = "";
+  for (let j = 1; j <= 2; j++) {
+    const sc = 1 - j * 0.3;
+    const ph = g.f(0, 6);
+    for (let k = 0; k <= 9; k++) {
+      const a = Math.PI + (Math.PI * k) / 9;
+      const wob = sc * (1 + 0.07 * Math.sin(a * 11 + ph));
+      grooves += `${k ? "L" : "M"}` + s`${x + Math.cos(a) * rw * wob} ${y + Math.sin(a) * rh * wob}`;
+    }
+  }
+  out += el("path", {
+    d: whole(grooves),
+    fill: "none",
+    stroke: tone(c, -16),
+    "stroke-width": rw * 0.05,
+    "stroke-linejoin": "round",
+  });
+  out += el("path", {
+    d: s`M${x - rw * 0.55} ${y - rh * 0.62}Q${x} ${y - rh * 1.08} ${x + rw * 0.5} ${y - rh * 0.68}`,
+    fill: "none",
+    stroke: "#fff",
+    "stroke-width": rw * 0.06,
+    "stroke-linecap": "round",
+    opacity: "0.2",
+  });
+  return out;
+}
+
+/** A sea fan on a short stem at (x, y): a lacy fan `fw` wide and `fh` tall with radiating veins. */
+function fanCoral(g: Rand, x: number, y: number, fw: number, fh: number, c: Hsl): string {
+  const cy = y - fh * 0.55;
+  const ring: Point[] = [
+    [x + fw * 0.08, y - fh * 0.1],
+    [x - fw * 0.08, y - fh * 0.1],
+  ];
+  const veins: Point[] = [];
+  for (let k = 0; k <= 6; k++) {
+    const a = Math.PI * 1.08 + (Math.PI * 0.84 * k) / 6;
+    const r = g.f(0.9, 1.05);
+    const p: Point = [x + Math.cos(a) * fw * 0.5 * r, cy + Math.sin(a) * fh * 0.45 * r];
+    ring.push(p);
+    veins.push(p);
+  }
+  let out = el("path", { d: whole(smoothClosed(ring)), fill: tone(c, 4), opacity: "0.8" });
+  let d = "";
+  for (const [vx, vy] of veins)
+    d += s`M${x} ${y - fh * 0.12}Q${x + (vx - x) * 0.3} ${cy} ${vx * 0.9 + x * 0.1} ${vy * 0.9 + cy * 0.1}`;
+  d += s`M${x} ${y}V${y - fh * 0.14}`;
+  out += el("path", {
+    d: whole(d),
+    fill: "none",
+    stroke: tone(c, -14),
+    "stroke-width": fw * 0.025,
+    "stroke-linecap": "round",
+  });
+  return out;
+}
+
+/** A cluster of tube corals standing on (x, y), up to `ht` tall, open at the top. */
+function tubeCoral(g: Rand, x: number, y: number, ht: number, c: Hsl): string {
+  const count = g.i(3, 5);
+  const tw = ht * 0.24;
+  const tubes = Array.from({ length: count }, (_, k) => ({
+    tx: x + (k - (count - 1) / 2) * tw * 0.85 + g.f(-0.1, 0.1) * tw,
+    th: ht * g.f(0.5, 1),
+    lean: (k - (count - 1) / 2) * g.f(0.08, 0.16),
+  })).sort((a, b) => b.th - a.th);
+  let out = "";
+  let holes = "";
+  for (const { tx, th, lean } of tubes) {
+    // Each tube leans out from the middle of the cluster, rounded at its open top.
+    const top = tx + lean * th;
+    const r = tw / 2;
+    out += el("path", {
+      d: whole(
+        s`M${tx - r} ${y + 2}L${top - r} ${y - th}A${r} ${r * 0.36} 0 0 1 ${top + r} ${y - th}L${tx + r} ${y + 2}Z`,
+      ),
+      fill: tone(c, g.f(-6, 4)),
+    });
+    holes += s`M${top - r * 0.5} ${y - th}h${r}`;
+  }
+  // The openings: short, thick round-capped strokes, which read as ovals.
+  return (
+    out + el("path", { d: whole(holes), stroke: tone(c, -24), "stroke-width": tw * 0.24, "stroke-linecap": "round" })
+  );
+}
+
+/** A sea anemone on (x, y): a short column topped with swaying tentacles, `ah` tall. */
+function anemone(g: Rand, x: number, y: number, ah: number, c: Hsl): string {
+  const aw = ah * g.f(0.9, 1.2);
+  let out = el("path", {
+    d: s`M${x - aw * 0.3} ${y}Q${x - aw * 0.22} ${y - ah * 0.2} ${x - aw * 0.3} ${y - ah * 0.35}H${x + aw * 0.3}
+         Q${x + aw * 0.22} ${y - ah * 0.2} ${x + aw * 0.3} ${y}Z`,
+    fill: tone(c, -18),
+  });
+  let d = "";
+  let tips = "";
+  const count = g.i(10, 12);
+  for (let k = 0; k < count; k++) {
+    const u = k / (count - 1) - 0.5;
+    const sx = x + u * aw * 0.55;
+    const sy = y - ah * 0.33;
+    const a = -Math.PI / 2 + u * 2.2 + g.f(-0.15, 0.15);
+    const len = ah * 0.65 * g.f(0.8, 1.1);
+    const ex = sx + Math.cos(a) * len;
+    const ey = sy + Math.sin(a) * len;
+    d += s`M${sx} ${sy}Q${(sx + ex) / 2 + g.f(-0.12, 0.12) * len} ${(sy + ey) / 2} ${ex} ${ey}`;
+    tips += s`M${ex} ${ey}h0`;
+  }
+  const sw = aw * 0.075;
+  out += el("path", { d: whole(d), fill: "none", stroke: tone(c, 0), "stroke-width": sw, "stroke-linecap": "round" });
+  out += el("path", { d: whole(tips), stroke: tone(c, 14), "stroke-width": sw * 1.4, "stroke-linecap": "round" });
+  return out;
+}
+
+/** A coral reef on a sandy floor: corals of several kinds, an anemone, small fish and light from above. */
+export const reef = defineKind("reef", "Coral reef", (g, w, h, note) => {
+  const unit = Math.min(w, h);
+  const hue = g.f(180, 200);
+  let out = underwater(g, w, h, hsl(hue - 5, 60, 66), hsl(hue + 12, 62, 34));
+  // The floor, gently rolling.
+  const gy = h * g.f(0.74, 0.8);
+  const ph = g.f(0, 6);
+  const waves = g.f(1, 2.5);
+  const floorY = (x: number) => gy + h * 0.02 * Math.sin((x / w) * Math.PI * waves + ph);
+  // A far reef, faded by the water.
+  let far = s`M-5 ${gy + unit * 0.02}`;
+  for (let x = -5; x < w + unit * 0.1;) {
+    const step = unit * g.f(0.14, 0.26);
+    far += s`Q${x + step / 2} ${gy - unit * g.f(0.06, 0.16)} ${x + step} ${gy - unit * g.f(0, 0.02)}`;
+    x += step;
+  }
+  out += el("path", { d: whole(far + s`V${h}H-5Z`), fill: hsl(hue + 15, 40, 40), opacity: "0.3" });
+  let sand = s`M-5 ${h}`;
+  for (let k = 0; k <= 12; k++) sand += s`L${(w * k) / 12} ${floorY((w * k) / 12)}`;
+  out += el("path", { d: whole(sand + s`L${w + 5} ${floorY(w)}V${h}Z`), fill: hsl(g.f(38, 50), 45, g.f(70, 78)) });
+  // Corals in two rows: a hazy back row along the floor line and a nearer one on the sand.
+  const colors = shuffled(g, CORAL);
+  let ci = 0;
+  const color = () => colors[ci++ % colors.length];
+  const coral = (x: number, y: number, size: number, kind: number) => {
+    const c = color();
+    if (kind === 0) return branchCoral(g, x, y, size, c);
+    if (kind === 1) return brainCoral(g, x, y, size * 0.55, c);
+    if (kind === 2) return fanCoral(g, x, y, size * 0.9, size, c);
+    return tubeCoral(g, x, y, size * 0.75, c);
+  };
+  // Larger corals in a wide picture, where there are fewer of them for the width.
+  const grow = Math.min(1.3, Math.max(1, w / h / 2.2));
+  const slots = Math.max(3, Math.min(5, Math.round(w / (unit * 0.3))));
+  let back = "";
+  for (let k = 0; k < slots; k++) {
+    const x = (w * (k + g.f(0.2, 0.8))) / slots;
+    back += coral(x, floorY(x) + unit * 0.02, unit * g.f(0.2, 0.3) * grow, g.i(0, 3));
+  }
+  out += el("g", { opacity: "0.65" }, back);
+  // The near row, with one anemone (sometimes with its clownfish).
+  const near = Math.max(4, Math.min(5, Math.round(w / (unit * 0.3))));
+  const anemoneAt = g.i(0, near - 1);
+  const kinds = shuffled(g, [0, 1, 2, 3]);
+  let clown: Point | undefined;
+  let focus: Point = [w / 2, gy];
+  for (let k = 0; k < near; k++) {
+    const x = (w * (k + g.f(0.25, 0.75))) / near;
+    const y = Math.min(h - unit * 0.02, floorY(x) + (h - floorY(x)) * g.f(0.35, 0.7));
+    const size = unit * g.f(0.32, 0.42) * grow;
+    if (k === anemoneAt) {
+      out += anemone(g, x, y, size * 0.6, color());
+      if (g.chance(0.65)) clown = [x + g.pick([-1, 1]) * size * 0.4, y - size * 0.75];
+      focus = [x, y - size * 0.4];
+    } else {
+      out += coral(x, y, size, kinds[k % 4]);
+    }
+  }
+  // A sea star and a few pebbles on the sand.
+  if (g.chance(0.5)) {
+    const sx = w * g.f(0.1, 0.9);
+    const sy = Math.min(h - unit * 0.03, floorY(sx) + (h - floorY(sx)) * g.f(0.6, 0.85));
+    const r = unit * 0.06;
+    const spin = g.f(0, 1);
+    const star: Point[] = [];
+    for (let k = 0; k < 10; k++) {
+      const a = ((k + spin) * Math.PI) / 5;
+      const rr = k % 2 ? r * 0.42 : r;
+      star.push([sx + Math.cos(a) * rr, sy + Math.sin(a) * rr * 0.6]);
+    }
+    out += el("polygon", { points: pts(star), fill: hsl(g.f(0, 30), 70, 60) });
+  }
+  // Fish swimming above the reef.
+  const top = h * 0.12;
+  const bottom = Math.max(top + unit * 0.05, gy - unit * 0.4);
+  const count = g.i(3, 5);
+  const fishHue = g.f(0, 360);
+  for (let k = 0; k < count; k++) {
+    const fh = fishHue + g.pick([0, 0, 60, 180]);
+    out += smallFish(
+      w * ((k + g.f(0.2, 0.8)) / count),
+      g.f(top, bottom),
+      unit * g.f(0.035, 0.055),
+      g.pick([-1, 1]),
+      hsl(fh, 80, 62),
+      hsl(fh + 15, 75, 50),
+      g.chance(0.4) ? hsl(fh + 180, 70, 85) : "",
+    );
+  }
+  if (clown) {
+    const r = unit * 0.05;
+    out += smallFish(clown[0], clown[1], r, clown[0] < focus[0] ? 1 : -1, hsl(22, 92, 56), hsl(18, 85, 48), "#fff");
+    out += bubbles(g, clown[0], clown[1] - r, r, unit * 0.008);
+  }
+  note.alt(
+    clown
+      ? "A coral reef with an anemone and its clownfish, small fish swimming above"
+      : "A coral reef of many kinds of coral on a sandy floor, small fish swimming above",
+  );
+  note.focus(...focus);
+  return out;
+});
+
+/**
+ * One giant kelp plant from its holdfast at (x, base) up to `top`, leaning with the current
+ * (`drift`, -1 or 1): path data for its thin stalk, for its long ribbon blades in two tones, and
+ * for the round float at the foot of each blade. Near the top the blades spread into a canopy.
+ * `gap` spaces the blades out.
+ */
+function kelpPlant(
+  g: Rand,
+  x: number,
+  base: number,
+  top: number,
+  unit: number,
+  drift: number,
+  gap = 1,
+): [string, string, string, string] {
+  const rise = base - top;
+  const sway = unit * g.f(0.02, 0.05);
+  const lean = drift * g.f(0.04, 0.14) * rise;
+  const ph = g.f(0, 6);
+  const at = (t: number): Point => [x + sway * Math.sin(t * Math.PI * 1.5 + ph) + lean * t * t, base - rise * t];
+  const line: Point[] = [];
+  for (let k = 0; k <= 6; k++) line.push(at(k / 6));
+  let stem = s`M${line[0][0]} ${line[0][1]}`;
+  for (let k = 1; k < line.length - 1; k++) {
+    const [mx, my] = lerp(line[k], line[k + 1], 0.5);
+    stem += s`Q${line[k][0]} ${line[k][1]} ${mx} ${my}`;
+  }
+  stem += s`L${line[6][0]} ${line[6][1]}`;
+  const blades = ["", ""];
+  let floats = "";
+  const step = (unit * gap * g.f(0.11, 0.13)) / rise;
+  for (let t = g.f(0.08, 0.14); t < 1.02; t += step * g.f(0.85, 1.15)) {
+    const [bx, by] = at(Math.min(t, 1));
+    const canopy = t > 0.82;
+    // Most blades stream the way the current runs; a few stand up against it.
+    const a = drift * (canopy ? g.f(1.1, 1.5) : g.chance(0.7) ? g.f(0.4, 1.05) : -g.f(0.15, 0.45));
+    const L = unit * g.f(0.2, 0.27) * (canopy ? 1.2 : 1);
+    const W = L * g.f(0.12, 0.15);
+    const dx = Math.sin(a);
+    const dy = -Math.cos(a);
+    const along = (f: number, side: number): Point => [
+      bx + dx * L * f - dy * W * side,
+      by + dy * L * f + dx * W * side,
+    ];
+    const tip: Point = [bx + dx * L + drift * L * 0.12, by + dy * L + L * 0.04];
+    const end = (side: number): Point => [tip[0] - dy * W * 0.45 * side, tip[1] + dx * W * 0.45 * side];
+    const [c1, c2, e1] = [along(0.25, g.f(0.7, 0.95)), along(0.65, g.f(0.95, 1.2)), end(1)];
+    const [c3, c4, e2] = [along(0.65, -g.f(0.95, 1.2)), along(0.25, -g.f(0.7, 0.95)), end(-1)];
+    blades[g.i(0, 1)] += s`M${bx} ${by}C${c1[0]} ${c1[1]} ${c2[0]} ${c2[1]} ${e1[0]} ${e1[1]}
+      Q${tip[0] + dx * W * 0.7} ${tip[1] + dy * W * 0.7} ${e2[0]} ${e2[1]}C${c3[0]} ${c3[1]} ${c4[0]} ${c4[1]} ${bx} ${by}Z`;
+    floats += s`M${bx} ${by}h0`;
+  }
+  return [stem, blades[0], blades[1], floats];
+}
+
+/** A seal swimming, as a dark shape far off in the water, `L` long and facing `dir`. */
+const sealShape = (x: number, y: number, L: number, dir: number, paint: string) =>
+  el("path", {
+    transform: s`translate(${x} ${y}) scale(${(dir * L) / 100} ${L / 100})`,
+    d: `M50 0C47-9 30-13 8-12C-18-10-40-5-58-1L-72-10L-69 1L-76 11L-57 4C-38 8-12 11 8 10L-2 22L16 10C33 8 47 6 50 0Z`,
+    fill: paint,
+    opacity: "0.4",
+  });
+
+/** A sea otter floating on its back at the surface, seen from below, `L` long and facing `dir`. */
+const otterShape = (x: number, y: number, L: number, dir: number, paint: string) =>
+  el("path", {
+    transform: s`translate(${x} ${y}) scale(${(dir * L) / 100} ${L / 100})`,
+    d: `M-38 0C-30-9 20-11 34-6A13 12 0 1 1 46 8C30 12-10 12-30 8L-58 6L-58 1Z
+        M12 6L18 18L23 6ZM-14 7L-12 18L-6 7Z`,
+    fill: paint,
+    opacity: "0.45",
+  });
+
+/** A kelp forest: tall fronds swaying up toward a bright surface, fish among them, rocks below. */
+export const kelp = defineKind("kelp", "Kelp forest", (g, w, h, note) => {
+  const unit = Math.min(w, h);
+  const hue = g.f(165, 195);
+  let out = underwater(g, w, h, hsl(hue - 5, 45, 74), hsl(hue + 15, 55, 22));
+  // The bright surface overhead.
+  const sx = w * g.f(0.2, 0.8);
+  const glow = g.id("glow");
+  out += el("defs", {}, glowDef(glow, "#ffffff", 0.7));
+  out += el("ellipse", { cx: sx, cy: 0, rx: unit * 0.6, ry: unit * 0.3, fill: `url(#${glow})` });
+  let surface = s`M0 0V${h * 0.035}`;
+  for (let k = 1; k <= 12; k++)
+    surface += s`Q${(w * (k - 0.5)) / 12} ${h * (k % 2 ? 0.055 : 0.02)} ${(w * k) / 12} ${h * 0.035}`;
+  out += el("path", { d: whole(surface + "V0Z"), fill: "#fff", opacity: "0.25" });
+  // Far kelp, hazy in the water, all leaning the way the current runs.
+  const drift = g.pick([-1, 1]);
+  const plants = Math.max(2, Math.min(4, Math.round(w / (unit * 0.34))));
+  const haze = hsl(hue + 10, 30, 48);
+  const layer = (parts: [string, string, string, string][], paints: readonly string[], width: number) =>
+    el("path", {
+      d: whole(parts.map(p => p[0]).join("")),
+      fill: "none",
+      stroke: paints[0],
+      "stroke-width": width,
+    }) +
+    [1, 2]
+      .map(k =>
+        el("path", {
+          d: whole(parts.map(p => p[k]).join("")),
+          fill: paints[k],
+          "fill-opacity": "0.92",
+          stroke: paints[3],
+          "stroke-width": paints[3] ? width * 0.45 : undefined,
+        }),
+      )
+      .join("") +
+    (paints[4]
+      ? el("path", {
+          d: whole(parts.map(p => p[3]).join("")),
+          stroke: paints[4],
+          "stroke-width": unit * 0.022,
+          "stroke-linecap": "round",
+        })
+      : "");
+  const far: [string, string, string, string][] = [];
+  for (let k = 0; k <= plants; k++)
+    far.push(kelpPlant(g, (w * (k + g.f(0.1, 0.9))) / (plants + 1), h, h * g.f(0.05, 0.25), unit * 0.7, drift, 2.6));
+  out += el("g", { opacity: "0.3" }, layer(far, [haze, haze, haze, ""], unit * 0.005));
+  // A seal far off, or an otter floating at the surface.
+  const visitor = g.pick(["seal", "otter", "none"] as const);
+  const shade = hsl(hue + 20, 40, 18);
+  const vdir = g.pick([-1, 1]);
+  if (visitor === "seal") out += sealShape(w * g.f(0.2, 0.8), h * g.f(0.25, 0.4), unit * g.f(0.18, 0.24), vdir, shade);
+  if (visitor === "otter") out += otterShape(w * g.f(0.2, 0.8), h * 0.04, unit * g.f(0.18, 0.22), vdir, shade);
+  // Rocks along the bottom.
+  const rock = hsl(hue + g.f(0, 40), 12, g.f(26, 34));
+  let rocks = s`M-5 ${h}V${h - unit * 0.03}`;
+  for (let x = -5; x < w;) {
+    const rw = unit * g.f(0.1, 0.2);
+    const ry = h - unit * g.f(0.02, 0.05);
+    rocks += s`C${x} ${ry - unit * g.f(0.06, 0.1)} ${x + rw} ${ry - unit * g.f(0.06, 0.1)} ${x + rw} ${ry}`;
+    x += rw;
+  }
+  // Kelp, in two layers with the fish between them: golden olive to amber, with pale rims.
+  const kh = g.f(32, 46);
+  const kelpColors = (d: number) => [
+    hsl(kh - 4, 40, 36 + d),
+    hsl(kh, 58, 36 + d),
+    hsl(kh + 10, 62, 43 + d),
+    hsl(kh + 14, 75, 64 + d),
+    hsl(kh + 16, 70, 56 + d),
+  ];
+  const rooted = (n: number) =>
+    Array.from({ length: n }, (_, k) =>
+      kelpPlant(
+        g,
+        (w * (k + g.f(0.15, 0.85))) / n - drift * unit * 0.08,
+        h - unit * g.f(0.03, 0.06),
+        h * g.f(0, 0.1),
+        unit,
+        drift,
+      ),
+    );
+  out += layer(rooted(plants), kelpColors(-8), unit * 0.007);
+  out += el("path", { d: whole(rocks + "V" + h + "Z"), fill: rock });
+  // Fish: a school of small ones, or a few larger ones.
+  const fx = w * g.f(0.3, 0.7);
+  const fy = h * g.f(0.35, 0.6);
+  const fdir = g.pick([-1, 1]);
+  const many = g.chance(0.6);
+  if (many) {
+    out += school(g, fx, fy, g.i(9, 14), unit * 0.022, fdir, hsl(hue, 15, 84));
+  } else {
+    const fh = g.f(15, 40);
+    for (let k = g.i(2, 3); k > 0; k--)
+      out += smallFish(
+        fx + g.f(-0.25, 0.25) * w,
+        fy + g.f(-0.15, 0.15) * h,
+        unit * g.f(0.04, 0.055),
+        g.pick([-1, 1]),
+        hsl(fh, 90, 56),
+        hsl(fh - 5, 85, 48),
+      );
+  }
+  out += layer(rooted(Math.max(1, Math.round(plants * 0.5))), kelpColors(0), unit * 0.007);
+  const extra =
+    visitor === "seal" ? ", a seal far off" : visitor === "otter" ? ", an otter floating at the surface" : "";
+  note.alt(
+    `Giant kelp swaying up toward a bright surface, ${many ? "a school of small fish" : "fish"} among the fronds${extra}`,
+  );
+  note.focus(fx, fy);
+  return out;
+});
+
+/** A home aquarium on a cabinet or table: gravel, plants, an ornament, bubbles and a few fish under a lit lid. */
+export const aquarium = defineKind("aquarium", "Aquarium", (g, w, h, note) => {
+  const unit = Math.min(w, h);
+  const wallHue = g.f(0, 360);
+  let out = fill(w, h, hsl(wallHue, g.f(12, 28), g.f(82, 90)));
+  // The floor and skirting board.
+  const fy = h * g.f(0.88, 0.92);
+  out += el("rect", { y: fy, width: w, height: h - fy, fill: hsl(g.f(20, 40), 30, g.f(45, 60)) });
+  out += el("rect", { y: fy - unit * 0.025, width: w, height: unit * 0.025, fill: "#fff", opacity: "0.6" });
+  // The stand: a cabinet, or a table on legs.
+  const cabinet = g.chance(0.55);
+  const wood = hsl(g.f(15, 40), g.f(25, 45), g.f(28, 55));
+  const sh = h * g.f(0.24, 0.3);
+  const tb = fy - sh;
+  // The tank's size, kept within the picture.
+  let th = (tb - h * 0.12) * g.f(0.78, 0.9);
+  const tw = Math.min(w * 0.76, th * g.f(1.5, 1.9));
+  th = Math.min(th, tw * 0.72);
+  const tx = w * g.f(0.47, 0.53) - tw / 2;
+  const ty = tb - th;
+  const sw = tw * 1.06;
+  const sx = tx - tw * 0.03;
+  const top = unit * 0.03;
+  out += el("rect", { x: sx, y: tb, width: sw, height: top, fill: wood });
+  if (cabinet) {
+    out += el("rect", { x: sx + sw * 0.02, y: tb + top, width: sw * 0.96, height: sh - top, fill: wood });
+    out += el("rect", {
+      x: sx + sw * 0.02,
+      y: tb + top,
+      width: sw * 0.96,
+      height: sh - top,
+      fill: "#000",
+      opacity: "0.12",
+    });
+    // Two doors with knobs.
+    const dw = sw * 0.44;
+    const dh = sh - top * 2.2;
+    for (const d of [-1, 1]) {
+      const dx = sx + sw / 2 + (d < 0 ? -dw - sw * 0.01 : sw * 0.01);
+      out += el("rect", { x: dx, y: tb + top * 1.6, width: dw, height: dh, rx: unit * 0.006, fill: wood });
+      out += el("circle", {
+        cx: sx + sw / 2 + d * sw * 0.04,
+        cy: tb + top * 1.6 + dh * 0.45,
+        r: unit * 0.008,
+        fill: "#000",
+        opacity: "0.35",
+      });
+    }
+  } else {
+    let legs = "";
+    for (const lx of [sx + sw * 0.04, sx + sw * 0.96 - unit * 0.025])
+      legs += s`M${lx} ${tb + top}h${unit * 0.025}V${fy}h${-unit * 0.025}Z`;
+    out += el("path", { d: legs, fill: wood });
+    out += el("path", { d: legs, fill: "#000", opacity: "0.15" });
+    out += el("rect", { x: sx + sw * 0.04, y: tb + top, width: sw * 0.92, height: unit * 0.03, fill: wood });
+  }
+  out += el("rect", { x: sx, y: tb + top * 0.75, width: sw, height: top * 0.25, fill: "#000", opacity: "0.12" });
+  // A houseplant on the floor to one side, and a picture on the wall to the other, where there's room.
+  const plantSide = g.pick([-1, 1]);
+  const gap = Math.min(sx, w - sx - sw);
+  const potted = gap > unit * 0.3 && g.chance(0.75);
+  if (potted) {
+    const off = Math.min(gap * 0.5, unit * g.f(0.16, 0.24));
+    const px = plantSide < 0 ? sx - off : sx + sw + off;
+    const pw = unit * g.f(0.1, 0.13);
+    const ph = pw * 0.9;
+    let fronds = "";
+    for (let k = g.i(6, 9); k > 0; k--) {
+      const a = g.f(-1.1, 1.1);
+      const len = unit * g.f(0.18, 0.3) * (1 - Math.abs(a) * 0.3);
+      const ex = px + Math.sin(a) * len;
+      const ey = fy - ph - Math.cos(a) * len;
+      const lw = len * 0.16;
+      fronds += s`M${px} ${fy - ph}Q${(px + ex) / 2 - lw} ${(fy - ph + ey) / 2 - lw} ${ex} ${ey}
+                  Q${(px + ex) / 2 + lw} ${(fy - ph + ey) / 2 + lw} ${px} ${fy - ph}Z`;
+    }
+    out += el("path", { d: whole(fronds), fill: hsl(g.f(100, 150), 40, 38) });
+    out += el("path", {
+      d: s`M${px - pw / 2} ${fy - ph}h${pw}l${-pw * 0.12} ${ph}h${-pw * 0.76}Z`,
+      fill: hsl(g.f(0, 360), 30, g.f(45, 65)),
+    });
+  }
+  const room = Math.max(sx, w - sx - sw);
+  if (room > unit * 0.45 && g.chance(0.7)) {
+    const pside = potted ? -plantSide : sx > w - sx - sw ? -1 : 1;
+    const side = pside < 0 ? sx : w - sx - sw;
+    if (side > unit * 0.45) {
+      const fw = Math.min(side * 0.6, unit * 0.32);
+      const fh = fw * 0.75;
+      const cx = pside < 0 ? sx - side / 2 : sx + sw + side / 2;
+      const cy = Math.min(ty + fh * 0.2, tb - fh * 0.8);
+      const fx = cx - fw / 2;
+      const fy2 = cy - fh / 2;
+      const m = fw * 0.07;
+      out += el("rect", { x: fx, y: fy2, width: fw, height: fh, fill: hsl(g.f(15, 40), 35, 32) });
+      out += el("rect", {
+        x: fx + m,
+        y: fy2 + m,
+        width: fw - m * 2,
+        height: fh - m * 2,
+        fill: hsl(g.f(190, 215), 45, 80),
+      });
+      out += el("path", {
+        d: s`M${fx + m} ${fy2 + fh - m}V${fy2 + fh * 0.6}Q${cx - fw * 0.1} ${fy2 + fh * 0.35} ${cx + fw * 0.1} ${fy2 + fh * 0.55}T${fx + fw - m} ${fy2 + fh * 0.5}V${fy2 + fh - m}Z`,
+        fill: hsl(g.f(90, 140), 30, 52),
+      });
+    }
+  }
+  // The water, below an air gap under the lid.
+  const hue = g.f(180, 205);
+  const water = g.id("tank");
+  const wy = ty + th * 0.08;
+  out += el("defs", {}, lin(water, [hsl(hue, 55, 78), hsl(hue + 10, 55, 52)]));
+  out += el("rect", { x: tx, y: ty, width: tw, height: th, fill: hsl(hue, 25, 92) });
+  out += el("rect", { x: tx, y: wy, width: tw, height: tb - wy, fill: `url(#${water})` });
+  // Light from the lid falling through the water.
+  let rays = "";
+  for (let k = 0; k < 3; k++) {
+    const rx = tx + tw * (0.1 + 0.3 * k + g.f(0, 0.1));
+    rays += s`M${rx} ${wy}h${tw * 0.1}l${tw * 0.06} ${tb - wy}h${-tw * 0.14}Z`;
+  }
+  out += el("path", { d: rays, fill: "#fff", opacity: "0.12" });
+  // Gravel along the bottom.
+  const gh = th * g.f(0.13, 0.17);
+  const gy = tb - gh;
+  let gravel = s`M${tx} ${tb}V${gy + gh * 0.2}`;
+  for (let k = 1; k <= 6; k++)
+    gravel += s`Q${tx + (tw * (k - 0.5)) / 6} ${gy + gh * g.f(-0.15, 0.15)} ${tx + (tw * k) / 6} ${gy + gh * g.f(0.1, 0.3)}`;
+  const gravelHue = g.f(20, 45);
+  out += el("path", { d: whole(gravel + s`V${tb}Z`), fill: hsl(gravelHue, 25, 62) });
+  const stones = ["", ""];
+  for (let k = 0; k < 40; k++) {
+    const px = tx + tw * g.f(0.02, 0.98);
+    const py = gy + gh * g.f(0.4, 0.92);
+    stones[k % 2] += s`M${px} ${py}h0`;
+  }
+  out += stones
+    .map((d, k) =>
+      el("path", {
+        d: whole(d),
+        stroke: hsl(gravelHue + k * 160, 20, k ? 45 : 78),
+        "stroke-width": unit * 0.012,
+        "stroke-linecap": "round",
+      }),
+    )
+    .join("");
+  // Tall plants at the back.
+  const plantHue = g.f(95, 140);
+  let leaves = "";
+  for (let k = g.i(3, 5); k > 0; k--) {
+    const px = tx + tw * g.f(0.06, 0.94);
+    const ph = (tb - wy) * g.f(0.45, 0.85);
+    for (let j = g.i(3, 5); j > 0; j--) {
+      const lean = g.f(-0.25, 0.25) * ph;
+      const lh = ph * g.f(0.6, 1);
+      const lw = unit * g.f(0.012, 0.02);
+      leaves += s`M${px - lw} ${gy + gh * 0.3}Q${px + lean * 0.3 - lw * 2} ${gy - lh * 0.6} ${px + lean} ${gy - lh}
+                  Q${px + lean * 0.3 + lw * 2} ${gy - lh * 0.6} ${px + lw} ${gy + gh * 0.3}Z`;
+    }
+  }
+  out += el("path", { d: whole(leaves), fill: hsl(plantHue, 45, 38) });
+  // An ornament sitting in the gravel.
+  const ornament = g.pick(["castle", "chest", "arch"] as const);
+  const os = Math.min(th, tw * 0.55) * g.f(0.38, 0.46);
+  const half = os * (ornament === "arch" ? 0.8 : ornament === "chest" ? 0.62 : 0.48) + tw * 0.03;
+  const ox = Math.max(tx + half, Math.min(tx + tw - half, tx + tw * g.pick([g.f(0.18, 0.32), g.f(0.68, 0.82)])));
+  const oy = gy + gh * 0.45;
+  if (ornament === "castle") {
+    const stone = hsl(g.f(20, 40), 12, g.f(66, 74));
+    const tower = (cx: number, cw: number, ch: number) =>
+      s`M${cx - cw / 2} ${oy}V${oy - ch}h${cw / 5}v${-cw / 5}h${cw / 5}v${cw / 5}h${cw / 5}v${-cw / 5}h${cw / 5}v${cw / 5}h${cw / 5}V${oy}Z`;
+    out += el("path", {
+      d: tower(ox - os * 0.3, os * 0.3, os) + tower(ox + os * 0.3, os * 0.3, os * 0.85) + tower(ox, os * 0.5, os * 0.6),
+      fill: stone,
+    });
+    out += el("path", {
+      d: s`M${ox - os * 0.1} ${oy}V${oy - os * 0.25}A${os * 0.1} ${os * 0.1} 0 0 1 ${ox + os * 0.1} ${oy - os * 0.25}V${oy}Z
+           M${ox - os * 0.33} ${oy - os * 0.75}h${os * 0.06}v${os * 0.12}h${-os * 0.06}Z
+           M${ox + os * 0.27} ${oy - os * 0.6}h${os * 0.06}v${os * 0.12}h${-os * 0.06}Z`,
+      fill: "#000",
+      opacity: "0.45",
+    });
+  } else if (ornament === "chest") {
+    const cw = os * 1.1;
+    const ch = os * 0.5;
+    const box = hsl(g.f(15, 30), 45, 35);
+    const trim = hsl(45, 80, 58);
+    out += el("rect", { x: ox - cw / 2, y: oy - ch, width: cw, height: ch, fill: box });
+    // The lid propped open, with treasure shining inside.
+    out += el("ellipse", { cx: ox, cy: oy - ch, rx: cw * 0.44, ry: ch * 0.2, fill: trim });
+    out += el("path", {
+      d: s`M${ox - cw / 2} ${oy - ch}L${ox - cw * 0.42} ${oy - ch * 1.9}H${ox + cw * 0.58}L${ox + cw / 2} ${oy - ch}Z`,
+      fill: box,
+    });
+    out += el("path", {
+      d: s`M${ox - cw / 2} ${oy - ch * 0.55}h${cw}M${ox} ${oy - ch}v${ch * 0.3}`,
+      stroke: trim,
+      "stroke-width": unit * 0.012,
+    });
+  } else {
+    const rock = hsl(g.f(20, 220), 10, g.f(48, 60));
+    out += el("path", {
+      d: s`M${ox - os * 0.75} ${oy}Q${ox - os * 0.8} ${oy - os * 1.1} ${ox} ${oy - os * 1.05}Q${ox + os * 0.85} ${oy - os} ${ox + os * 0.75} ${oy}Z
+           M${ox - os * 0.35} ${oy}Q${ox - os * 0.35} ${oy - os * 0.6} ${ox} ${oy - os * 0.6}Q${ox + os * 0.35} ${oy - os * 0.6} ${ox + os * 0.35} ${oy}Z`,
+      fill: rock,
+      "fill-rule": "evenodd",
+    });
+    out += el("path", {
+      d: s`M${ox - os * 0.55} ${oy - os * 0.75}Q${ox} ${oy - os * 1.0} ${ox + os * 0.5} ${oy - os * 0.8}`,
+      fill: "none",
+      stroke: "#fff",
+      "stroke-width": unit * 0.01,
+      "stroke-linecap": "round",
+      opacity: "0.25",
+    });
+  }
+  // An air stone sending up a stream of bubbles on the other side.
+  const bx = ox < tx + tw / 2 ? tx + tw * g.f(0.72, 0.88) : tx + tw * g.f(0.12, 0.28);
+  let stream = "";
+  const br = unit * 0.008;
+  for (let y = gy - br * 2, k = 0; y > wy + br * 3; y -= br * g.f(3.5, 5.5), k++) {
+    const r = br * (0.7 + (0.6 * (gy - y)) / (gy - wy)) * g.f(0.8, 1.2);
+    stream += s`M${bx + g.f(-1, 1) * br - r} ${y}a${r} ${r} 0 1 0 ${2 * r} 0a${r} ${r} 0 1 0 ${-2 * r} 0`;
+  }
+  out += el("path", { d: whole(stream), fill: "none", stroke: "#fff", "stroke-width": "1.5", opacity: "0.75" });
+  out += el("ellipse", { cx: bx, cy: gy + gh * 0.1, rx: unit * 0.018, ry: unit * 0.008, fill: hsl(0, 0, 40) });
+  // Fish.
+  const fishCount = g.i(2, 5);
+  const kind = g.pick(["goldfish", "tetra", "mixed"] as const);
+  const swimTop = wy + (gy - wy) * 0.15;
+  const swimBottom = gy - (gy - wy) * 0.2;
+  for (let k = 0; k < fishCount; k++) {
+    const fx = tx + tw * ((k + g.f(0.25, 0.75)) / fishCount) * 0.8 + tw * 0.1;
+    const fy = g.f(swimTop, swimBottom);
+    const r = unit * (kind === "tetra" ? g.f(0.022, 0.028) : g.f(0.03, 0.042));
+    const fh = kind === "goldfish" ? g.f(20, 35) : kind === "tetra" ? g.f(190, 210) : g.f(0, 360);
+    out += smallFish(
+      fx,
+      fy,
+      r,
+      g.pick([-1, 1]),
+      hsl(fh, 85, kind === "tetra" ? 55 : 58),
+      hsl(fh + 10, 80, 50),
+      kind === "tetra" ? hsl(0, 80, 55) : "",
+    );
+  }
+  // Short grass in front.
+  let grass = "";
+  for (let k = g.i(4, 7); k > 0; k--) {
+    const px = tx + tw * g.f(0.04, 0.96);
+    for (let j = -2; j <= 2; j++)
+      grass += s`M${px + j * unit * 0.006} ${tb}q${j * unit * 0.008} ${-gh * 0.5} ${j * unit * 0.02} ${-gh * g.f(0.9, 1.4)}`;
+  }
+  out += el("path", {
+    d: whole(grass),
+    fill: "none",
+    stroke: hsl(plantHue + 10, 50, 45),
+    "stroke-width": unit * 0.007,
+    "stroke-linecap": "round",
+  });
+  // The surface line, the glass with its trim and shine, and the lid with its light.
+  out += el("rect", { x: tx, y: wy, width: tw, height: unit * 0.006, fill: "#fff", opacity: "0.6" });
+  out += el("path", {
+    d: s`M${tx + tw * 0.06} ${tb - th * 0.1}L${tx + tw * 0.2} ${ty + th * 0.1}h${tw * 0.05}L${tx + tw * 0.11} ${tb - th * 0.1}Z
+         M${tx + tw * 0.75} ${tb - th * 0.15}L${tx + tw * 0.86} ${ty + th * 0.2}h${tw * 0.02}L${tx + tw * 0.77} ${tb - th * 0.15}Z`,
+    fill: "#fff",
+    opacity: "0.18",
+  });
+  const trim = hsl(0, 0, g.f(14, 24));
+  const tt = unit * 0.012;
+  out += el("path", {
+    d: s`M${tx} ${ty}h${tw}v${th}h${-tw}Z M${tx + tt} ${ty + tt}v${th - tt * 2}h${tw - tt * 2}v${-th + tt * 2}Z`,
+    fill: trim,
+    "fill-rule": "evenodd",
+  });
+  const lh = unit * 0.035;
+  out += el("rect", {
+    x: tx - unit * 0.008,
+    y: ty - lh,
+    width: tw + unit * 0.016,
+    height: lh,
+    rx: unit * 0.006,
+    fill: trim,
+  });
+  out += el("rect", { x: tx + tw * 0.15, y: ty, width: tw * 0.7, height: tt * 1.2, fill: hsl(50, 100, 88) });
+  out += el("rect", {
+    x: tx + tw * 0.15,
+    y: ty - lh * 0.55,
+    width: tw * 0.3,
+    height: lh * 0.12,
+    fill: "#fff",
+    opacity: "0.25",
+  });
+  const stand = cabinet ? "a cabinet" : "a table";
+  const what = ornament === "castle" ? "a little castle" : ornament === "chest" ? "a treasure chest" : "a rock arch";
+  const words = ["", "", "Two", "Three", "Four", "Five"];
+  note.alt(
+    `A fish tank on ${stand} with plants, ${what} and bubbles, ${words[fishCount].toLowerCase()} fish swimming inside`,
+  );
+  note.focus(tx + tw / 2, ty + th / 2);
+  return out;
+});
