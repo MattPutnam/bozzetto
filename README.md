@@ -73,7 +73,19 @@ for (const photo of placeholders(12, { kind: animals, size: ["400x300", "300x400
 
 `toSvg` and `toDataUri` return just the markup or the data URI, for when that's all you need.
 
-## Kinds
+## Command line
+
+The `bozzetto` command writes pictures as SVG files, for fixtures, mockups and design tools:
+
+```sh
+npx bozzetto owl > owl.svg
+npx bozzetto owl --seed 3 --size 320x240 --palette riso -o owl.svg
+npx bozzetto animals donut -n 24 -s 400x300 -s 300x400 -o fixtures/
+npx bozzetto landscapes -n 5 --format json
+npx bozzetto --list
+```
+
+Name kinds by id (`ice-cream`), export name (`iceCream`) or category (`animals`), in any mix. The options match `placeholders`, and repeating `--size`, `--palette`, `--mapping` or `--texture` gives a list to go through. With several pictures, `-o <folder>` writes one SVG per picture plus `manifest.json` with each picture's kind, seed, size, alt text, focus and color. `--format uri` prints data URIs, one per line, and `--format json` prints everything, markup included. See `bozzetto --help` for the full list.
 
 Categories are plain arrays of kinds. Use them anywhere a list of kinds is accepted, alone or mixed with single kinds, as in `[animals, donut]`.
 
@@ -152,6 +164,7 @@ placeholders(6, { kind: [dot, "owl"] }); // custom kinds mix with built-in ones
 ```sh
 npm install
 npm run dev       # the gallery and palette picker, at /index.html and /picker.html
+npm run build     # the library and the bozzetto command, in dist/
 npm run check     # format check, lint, typecheck and tests
 npm run pages     # self-contained copies of the demo pages in demo/out/
 npm run gallery   # regenerate media/gallery.svg
