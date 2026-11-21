@@ -3,7 +3,7 @@ import globals from "globals";
 import tseslint from "typescript-eslint";
 
 export default tseslint.config(
-  { ignores: ["dist/", "demo/dist/", "sketches/out/", "media/"] },
+  { ignores: ["dist/", "demo/dist/", "demo/out/", "media/"] },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {
@@ -18,7 +18,7 @@ export default tseslint.config(
     },
   },
   {
-    files: ["scripts/**", "sketches/build.mjs", "*.config.{js,ts}"],
+    files: ["scripts/**", "*.config.{js,ts}"],
     languageOptions: { globals: { ...globals.node } },
   },
 );

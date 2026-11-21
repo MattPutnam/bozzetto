@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { hills, toSvg } from "../src";
-import { hexToLch, lchToHex, parseColor, toHex } from "./color";
-import { stylize } from "./style";
+import { hexToLch, lchToHex, parseColor, toHex } from "../src/color";
+import { stylize } from "../src/style";
 import {
   PALETTES,
   SCHEMES,
@@ -11,7 +11,7 @@ import {
   randomPalette,
   resolvePalette,
   type Scheme,
-} from "./palettes";
+} from "../src/palettes";
 
 const HEX = /^#[0-9a-f]{6}$/;
 const hueGap = (a: number, b: number) => Math.abs(((a - b + 540) % 360) - 180);

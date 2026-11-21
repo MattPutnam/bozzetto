@@ -1,31 +1,32 @@
 import { describe, expect, it } from "vitest";
-import { hills, kinds, toSvg } from "../src";
-import { animals } from "./animals";
-import { food } from "./food";
-import { ADJUSTMENTS, MAPPINGS, PALETTES, stylize } from "./style";
-import { objects } from "./objects";
+import { ADJUSTMENTS, MAPPINGS, PALETTES, hills, kinds, stylize, toDataUri, toSvg } from "../src";
 
-const SKETCHES = [...animals, ...food, ...objects];
 const SEEDS = Array.from({ length: 150 }, (_, k) => k * 7919 + 1);
-const SIZES: [number, number][] = [
-  [400, 300],
-  [300, 400],
-  [256, 256],
-  [960, 240],
-];
+const SIZES = ["400x300", "300x400", "256x256", "960x240"] as const;
 const BAD = /NaN|undefined|Infinity|\[object/;
 
-describe.each(SKETCHES.map(k => [k.id, k] as const))("sketch %s", (_, kind) => {
+describe.each(kinds.map(k => [k.id, k] as const))("%s", (_, kind) => {
   it("draws clean markup at every size and seed", () => {
-    for (const [width, height] of SIZES)
-      for (const seed of SEEDS) expect(toSvg(kind, { width, height, seed })).not.toMatch(BAD);
+    for (const size of SIZES) {
+      for (const seed of SEEDS) {
+        const svg = toSvg(kind, { size, seed });
+        expect(svg).not.toMatch(BAD);
+        expect(svg.startsWith("<svg ")).toBe(true);
+        expect(svg.endsWith("</svg>")).toBe(true);
+      }
+    }
   });
-  it("varies with the seed and stays small", () => {
-    const svgs = SEEDS.slice(0, 20).map(seed => toSvg(kind, { seed }));
-    expect(new Set(svgs).size).toBeGreaterThanOrEqual(18);
-    expect(Math.max(...svgs.map(x => encodeURIComponent(x).length))).toBeLessThan(12_000);
+
+  it("is deterministic and varies with the seed", () => {
+    expect(toSvg(kind, { seed: 42 })).toBe(toSvg(kind, { seed: 42 }));
+    expect(new Set(SEEDS.slice(0, 20).map(seed => toSvg(kind, { seed }))).size).toBeGreaterThanOrEqual(18);
   });
-  it("balances its groups", () => {
+
+  it("stays small", () => {
+    expect(Math.max(...SEEDS.map(seed => toDataUri(kind, { seed }).length))).toBeLessThan(12_000);
+  });
+
+  it("closes every group it opens", () => {
     for (const seed of SEEDS.slice(0, 30)) {
       const svg = toSvg(kind, { seed });
       expect((svg.match(/<g[ >]/g) ?? []).length).toBe((svg.match(/<\/g>/g) ?? []).length);
@@ -34,7 +35,7 @@ describe.each(SKETCHES.map(k => [k.id, k] as const))("sketch %s", (_, kind) => {
 });
 
 describe("stylize", () => {
-  const every = [...kinds, ...SKETCHES];
+  const every = kinds;
   it("recolors every kind with every adjustment, palette and mapping without breaking markup", () => {
     for (const kind of every) {
       const svg = toSvg(kind, { seed: 3 });
@@ -70,5 +71,14 @@ describe("default mapping", () => {
     const svg = toSvg(kinds[0], { seed: 3 });
     expect(stylize(svg, { palette: "riso" })).toBe(stylize(svg, { palette: "riso", mapping: "balanced" }));
     expect(stylize(svg, { palette: "riso" })).not.toBe(stylize(svg, { palette: "riso", mapping: "ramp" }));
+  });
+});
+
+describe("toSvg with style options", () => {
+  it("matches styling the plain picture", () => {
+    const plain = toSvg(hills, { seed: 5 });
+    expect(toSvg(hills, { seed: 5, palette: "riso", texture: "grain" })).toBe(
+      stylize(plain, { palette: "riso", texture: "grain" }),
+    );
   });
 });

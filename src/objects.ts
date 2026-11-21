@@ -1,8 +1,8 @@
-import { el, hsl, mix, pts, s } from "../src/core";
-import { blob, sketch, table } from "./shared";
+import { defineKind, el, hsl, mix, pts, s } from "./core";
+import { blob, table } from "./shapes";
 
 /** A bowl of apples, oranges, pears and bananas on a table. */
-export const fruitBowl = sketch("fruit-bowl", "Fruit bowl", "object", (g, w, h) => {
+export const fruitBowl = defineKind("fruit-bowl", "Fruit bowl", (g, w, h) => {
   const unit = Math.min(w, h);
   const top = h * g.f(0.6, 0.68);
   const cx = w / 2;
@@ -166,7 +166,7 @@ export const fruitBowl = sketch("fruit-bowl", "Fruit bowl", "object", (g, w, h) 
 });
 
 /** A vase of round flowers on a table. */
-export const flowers = sketch("flowers", "Vase of flowers", "object", (g, w, h) => {
+export const flowers = defineKind("flowers", "Vase of flowers", (g, w, h) => {
   const unit = Math.min(w, h);
   const top = h * g.f(0.74, 0.8);
   const cx = w / 2 + w * g.f(-0.05, 0.05);
@@ -254,7 +254,7 @@ export const flowers = sketch("flowers", "Vase of flowers", "object", (g, w, h) 
 });
 
 /** A cactus or succulent in a terracotta pot. */
-export const cactus = sketch("cactus", "Potted cactus", "object", (g, w, h) => {
+export const cactus = defineKind("cactus", "Potted cactus", (g, w, h) => {
   const unit = Math.min(w, h);
   const top = h * g.f(0.78, 0.84);
   const cx = w / 2;
@@ -355,7 +355,7 @@ export const cactus = sketch("cactus", "Potted cactus", "object", (g, w, h) => {
 });
 
 /** A cup of coffee on a saucer, or a mug, with steam. */
-export const coffee = sketch("coffee", "Coffee", "object", (g, w, h) => {
+export const coffee = defineKind("coffee", "Coffee", (g, w, h) => {
   const unit = Math.min(w, h);
   const top = h * g.f(0.68, 0.76);
   const cx = w / 2 - unit * 0.03;
@@ -441,7 +441,7 @@ export const coffee = sketch("coffee", "Coffee", "object", (g, w, h) => {
 });
 
 /** Books standing and leaning on a shelf, sometimes with a small plant. */
-export const books = sketch("books", "Bookshelf", "object", (g, w, h) => {
+export const books = defineKind("books", "Bookshelf", (g, w, h) => {
   const unit = Math.min(w, h);
   const shelfY = h * g.f(0.74, 0.8);
   const wall = hsl(g.f(0, 360), g.f(15, 35), g.f(82, 90));
@@ -500,7 +500,7 @@ export const books = sketch("books", "Bookshelf", "object", (g, w, h) => {
 const MORANDI = ["#c9b8a4", "#a89f91", "#8e9aa0", "#d7cbb7", "#b07d62", "#6f7d74", "#e3dccf", "#9c8b7a", "#7f8c9a"];
 
 /** Bottles, jars and boxes in muted colors, after Morandi's still lifes. */
-export const bottles = sketch("bottles", "Bottles", "object", (g, w, h) => {
+export const bottles = defineKind("bottles", "Bottles", (g, w, h) => {
   const unit = Math.min(w, h);
   const top = h * g.f(0.66, 0.72);
   const base = h * g.f(0.8, 0.86);
@@ -591,5 +591,3 @@ export const bottles = sketch("bottles", "Bottles", "object", (g, w, h) => {
   for (const item of items) out += item.draw;
   return out;
 });
-
-export const objects = [fruitBowl, flowers, cactus, coffee, books, bottles];

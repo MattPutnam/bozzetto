@@ -1,11 +1,5 @@
-import { el, s, type Draw, type Kind, type Point, type Rand } from "../src/core";
-
-/** Sketch families go beyond the package's Family type until they are approved. */
-export type SketchFamily = "animal" | "food" | "object";
-
-export function sketch(id: string, name: string, family: SketchFamily, draw: Draw): Kind {
-  return { id, name, family, draw } as unknown as Kind;
-}
+/** Drawing helpers shared by several kinds. */
+import { el, s, type Point, type Rand } from "./core";
 
 /** A smooth closed shape with `lobes` bulges, through points around a center. */
 export function blob(

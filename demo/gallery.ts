@@ -1,35 +1,45 @@
-import { kinds as builtIn, toSvg, type Kind } from "../src";
-import { animals } from "./animals";
-import { food } from "./food";
-import { ADJUSTMENTS, PALETTES, stylize, type Mapping, type StyleOptions, type Texture } from "./style";
-import { objects } from "./objects";
+import {
+  ADJUSTMENTS,
+  PALETTES,
+  categories,
+  kinds,
+  toSvg,
+  type Kind,
+  type Mapping,
+  type StyleOptions,
+  type Texture,
+} from "../src";
 
 const W = 400;
 const H = 300;
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 
-const FAMILIES: { name: string; note: string; isNew: boolean; kinds: readonly Kind[] }[] = [
-  { name: "Animals", note: "Seven new animals beside the cat, bird, fish and owl.", isNew: true, kinds: animals },
-  { name: "Food", note: "Seen from above or on a plate, with toppings that vary.", isNew: true, kinds: food },
-  { name: "Objects", note: "Still lifes on a table or shelf.", isNew: true, kinds: objects },
-  {
-    name: "Already in the package",
-    note: "The first 18 kinds, so you can see the styles on them too.",
-    isNew: false,
-    kinds: builtIn,
-  },
-];
-const ALL = FAMILIES.flatMap(f => f.kinds);
+const NOTES: Record<keyof typeof categories, string> = {
+  landscapes: "Gradient skies and layered silhouettes. Hue and horizon move with the seed.",
+  art: "Loose homages to familiar 20th-century styles, from a dozen or so rectangles, circles and blobs.",
+  people: "Skin, hair color and style, head shape, brows, smile and glasses all vary.",
+  animals: "Built from ellipses and triangles. Coats, markings and the way they face vary.",
+  food: "Seen from above or on a plate, with toppings that vary.",
+  objects: "Still lifes on a table or shelf.",
+};
+const SECTIONS = (Object.keys(categories) as (keyof typeof categories)[]).map(name => ({
+  name: name[0].toUpperCase() + name.slice(1),
+  id: name,
+  note: NOTES[name],
+  kinds: categories[name] as readonly Kind[],
+}));
+const categoryOf = new Map<string, string>(SECTIONS.flatMap(s => s.kinds.map(k => [k.id, s.id] as const)));
+const ALL: readonly Kind[] = kinds;
 const byId = new Map(ALL.map(k => [k.id, k]));
 
 const state = {
   seeds: Object.fromEntries(ALL.map((k, n) => [k.id, 7 + n * 101])) as Record<string, number>,
   style: {} as StyleOptions,
-  selected: { id: animals[0].id, i: 0 },
+  selected: { id: ALL[0].id, i: 0 },
 };
 
 const render = (kind: Kind, seed: number, style: StyleOptions = state.style) =>
-  stylize(toSvg(kind, { width: W, height: H, seed }), style);
+  toSvg(kind, { size: `${W}x${H}`, seed, ...style });
 const uri = (svg: string) => `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
 const shapes = (svg: string) => (svg.match(/<(rect|circle|ellipse|path|polygon|polyline|line)\b/g) ?? []).length;
 const kb = (n: number) => (n < 1024 ? `${n} B` : `${(n / 1024).toFixed(1)} KB`);
@@ -68,11 +78,11 @@ function thumb(
 }
 
 // ---------- contact sheets ----------
-const host = $("families");
-for (const fam of FAMILIES) {
+const host = $("categories");
+for (const section of SECTIONS) {
   const sec = document.createElement("section");
-  sec.innerHTML = `<div class="section-head"><h2>${fam.name}${fam.isNew ? '<span class="tag">new</span>' : ""}</h2><p>${fam.note}</p></div><div class="sheet"></div>`;
-  for (const kind of fam.kinds) {
+  sec.innerHTML = `<div class="section-head"><h2>${section.name}</h2><p>${section.note}</p></div><div class="sheet"></div>`;
+  for (const kind of section.kinds) {
     const card = document.createElement("div");
     card.className = "card";
     card.innerHTML = `<div class="card-head"><h3>${kind.name}</h3><span class="count" id="count-${kind.id}"></span></div><div class="thumbs" id="thumbs-${kind.id}"></div><button class="reseed" id="reseed-${kind.id}">New seeds</button>`;
@@ -95,7 +105,7 @@ function drawKind(kind: Kind) {
       ),
     ),
   );
-  const svg = toSvg(kind, { width: W, height: H, seed: base });
+  const svg = toSvg(kind, { size: `${W}x${H}`, seed: base });
   $(`count-${kind.id}`).textContent = `${shapes(svg)} shapes · ${kb(uri(svg).length)}`;
 }
 
@@ -115,7 +125,7 @@ function drawBench() {
   $<HTMLImageElement>("big").src = u;
   $<HTMLImageElement>("big").alt = `${kind.name}, seed ${seed}`;
   $("big-name").textContent = kind.name;
-  $("f-kind").textContent = `${(kind as { family: string }).family} / ${kind.id}`;
+  $("f-kind").textContent = `${categoryOf.get(kind.id)} / ${kind.id}`;
   $("f-seed").textContent = String(seed);
   $("f-style").textContent = styleText(state.style);
   $("f-shapes").textContent = String(shapes(svg));

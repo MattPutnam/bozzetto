@@ -1,7 +1,7 @@
 import { defineKind, el, fill, hsl, s, type Point, type Rand } from "./core";
 
 /** Two or three soft-edged bands on a dark ground, after the color-field painters. */
-export const field = defineKind("field", "Color field", "art", (g, w, h) => {
+export const field = defineKind("field", "Color field", (g, w, h) => {
   const hue = g.f(0, 360);
   const margin = w * 0.08;
   const gap = h * 0.05;
@@ -43,7 +43,7 @@ export const field = defineKind("field", "Color field", "art", (g, w, h) => {
 const OFF_WHITE = "#f3f0e6";
 
 /** The canvas split again and again into rectangles, a few of them filled with primaries. */
-export const grid = defineKind("grid", "Primary grid", "art", (g, w, h) => {
+export const grid = defineKind("grid", "Primary grid", (g, w, h) => {
   type Cell = { x: number; y: number; w: number; h: number };
   const cells: Cell[] = [{ x: 0, y: 0, w, h }];
   // Repeatedly split one of the largest cells across its longer side.
@@ -82,7 +82,7 @@ export const grid = defineKind("grid", "Primary grid", "art", (g, w, h) => {
 });
 
 /** Squares nested low in the frame in neighboring colors, after Albers. */
-export const squares = defineKind("squares", "Nested squares", "art", (g, w, h) => {
+export const squares = defineKind("squares", "Nested squares", (g, w, h) => {
   const hue = g.f(0, 360);
   const dir = g.pick([-1, 1]);
   const step = g.f(5, 18);
@@ -112,7 +112,7 @@ export const squares = defineKind("squares", "Nested squares", "art", (g, w, h) 
 });
 
 /** A large haloed circle among small circles, rings and thin lines. */
-export const orbits = defineKind("orbits", "Orbiting circles", "art", (g, w, h) => {
+export const orbits = defineKind("orbits", "Orbiting circles", (g, w, h) => {
   const dark = g.chance(0.55);
   const ink = dark ? "#efe7d6" : "#1c1c22";
   const palette = ["#d9473b", "#f0b62e", "#2f6db5", "#1f9e89", "#7a3e9d", "#e57ea1", ink];
@@ -176,7 +176,7 @@ function blob(g: Rand, cx: number, cy: number, r: number, lobes: number, amp: nu
 }
 
 /** Flat, lobed shapes in bold colors, like cut paper. */
-export const cutouts = defineKind("cutouts", "Paper cutouts", "art", (g, w, h) => {
+export const cutouts = defineKind("cutouts", "Paper cutouts", (g, w, h) => {
   const palette = g.pick([
     ["#1d4e89", "#e8563f", "#f2c14e", "#2a9d8f", "#111111"],
     ["#264653", "#e76f51", "#f4a261", "#8ab17d", "#ffffff"],
@@ -195,7 +195,7 @@ export const cutouts = defineKind("cutouts", "Paper cutouts", "art", (g, w, h) =
 });
 
 /** A grid of tiles, each holding a circle, half circle, quarter circle or triangle. */
-export const bauhaus = defineKind("bauhaus", "Bauhaus tiles", "art", (g, w, h) => {
+export const bauhaus = defineKind("bauhaus", "Bauhaus tiles", (g, w, h) => {
   const palette = g.pick([
     ["#e63946", "#f1c453", "#1d3557", "#f1faee"],
     ["#d1495b", "#edae49", "#00798c", "#30638e"],

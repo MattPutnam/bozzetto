@@ -1,10 +1,6 @@
 /**
- * The machinery every picture shares: a seeded random source, small SVG helpers,
- * and the step that wraps a kind's shapes in an `<svg>` element.
+ * The machinery every picture shares: what a kind is, a seeded random source, and small SVG helpers.
  */
-
-/** Which shelf a kind sits on. */
-export type Family = "landscape" | "art" | "face" | "animal";
 
 /** The random source a kind draws with. Every value comes from the seed. */
 export interface Rand {
@@ -29,27 +25,15 @@ export type Draw = (r: Rand, width: number, height: number) => string;
 export interface Kind<I extends string = string> {
   readonly id: I;
   readonly name: string;
-  readonly family: Family;
   readonly draw: Draw;
 }
 
-export function defineKind<const I extends string>(id: I, name: string, family: Family, draw: Draw): Kind<I> {
-  return { id, name, family, draw };
-}
-
-export interface RenderOptions {
-  /** Width in px. Default 400. */
-  width?: number;
-  /** Height in px. Default 300. */
-  height?: number;
-  /** The same seed always gives the same picture. A string is hashed. Default 1. */
-  seed?: number | string;
-  /** Text drawn in the bottom-right corner, such as a number. */
-  label?: string | number;
+export function defineKind<const I extends string>(id: I, name: string, draw: Draw): Kind<I> {
+  return { id, name, draw };
 }
 
 /** FNV-1a, for turning string seeds and id prefixes into integers. */
-function hash(text: string): number {
+export function hash(text: string): number {
   let h = 0x811c9dc5;
   for (let k = 0; k < text.length; k++) {
     h ^= text.charCodeAt(k);
@@ -162,51 +146,3 @@ export const pts = (points: readonly Point[]): string => points.map(p => `${n(p[
  */
 export const facing = (cx: number, dir: number): string =>
   s`<g transform="translate(${cx} 0) scale(${dir} 1) translate(${-cx} 0)">`;
-
-/** The full SVG markup for one picture. */
-export function toSvg(kind: Kind, options: RenderOptions = {}): string {
-  const width = options.width ?? 400;
-  const height = options.height ?? 300;
-  const seed = seedToInt(options.seed);
-  const prefix = `bz${hash(`${kind.id}:${seed}:${width}x${height}`).toString(36)}-`;
-  let body = kind.draw(makeRand(seed, prefix), width, height);
-  if (options.label !== undefined && options.label !== "") {
-    const size = Math.min(width, height) * 0.093;
-    const pad = size * 0.57;
-    body += el(
-      "text",
-      {
-        x: width - pad,
-        y: height - pad,
-        "text-anchor": "end",
-        "font-family": "system-ui,sans-serif",
-        "font-size": size,
-        "font-weight": 600,
-        fill: "#fff",
-        opacity: "0.85",
-      },
-      escapeXml(String(options.label)),
-    );
-  }
-  // The size is written as given, not rounded, so it matches the caller's numbers exactly.
-  return el(
-    "svg",
-    {
-      xmlns: "http://www.w3.org/2000/svg",
-      width: String(width),
-      height: String(height),
-      viewBox: `0 0 ${width} ${height}`,
-      preserveAspectRatio: "xMidYMid slice",
-    },
-    body,
-  );
-}
-
-/** The picture as a `data:image/svg+xml` URI, ready for an `<img src>` or CSS `url()`. */
-export function toDataUri(kind: Kind, options: RenderOptions = {}): string {
-  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(toSvg(kind, options))}`;
-}
-
-function escapeXml(text: string): string {
-  return text.replace(/[<>&"']/g, c => `&#${c.charCodeAt(0)};`);
-}

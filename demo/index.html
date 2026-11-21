@@ -2,9 +2,16 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>bozzetto</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Bozzetto Gallery</title>
+    <meta name="claude:viewport-fit-sides" content="cover" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"
+    />
     <style>
+      /* Layout: a specimen bench, a sticky style bar that restyles everything, a palette matrix, then contact sheets per category. */
       :root {
         --bg: #f1f3ee;
         --surface: #fafbf8;
@@ -12,124 +19,387 @@
         --muted: #5d6761;
         --line: #d7dcd3;
         --accent: #2f6b58;
-        color-scheme: light dark;
+        --new: #b4532a;
+        --display: "Bricolage Grotesque", "Avenir Next", system-ui, sans-serif;
+        --body: "Inter", system-ui, -apple-system, sans-serif;
+        --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
       }
       @media (prefers-color-scheme: dark) {
-        :root {
+        :root:not([data-theme="light"]) {
           --bg: #121614;
           --surface: #1a1f1c;
           --ink: #e5eae6;
           --muted: #9aa49e;
           --line: #2c332f;
           --accent: #82c7ac;
+          --new: #e8956a;
+          color-scheme: dark;
         }
       }
+      :root[data-theme="dark"] {
+        --bg: #121614;
+        --surface: #1a1f1c;
+        --ink: #e5eae6;
+        --muted: #9aa49e;
+        --line: #2c332f;
+        --accent: #82c7ac;
+        --new: #e8956a;
+        color-scheme: dark;
+      }
+
       body {
-        margin: 0;
         background: var(--bg);
         color: var(--ink);
-        font:
-          15px/1.5 system-ui,
-          sans-serif;
+        font: 15px/1.55 var(--body);
       }
-      main {
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0 0 auto;
+        height: env(safe-area-inset-top, 0px);
+        z-index: 10;
+        background: var(--bg);
+      }
+      .wrap {
         max-width: 1180px;
         margin: 0 auto;
-        padding: 32px 16px 64px;
+        padding-block: 40px 72px;
+        padding-left: max(16px, env(safe-area-inset-left, 0px));
+        padding-right: max(16px, env(safe-area-inset-right, 0px));
         display: grid;
-        gap: 32px;
+        gap: 36px;
+      }
+      h1,
+      h2,
+      h3 {
+        font-family: var(--display);
+        text-wrap: balance;
+        margin: 0;
       }
       h1 {
-        margin: 0;
-        font-size: 40px;
+        font-size: clamp(32px, 5vw, 52px);
+        line-height: 1.02;
+        font-weight: 700;
         letter-spacing: -0.02em;
       }
       h2 {
-        margin: 0;
-        font-size: 22px;
-        text-transform: capitalize;
-        border-bottom: 1px solid var(--line);
-        padding-bottom: 8px;
+        font-size: 26px;
+        font-weight: 700;
+        letter-spacing: -0.01em;
       }
       h3 {
-        margin: 0;
-        font-size: 15px;
-        font-weight: 600;
+        font-size: 17px;
+        font-weight: 500;
       }
-      .bar {
+      p {
+        margin: 0;
+        max-width: 65ch;
+      }
+      .lede {
+        color: var(--muted);
+        font-size: 17px;
+      }
+      header {
+        display: grid;
+        gap: 14px;
+      }
+
+      .bench {
+        display: grid;
+        grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+        gap: 28px;
+        align-items: start;
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        padding: 20px;
+      }
+      .bench img {
+        width: 100%;
+        aspect-ratio: 4 / 3;
+        display: block;
+        border-radius: 8px;
+      }
+      .facts {
+        display: grid;
+        gap: 16px;
+        min-width: 0;
+      }
+      .facts dl {
+        display: grid;
+        grid-template-columns: auto 1fr;
+        gap: 6px 16px;
+        margin: 0;
+        font-size: 14px;
+      }
+      .facts dt {
+        color: var(--muted);
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        padding-top: 2px;
+      }
+      .facts dd {
+        margin: 0;
+        font-family: var(--mono);
+        font-variant-numeric: tabular-nums;
+        min-width: 0;
+        overflow-wrap: anywhere;
+      }
+      pre {
+        margin: 0;
+        background: var(--bg);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 12px 14px;
+        font: 13px/1.6 var(--mono);
+        overflow-x: auto;
+      }
+
+      .stylebar {
+        position: sticky;
+        top: env(safe-area-inset-top, 0px);
+        z-index: 5;
         display: flex;
         flex-wrap: wrap;
-        gap: 12px;
-        align-items: center;
+        gap: 10px 18px;
+        align-items: end;
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 12px 16px;
       }
-      .bar label {
-        display: inline-flex;
-        gap: 6px;
-        align-items: center;
+      .stylebar label {
+        display: grid;
+        gap: 3px;
+        font-size: 12px;
         color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
       }
-      .bar input[type="number"] {
-        width: 5em;
+      select {
+        font: 14px var(--body);
+        color: var(--ink);
+        background: var(--bg);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 6px 8px;
+        text-transform: none;
+        letter-spacing: 0;
       }
       button {
-        font: inherit;
+        font: 500 14px var(--body);
         color: var(--ink);
         background: var(--surface);
         border: 1px solid var(--line);
         border-radius: 999px;
-        padding: 6px 14px;
+        padding: 7px 14px;
         cursor: pointer;
       }
       button:hover {
         border-color: var(--accent);
         color: var(--accent);
       }
+      button.primary {
+        background: var(--accent);
+        color: var(--bg);
+        border-color: var(--accent);
+      }
+      button.primary:hover {
+        color: var(--bg);
+        filter: brightness(1.08);
+      }
+      :focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+      }
+      .spacer {
+        flex: 1;
+      }
+
       section {
         display: grid;
-        gap: 14px;
+        gap: 16px;
+      }
+      .section-head {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        align-items: baseline;
+        gap: 8px;
+        border-bottom: 1px solid var(--line);
+        padding-bottom: 10px;
+      }
+      .section-head p {
+        color: var(--muted);
+        font-size: 14px;
+      }
+      .tag {
+        font: 500 11px var(--mono);
+        color: var(--new);
+        border: 1px solid currentColor;
+        border-radius: 999px;
+        padding: 1px 7px;
+        vertical-align: 3px;
+        margin-left: 8px;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
       }
       .sheet {
         display: grid;
         grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-        gap: 20px 16px;
+        gap: 22px 18px;
       }
       .card {
         display: grid;
-        gap: 6px;
+        gap: 8px;
       }
-      .meta {
+      .card-head {
         display: flex;
         justify-content: space-between;
+        align-items: baseline;
         gap: 8px;
+      }
+      .count {
+        font: 12px var(--mono);
         color: var(--muted);
-        font:
-          12px ui-monospace,
-          Menlo,
-          monospace;
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
       }
       .thumbs {
         display: grid;
         grid-template-columns: 1fr 1fr;
         gap: 4px;
       }
-      .thumbs img {
-        width: 100%;
+      .thumb {
+        padding: 0;
+        border: 0;
+        border-radius: 5px;
+        overflow: hidden;
+        background: none;
         display: block;
-        border-radius: 4px;
+      }
+      .thumb[aria-pressed="true"] {
+        outline: 2px solid var(--accent);
+        outline-offset: 1px;
+      }
+      .thumb img {
+        width: 100%;
+        aspect-ratio: 4 / 3;
+        display: block;
+      }
+      .card .reseed {
+        justify-self: start;
+        font-size: 13px;
+        padding: 4px 10px;
+      }
+
+      .matrix-scroll {
+        overflow-x: auto;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: var(--surface);
+      }
+      .matrix {
+        border-collapse: separate;
+        border-spacing: 6px;
+        min-width: 100%;
+      }
+      .matrix th {
+        font: 500 12px var(--mono);
+        color: var(--muted);
+        text-align: left;
+        padding: 2px 4px;
+        white-space: nowrap;
+      }
+      .matrix td {
+        padding: 0;
+        width: 130px;
+        min-width: 110px;
+      }
+      .matrix .thumb img {
+        aspect-ratio: 4 / 3;
+      }
+      @media (max-width: 760px) {
+        .bench {
+          grid-template-columns: 1fr;
+        }
+      }
+      @media (prefers-reduced-motion: no-preference) {
+        .thumb img {
+          transition: transform 0.2s ease;
+        }
+        .thumb:hover img {
+          transform: scale(1.03);
+        }
       }
     </style>
   </head>
   <body>
-    <main>
-      <h1>bozzetto</h1>
-      <div class="bar">
-        <button id="shuffle">Shuffle seeds</button>
-        <label>Width <input id="width" type="number" value="400" min="40" step="10" /></label>
-        <label>Height <input id="height" type="number" value="300" min="40" step="10" /></label>
-        <label><input id="numbered" type="checkbox" /> Numbered</label>
+    <div class="wrap">
+      <header>
+        <h1>Bozzetto Gallery</h1>
+        <p class="lede">
+          Every kind of picture bozzetto draws, four seeds each, with palettes and textures that restyle any picture.
+          Pick a style in the bar and every picture on the page follows it. Click any picture to inspect it, or open the
+          <a href="./picker.html">palette picker</a>.
+        </p>
+      </header>
+
+      <div class="bench" aria-live="polite">
+        <img id="big" alt="" />
+        <div class="facts">
+          <h2 id="big-name">—</h2>
+          <dl>
+            <dt>Kind</dt>
+            <dd id="f-kind">—</dd>
+            <dt>Seed</dt>
+            <dd id="f-seed">—</dd>
+            <dt>Style</dt>
+            <dd id="f-style">—</dd>
+            <dt>Shapes</dt>
+            <dd id="f-shapes">—</dd>
+            <dt>Size</dt>
+            <dd id="f-bytes">—</dd>
+          </dl>
+          <pre id="f-call"></pre>
+        </div>
       </div>
-      <div id="families"></div>
-    </main>
-    <script type="module" src="./main.ts"></script>
+
+      <div class="stylebar" role="group" aria-label="Style for every picture">
+        <label for="palette">Palette<select id="palette"></select></label>
+        <label for="mapping"
+          >Palette mapping<select id="mapping">
+            <option value="balanced">Balanced (exact colors)</option>
+            <option value="ramp">Ramp (blend, keep light and dark)</option>
+            <option value="nearest">Nearest color</option>
+          </select></label
+        >
+        <label for="texture"
+          >Texture<select id="texture">
+            <option value="">None</option>
+            <option value="grain">Grain</option>
+            <option value="paper">Paper</option>
+          </select></label
+        >
+        <span class="spacer"></span>
+        <button id="shuffle" class="primary">Shuffle every seed</button>
+      </div>
+
+      <section>
+        <div class="section-head">
+          <h2>Palettes</h2>
+          <p>
+            Each column restyles the same picture. The first table adjusts each picture's own colors; the second
+            replaces them with a palette. These ignore the style bar.
+          </p>
+        </div>
+        <div class="matrix-scroll"><table class="matrix" id="adjustments"></table></div>
+        <div class="matrix-scroll"><table class="matrix" id="palettes"></table></div>
+      </section>
+
+      <div id="categories"></div>
+    </div>
+    <script type="module" src="./gallery.ts"></script>
   </body>
 </html>

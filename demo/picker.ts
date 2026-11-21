@@ -1,9 +1,25 @@
-import { bauhaus, cat, cutouts, hills, portrait, sea, toSvg, type Kind } from "../src";
-import { hexToLch, lchToHex, parseColor, toHex } from "./color";
-import { donut } from "./food";
-import { MAPPINGS, stylize, type Mapping } from "./style";
-import { fruitBowl } from "./objects";
-import { PALETTES, SCHEMES, decodePalette, encodePalette, makePalette, randomPalette, type Scheme } from "./palettes";
+import {
+  MAPPINGS,
+  PALETTES,
+  SCHEMES,
+  bauhaus,
+  cat,
+  cutouts,
+  decodePalette,
+  donut,
+  encodePalette,
+  fruitBowl,
+  hills,
+  makePalette,
+  portrait,
+  randomPalette,
+  sea,
+  toSvg,
+  type Kind,
+  type Mapping,
+  type Scheme,
+} from "../src";
+import { hexToLch, lchToHex, parseColor, toHex } from "../src/color";
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 
@@ -155,7 +171,9 @@ function drawSwatches() {
 function drawPreviews() {
   $("previews").replaceChildren(
     ...PREVIEW_KINDS.map((kind, k) => {
-      const svg = stylize(toSvg(kind, { width: 320, height: 240, seed: state.pictureSeed + k }), {
+      const svg = toSvg(kind, {
+        size: "320x240",
+        seed: state.pictureSeed + k,
         palette: colors,
         mapping: state.mapping,
       });

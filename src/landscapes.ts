@@ -1,7 +1,7 @@
 import { defineKind, el, fill, hsl, lin, pts, qpt, s, type Point } from "./core";
 
 /** Soft hills under a gradient sky and a sun, sometimes with a lone tree. */
-export const hills = defineKind("hills", "Rolling hills", "landscape", (g, w, h) => {
+export const hills = defineKind("hills", "Rolling hills", (g, w, h) => {
   const hue = g.f(0, 360);
   const sky = g.id("sky");
   // The far hill: one curve and its smooth continuation.
@@ -46,7 +46,7 @@ export const hills = defineKind("hills", "Rolling hills", "landscape", (g, w, h)
 });
 
 /** Three jagged ranges fading into the distance. */
-export const mountains = defineKind("mountains", "Mountain ranges", "landscape", (g, w, h) => {
+export const mountains = defineKind("mountains", "Mountain ranges", (g, w, h) => {
   const hue = g.f(180, 260);
   const shift = g.f(-35, 30);
   const sky = g.id("sky");
@@ -78,7 +78,7 @@ export const mountains = defineKind("mountains", "Mountain ranges", "landscape",
 });
 
 /** A low sun over the sea, with its reflection broken into streaks. */
-export const sea = defineKind("sea", "Sunset sea", "landscape", (g, w, h) => {
+export const sea = defineKind("sea", "Sunset sea", (g, w, h) => {
   const hue = g.f(-15, 45);
   const horizon = h * g.f(0.55, 0.68);
   const sunX = w * g.f(0.25, 0.75);
@@ -127,7 +127,7 @@ export const sea = defineKind("sea", "Sunset sea", "landscape", (g, w, h) => {
 });
 
 /** Layered sand ridges under a pale sun. */
-export const dunes = defineKind("dunes", "Desert dunes", "landscape", (g, w, h) => {
+export const dunes = defineKind("dunes", "Desert dunes", (g, w, h) => {
   const sand = g.f(16, 40);
   const skyHue = g.f(185, 220);
   const sky = g.id("sky");
@@ -173,7 +173,7 @@ const pine = (x: number, y: number, ht: number, wd: number, paint: string) =>
   el("polygon", { points: pts(PINE.map(([px, py]): Point => [x + px * wd, y + py * ht])), fill: paint });
 
 /** A pale back row of pines and a dark, scattered front row. */
-export const forest = defineKind("forest", "Pine forest", "landscape", (g, w, h) => {
+export const forest = defineKind("forest", "Pine forest", (g, w, h) => {
   const hue = g.f(90, 165);
   const skyHue = g.f(180, 235);
   const groundY = h * g.f(0.66, 0.76);
@@ -201,7 +201,7 @@ export const forest = defineKind("forest", "Pine forest", "landscape", (g, w, h)
 });
 
 /** Stars, a full or crescent moon, and dark hills. */
-export const night = defineKind("night", "Night sky", "landscape", (g, w, h) => {
+export const night = defineKind("night", "Night sky", (g, w, h) => {
   const hue = g.f(210, 285);
   const moonX = w * g.f(0.2, 0.8);
   const moonY = h * g.f(0.18, 0.35);
@@ -257,7 +257,7 @@ export const night = defineKind("night", "Night sky", "landscape", (g, w, h) => 
 });
 
 /** Two rows of buildings against a dusk sky; some windows are lit. */
-export const city = defineKind("city", "City at dusk", "landscape", (g, w, h) => {
+export const city = defineKind("city", "City at dusk", (g, w, h) => {
   const hue = g.f(0, 360);
   const sky = g.id("sky");
   const win = g.id("win");

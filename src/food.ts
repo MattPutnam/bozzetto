@@ -1,10 +1,10 @@
-import { el, fill, hsl, mix, pts, s, type Point } from "../src/core";
-import { blob, sketch, sprinkles, table } from "./shared";
+import { defineKind, el, fill, hsl, mix, pts, s, type Point } from "./core";
+import { blob, sprinkles, table } from "./shapes";
 
 const SPRINKLES = ["#f25c78", "#4fb4e6", "#f2c14e", "#7bd389", "#ffffff", "#9b6bd6"];
 
 /** A glazed donut from above, with sprinkles on some. */
-export const donut = sketch("donut", "Donut", "food", (g, w, h) => {
+export const donut = defineKind("donut", "Donut", (g, w, h) => {
   const unit = Math.min(w, h);
   const cx = w / 2 + w * g.f(-0.05, 0.05);
   const cy = h / 2 + h * g.f(-0.04, 0.04);
@@ -53,7 +53,7 @@ export const donut = sketch("donut", "Donut", "food", (g, w, h) => {
 });
 
 /** A whole pizza from above, cut into slices, with toppings. */
-export const pizza = sketch("pizza", "Pizza", "food", (g, w, h) => {
+export const pizza = defineKind("pizza", "Pizza", (g, w, h) => {
   const unit = Math.min(w, h);
   const cx = w / 2;
   const cy = h / 2;
@@ -140,7 +140,7 @@ export const pizza = sketch("pizza", "Pizza", "food", (g, w, h) => {
 const SCOOPS = ["#f7c6d0", "#7b4a35", "#fff4dd", "#b8e0b0", "#f6d365", "#c9a7eb", "#f28b66"];
 
 /** One to three scoops on a waffle cone, maybe with a cherry. */
-export const iceCream = sketch("ice-cream", "Ice cream", "food", (g, w, h) => {
+export const iceCream = defineKind("ice-cream", "Ice cream", (g, w, h) => {
   const unit = Math.min(w, h);
   const cx = w / 2 + w * g.f(-0.04, 0.04);
   const scoops = g.i(1, 3);
@@ -212,7 +212,7 @@ export const iceCream = sketch("ice-cream", "Ice cream", "food", (g, w, h) => {
 });
 
 /** Nigiri and maki on a dark plate, with chopsticks. */
-export const sushi = sketch("sushi", "Sushi", "food", (g, w, h) => {
+export const sushi = defineKind("sushi", "Sushi", (g, w, h) => {
   const unit = Math.min(w, h);
   const bg = g.pick(["#d9cbb5", "#c9d6d0", "#e6ddd0", "#3a3f3a"]);
   let out = fill(w, h, bg);
@@ -309,7 +309,7 @@ const SPONGE = ["#f3d9a4", "#7b4a35", "#f7e7c6", "#e9b872"];
 const CREAM = ["#fbf4e8", "#f7c6d0", "#f6d365", "#6b3e2e"];
 
 /** A layered slice of cake on a plate, with a berry on top. */
-export const cake = sketch("cake", "Slice of cake", "food", (g, w, h) => {
+export const cake = defineKind("cake", "Slice of cake", (g, w, h) => {
   const unit = Math.min(w, h);
   const sponge = g.pick(SPONGE);
   const cream = g.pick(CREAM.filter(c => c !== sponge));
@@ -394,7 +394,7 @@ export const cake = sketch("cake", "Slice of cake", "food", (g, w, h) => {
 });
 
 /** A fried egg in a pan or on a plate, sometimes with bacon. */
-export const egg = sketch("egg", "Fried egg", "food", (g, w, h) => {
+export const egg = defineKind("egg", "Fried egg", (g, w, h) => {
   const unit = Math.min(w, h);
   const cx = w / 2;
   const cy = h / 2;
@@ -461,5 +461,3 @@ export const egg = sketch("egg", "Fried egg", "food", (g, w, h) => {
   });
   return out;
 });
-
-export const food = [donut, pizza, iceCream, sushi, cake, egg];

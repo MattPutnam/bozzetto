@@ -1,14 +1,14 @@
 # bozzetto
 
-Seeded placeholder images as tiny SVGs: landscapes, modern-art homages, faces and animals, each drawn from a handful of flat shapes and gradients.
+Seeded placeholder images as tiny SVGs: landscapes, modern-art homages, people, animals, food and still lifes, each drawn from a handful of flat shapes and gradients, in any palette.
 
 A _bozzetto_ is a painter's small preliminary sketch, made before the real work. These are the stand-ins for your real pictures.
 
 ![Two seeds of every kind](media/gallery.svg)
 
 - **Deterministic.** The same seed gives the same picture, everywhere. Seeds can be numbers or strings, such as a user id.
-- **Small.** Most pictures are 1–3 KB as a data URI, and none needs a network request.
-- **Any size.** Pictures are drawn to the width and height you ask for.
+- **Small.** Most pictures are 1–4 KB as a data URI, and none needs a network request.
+- **Any size and any palette.** Pictures are drawn to the size you ask for, in their own colors or yours.
 - **No dependencies.** Import only the kinds you use and the rest is tree-shaken away.
 
 ## Install
@@ -19,72 +19,86 @@ npm install bozzetto
 
 ## Use
 
-```ts
-import { placeholder, placeholders } from "bozzetto";
-
-// One picture as a data URI, for <img src> or CSS url().
-img.src = placeholder({ kind: "owl", seed: 3, width: 320, height: 240 });
-
-// A whole family, with the seed choosing which kind.
-avatar.src = placeholder({ kind: "face", seed: user.id });
-
-// A list of different pictures, numbered in the corner. Picture k uses seed + k,
-// so asking for more later keeps the first ones the same.
-const photos = placeholders(24, { kind: "landscape", seed: 1, numbered: true });
-```
-
-`placeholder` and `placeholders` can choose any kind, so they bundle every kind. To keep the bundle small, import kinds directly:
+Every kind of picture is its own export, like icons in an icon library:
 
 ```ts
-import { hills, owl, toDataUri, toSvg } from "bozzetto";
+import { owl, toDataUri, toSvg } from "bozzetto";
 
-img.src = toDataUri(hills, { seed: 7 });
-container.innerHTML = toSvg(owl, { seed: 7 }); // inline markup; element ids are unique per picture
+img.src = toDataUri(owl, { seed: 3, size: "320x240" });
+container.innerHTML = toSvg(owl, { seed: 3 }); // inline markup; element ids are unique per picture
 ```
+
+To fill a gallery, `placeholders` makes a list. Most options take a single value or a list to go through picture by picture:
+
+```ts
+import { animals, donut, placeholders } from "bozzetto";
+
+const photos = placeholders(24, {
+  kind: [animals, donut], // every animal plus the donut
+  size: ["400x300", "300x400", "300x300"], // mixed shapes
+  palette: ["pastel", "riso"], // two looks
+  seed: 1,
+});
+```
+
+- **Lists are shuffled by default:** each value is used once, in a seeded order, before any repeats. Set `order: "cycle"` to go through them in the order given, or `order: "random"` for independent picks.
+- **Picture k uses seed `seed + k`,** so asking for more pictures later keeps the first ones the same.
+- **`numbered: true`** labels the pictures 1, 2, 3… in the corner.
+
+`placeholder` makes a single picture, choosing a kind by seed when given a list (`placeholderSvg` returns markup instead of a data URI). Both `placeholder` and `placeholders` bundle every kind; import kinds directly to keep a bundle small.
 
 ## Kinds
 
-| Family      | `kind`      | Picture                                                       |
-| ----------- | ----------- | ------------------------------------------------------------- |
-| `landscape` | `hills`     | Soft hills under a sun, sometimes with a lone tree            |
-|             | `mountains` | Three jagged ranges fading into the distance                  |
-|             | `sea`       | A low sun over the sea, with a streaked reflection            |
-|             | `dunes`     | Layered sand ridges                                           |
-|             | `forest`    | Two rows of pines                                             |
-|             | `night`     | Stars, a full or crescent moon, dark hills                    |
-|             | `city`      | Buildings against a dusk sky, some windows lit                |
-| `art`       | `field`     | Soft-edged color bands, after the color-field painters        |
-|             | `grid`      | A canvas split into rectangles, a few in primaries            |
-|             | `squares`   | Nested squares in neighboring colors, after Albers            |
-|             | `orbits`    | A haloed circle among small circles, rings and lines          |
-|             | `cutouts`   | Lobed paper-cut shapes in bold colors                         |
-|             | `bauhaus`   | Tiles of circles, half and quarter circles, triangles         |
-| `face`      | `portrait`  | Head and shoulders; skin, hair, brows, smile and glasses vary |
-| `animal`    | `cat`       | A cat's face; coat, eyes, stripes and muzzle vary             |
-|             | `bird`      | A songbird on a leafy branch                                  |
-|             | `fish`      | A fish among weeds and bubbles                                |
-|             | `owl`       | An owl on a branch at dusk                                    |
+Categories are plain arrays of kinds. Use them anywhere a list of kinds is accepted, alone or mixed with single kinds, as in `[animals, donut]`.
 
-## API
+| Category     | Kinds                                                                                     |
+| ------------ | ----------------------------------------------------------------------------------------- |
+| `landscapes` | `hills`, `mountains`, `sea`, `dunes`, `forest`, `night`, `city`                           |
+| `art`        | `field`, `grid`, `squares`, `orbits`, `cutouts`, `bauhaus`                                |
+| `people`     | `portrait`                                                                                |
+| `animals`    | `cat`, `bird`, `fish`, `owl`, `dog`, `fox`, `penguin`, `whale`, `frog`, `rabbit`, `snail` |
+| `food`       | `donut`, `pizza`, `iceCream`, `sushi`, `cake`, `egg`                                      |
+| `objects`    | `fruitBowl`, `flowers`, `cactus`, `coffee`, `books`, `bottles`                            |
 
-| Function                       | Returns                                 |
-| ------------------------------ | --------------------------------------- |
-| `placeholder(options)`         | One picture as a data URI               |
-| `placeholderSvg(options)`      | One picture as SVG markup               |
-| `placeholders(count, options)` | `count` different pictures as data URIs |
-| `toDataUri(kind, options)`     | A specific kind as a data URI           |
-| `toSvg(kind, options)`         | A specific kind as SVG markup           |
-| `resolveKind(choice, seed)`    | The kind a seed picks from a choice     |
+`kinds` lists every kind, and `categories` maps each category's name to its kinds. Kinds can also be named by id in strings, such as `"owl"` or `"ice-cream"`.
 
-Options:
+## Colors
 
-| Option            | Default      |                                                                                      |
-| ----------------- | ------------ | ------------------------------------------------------------------------------------ |
-| `width`, `height` | `400`, `300` | Size in px                                                                           |
-| `seed`            | `1`          | Number or string                                                                     |
-| `label`           | none         | Text in the bottom-right corner (`toSvg`, `toDataUri`, `placeholder`)                |
-| `numbered`        | `false`      | Label pictures 1, 2, 3… (`placeholders` only)                                        |
-| `kind`            | any kind     | A kind id, a family, a kind object, or a list of ids and kinds (`placeholder*` only) |
+`palette` accepts:
+
+- **An adjustment** of each picture's own colors: `"vivid"`, `"pastel"`, `"muted"`, `"dusk"` or `"grayscale"`.
+- **A built-in palette:** `"sunset"`, `"sea glass"`, `"riso"`, `"orchard"`, `"candy"`, `"sepia"` or `"mono"`.
+- **Your own colors:** `["#264653", "#2a9d8f", "#e9c46a"]` (hex, `rgb()` or `hsl()`), or the same palette as a code, `"264653-2a9d8f-e9c46a"`.
+
+Color palettes are applied with `mapping: "balanced"` by default, which uses only your exact colors while keeping each picture's light and dark. `"ramp"` blends between your colors for softer shading, and `"nearest"` snaps every color to its closest match. `texture: "grain"` or `"paper"` adds a subtle surface.
+
+To build a palette without picking colors by hand, `makePalette` works from a starting color or hue and a color-wheel scheme:
+
+```ts
+import { makePalette, randomPalette } from "bozzetto";
+
+makePalette({ base: "#e76f51", scheme: "triadic", count: 5, contrast: 0.7, vibrance: 0.55 });
+makePalette({ base: 200, scheme: "analogous", locked: [null, "#123456"] }); // keep chosen colors in place
+randomPalette("my-seed");
+```
+
+Schemes are `monochrome`, `analogous`, `complementary`, `split-complementary`, `triadic` and `tetradic`. Palettes are built in OKLCH, so their steps look even. `encodePalette` and `decodePalette` convert between a list of colors and a palette code.
+
+## Options
+
+| Option     | Default     |                                                                             |
+| ---------- | ----------- | --------------------------------------------------------------------------- |
+| `kind`     | every kind  | A kind, an id, or a list (`placeholder` and `placeholders`)                 |
+| `size`     | `"400x300"` | `"WxH"` or `{ width, height }`                                              |
+| `seed`     | `1`         | A number or string                                                          |
+| `palette`  | none        | An adjustment, palette name, palette code, or list of colors                |
+| `mapping`  | `balanced`  | How a color palette is applied: `balanced`, `ramp` or `nearest`             |
+| `texture`  | none        | `grain` or `paper`                                                          |
+| `label`    | none        | Text in the bottom-right corner (single pictures)                           |
+| `numbered` | `false`     | Label pictures 1, 2, 3… (`placeholders`)                                    |
+| `order`    | `shuffle`   | How lists are gone through: `shuffle`, `cycle` or `random` (`placeholders`) |
+
+In `placeholders`, `kind`, `size`, `palette`, `mapping` and `texture` each take a single value or a list. A list made only of colors counts as one palette: `["#264653", "#e76f51"]` is one palette, while `["pastel", "riso"]` is two.
 
 ### Your own kinds
 
@@ -96,13 +110,12 @@ import { defineKind, toDataUri } from "bozzetto";
 const dot = defineKind(
   "dot",
   "Dot",
-  "art",
   (r, w, h) =>
     `<rect width="${w}" height="${h}" fill="#eee"/><circle cx="${r.f(0, w)}" cy="${r.f(0, h)}" r="20" fill="tomato"/>`,
 );
 
-img.src = toDataUri(dot, { seed: 1 });
-placeholder({ kind: [dot, "owl"], seed: 2 }); // custom kinds mix with built-in ones
+img.src = toDataUri(dot, { seed: 1, palette: "riso" });
+placeholders(6, { kind: [dot, "owl"] }); // custom kinds mix with built-in ones
 ```
 
 `r` has `f(min, max)`, `i(min, max)`, `pick(list)`, `chance(p)`, `next()`, and `id(name)` for gradient and mask ids that stay unique when several pictures are inlined on one page.
@@ -111,8 +124,9 @@ placeholder({ kind: [dot, "owl"], seed: 2 }); // custom kinds mix with built-in 
 
 ```sh
 npm install
-npm run dev       # demo page with every kind
-npm test
+npm run dev       # the gallery and palette picker, at /index.html and /picker.html
+npm run check     # format check, lint, typecheck and tests
+npm run pages     # self-contained copies of the demo pages in demo/out/
 npm run gallery   # regenerate media/gallery.svg
 ```
 

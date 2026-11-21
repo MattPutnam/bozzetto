@@ -1,7 +1,7 @@
 {
   "name": "bozzetto",
   "version": "0.1.0",
-  "description": "Seeded placeholder images as tiny SVGs: landscapes, modern-art homages, faces and animals, drawn from a handful of shapes.",
+  "description": "Seeded placeholder images as tiny SVGs: landscapes, art, people, animals, food and still lifes, drawn from a handful of shapes, in any palette.",
   "keywords": [
     "placeholder",
     "placeholder-image",
@@ -56,6 +56,7 @@
     "test:watch": "vitest",
     "check": "npm run format:check && npm run lint && npm run typecheck && npm test",
     "dev": "vite demo",
+    "pages": "node scripts/pages.mjs",
     "gallery": "npm run build && node scripts/gallery.mjs",
     "release": "npm run check && npm run build && npm publish"
   },

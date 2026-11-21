@@ -1,113 +1,77 @@
 /**
  * bozzetto: seeded placeholder images as tiny SVGs.
  *
- * Import a kind and render it, which keeps your bundle to the kinds you use:
+ * Every kind of picture is its own export, like icons in an icon library. Import a kind and render it,
+ * and your bundle only carries the kinds you use:
  *
  *     import { owl, toDataUri } from "bozzetto";
- *     img.src = toDataUri(owl, { seed: 3 });
+ *     img.src = toDataUri(owl, { seed: 3, palette: "pastel" });
  *
- * Or let `placeholder` choose by name, family or seed (this pulls in every kind):
+ * Or let `placeholder` and `placeholders` choose from a list, a category, or every kind
+ * (these pull in every kind):
  *
- *     import { placeholder } from "bozzetto";
- *     img.src = placeholder({ kind: "landscape", seed: "user-42" });
+ *     import { animals, donut, placeholders } from "bozzetto";
+ *     const photos = placeholders(12, { kind: [animals, donut], size: ["400x300", "300x400"] });
  */
-import { makeRand, seedToInt, toDataUri, toSvg, type Family, type Kind, type RenderOptions } from "./core";
-import { bird, cat, fish, owl } from "./animals";
+import { bird, cat, dog, fish, fox, frog, owl, penguin, rabbit, snail, whale } from "./animals";
 import { bauhaus, cutouts, field, grid, orbits, squares } from "./art";
 import { portrait } from "./faces";
+import { cake, donut, egg, iceCream, pizza, sushi } from "./food";
 import { city, dunes, forest, hills, mountains, night, sea } from "./landscapes";
+import { makePlaceholders } from "./placeholder";
+import { books, bottles, cactus, coffee, flowers, fruitBowl } from "./objects";
 
-export { defineKind, seedToInt, toDataUri, toSvg } from "./core";
-export type { Draw, Family, Kind, Rand, RenderOptions } from "./core";
-export { bird, cat, fish, owl } from "./animals";
+// Kinds
+export { bird, cat, dog, fish, fox, frog, owl, penguin, rabbit, snail, whale } from "./animals";
 export { bauhaus, cutouts, field, grid, orbits, squares } from "./art";
 export { portrait } from "./faces";
+export { cake, donut, egg, iceCream, pizza, sushi } from "./food";
 export { city, dunes, forest, hills, mountains, night, sea } from "./landscapes";
+export { books, bottles, cactus, coffee, flowers, fruitBowl } from "./objects";
 
-/** Every built-in kind, grouped by family. */
-export const kinds = [
-  hills,
-  mountains,
-  sea,
-  dunes,
-  forest,
-  night,
-  city,
-  field,
-  grid,
-  squares,
-  orbits,
-  cutouts,
-  bauhaus,
-  portrait,
-  cat,
-  bird,
-  fish,
-  owl,
-] as const;
+// Rendering
+export { defineKind, seedToInt } from "./core";
+export type { Draw, Kind, Rand } from "./core";
+export { resolveSize, toDataUri, toSvg } from "./render";
+export type { RenderOptions, Size } from "./render";
 
-export type KindId = (typeof kinds)[number]["id"];
+// Colors
+export {
+  ADJUSTMENTS,
+  PALETTES,
+  PALETTE_NAMES,
+  SCHEMES,
+  decodePalette,
+  encodePalette,
+  makePalette,
+  randomPalette,
+  resolvePalette,
+} from "./palettes";
+export type { Adjustment, PaletteOptions, PaletteSpec, Scheme } from "./palettes";
+export { MAPPINGS, stylize } from "./style";
+export type { Mapping, StyleOptions, Texture } from "./style";
 
-export const families: readonly Family[] = ["landscape", "art", "face", "animal"];
-
-/** What to draw: one kind (by id or object), a whole family, or a list to choose from. */
-export type KindChoice = KindId | Family | Kind | readonly (KindId | Kind)[];
-
-export interface PlaceholderOptions extends RenderOptions {
-  /** Default: any built-in kind, chosen by the seed. */
-  kind?: KindChoice;
-}
-
-const byId = new Map<string, Kind>(kinds.map(k => [k.id, k]));
-
-function pool(choice: KindChoice | undefined): readonly Kind[] {
-  if (choice === undefined) return kinds;
-  if (typeof choice === "string") {
-    if ((families as readonly string[]).includes(choice)) return kinds.filter(k => k.family === choice);
-    const kind = byId.get(choice);
-    if (!kind)
-      throw new Error(
-        `bozzetto: unknown kind "${choice}". Known kinds: ${[...byId.keys()].join(", ")}; families: ${families.join(", ")}.`,
-      );
-    return [kind];
-  }
-  if (Array.isArray(choice)) {
-    const list = choice.flatMap(c => pool(c as KindId | Kind));
-    if (list.length === 0) throw new Error("bozzetto: `kind` is an empty list.");
-    return list;
-  }
-  return [choice as Kind];
-}
-
-/** The kind a seed picks from a choice. Stable: the same seed always picks the same kind. */
-export function resolveKind(choice: KindChoice | undefined, seed: number | string = 1): Kind {
-  const list = pool(choice);
-  return list.length === 1 ? list[0] : list[Math.floor(makeRand(seedToInt(seed) ^ 0x9e3779b9).next() * list.length)];
-}
-
-/** A placeholder picture as a `data:image/svg+xml` URI. */
-export function placeholder(options: PlaceholderOptions = {}): string {
-  return toDataUri(resolveKind(options.kind, options.seed), options);
-}
-
-/** A placeholder picture as SVG markup, for inlining. */
-export function placeholderSvg(options: PlaceholderOptions = {}): string {
-  return toSvg(resolveKind(options.kind, options.seed), options);
-}
-
-export interface PlaceholdersOptions extends Omit<PlaceholderOptions, "label"> {
-  /** Number the pictures 1, 2, 3… in the corner. */
-  numbered?: boolean;
-}
+// Choosing kinds
+export type { KindChoice, OneOrMany, Order, PlaceholderOptions, PlaceholdersOptions } from "./placeholder";
 
 /**
- * `count` different placeholder pictures as data URIs. Picture k uses seed `seed + k`,
- * so a list grows without changing the pictures already in it.
+ * Categories group kinds for convenience: use one wherever a list of kinds is accepted,
+ * alone or mixed with single kinds, as in `[animals, donut]`.
  */
-export function placeholders(count: number, options: PlaceholdersOptions = {}): string[] {
-  const { numbered, seed, ...rest } = options;
-  const base = seedToInt(seed);
-  return Array.from({ length: count }, (_, k) =>
-    placeholder({ ...rest, seed: (base + k) >>> 0, label: numbered ? k + 1 : undefined }),
-  );
-}
+export const landscapes = [hills, mountains, sea, dunes, forest, night, city] as const;
+export const art = [field, grid, squares, orbits, cutouts, bauhaus] as const;
+export const people = [portrait] as const;
+export const animals = [cat, bird, fish, owl, dog, fox, penguin, whale, frog, rabbit, snail] as const;
+export const food = [donut, pizza, iceCream, sushi, cake, egg] as const;
+export const objects = [fruitBowl, flowers, cactus, coffee, books, bottles] as const;
+
+/** Every category by name, for listing them (in a demo, say). */
+export const categories = { landscapes, art, people, animals, food, objects } as const;
+
+/** Every built-in kind. */
+export const kinds = [...landscapes, ...art, ...people, ...animals, ...food, ...objects] as const;
+
+/** The id of any built-in kind, such as `"owl"` or `"ice-cream"`. */
+export type KindId = (typeof kinds)[number]["id"];
+
+export const { resolveKind, placeholder, placeholderSvg, placeholders } = makePlaceholders(kinds);

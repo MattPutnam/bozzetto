@@ -4,7 +4,7 @@
  * Because this works on the markup, every kind gets it for free, built-in or custom.
  */
 
-import { el } from "../src/core";
+import { el } from "./core";
 import { rgbToOklab } from "./color";
 import { ADJUSTMENTS, resolvePalette, type Adjustment, type PaletteSpec } from "./palettes";
 

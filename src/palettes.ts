@@ -6,7 +6,7 @@
  * so a palette picker can regenerate as controls change, lock swatches, and share a palette as
  * a short code.
  */
-import { makeRand, seedToInt } from "../src/core";
+import { makeRand, seedToInt } from "./core";
 import { hexToLch, lchToHex, lightnessOf, parseColor, toHex, type LCH } from "./color";
 
 /** A list of colors in any form `parseColor` reads, a built-in palette's or adjustment's name, or a palette code. */

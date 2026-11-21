@@ -3,4 +3,4 @@ dist
 *.tsbuildinfo
 .release/
 demo/dist/
-sketches/out/
+demo/out/

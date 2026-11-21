@@ -1,6 +1,6 @@
 # Generated
 dist/
 demo/dist/
-sketches/out/
+demo/out/
 media/
 package-lock.json

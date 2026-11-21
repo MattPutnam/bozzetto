@@ -3,7 +3,7 @@
 import { writeFileSync } from "node:fs";
 import { kinds, toSvg } from "../dist/index.js";
 
-const cols = 6;
+const cols = 8;
 const w = 200;
 const h = 150;
 const gap = 6;
@@ -12,7 +12,7 @@ const cells = kinds.flatMap((kind, k) =>
     const idx = k * 2 + j;
     const x = (idx % cols) * (w + gap);
     const y = Math.floor(idx / cols) * (h + gap);
-    return toSvg(kind, { width: w, height: h, seed }).replace("<svg ", `<svg x="${x}" y="${y}" `);
+    return toSvg(kind, { size: `${w}x${h}`, seed }).replace("<svg ", `<svg x="${x}" y="${y}" `);
   }),
 );
 const rows = Math.ceil(cells.length / cols);
