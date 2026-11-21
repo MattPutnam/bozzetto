@@ -55,9 +55,14 @@ describe("dark", () => {
     expect(render(owl, { seed: 2 }).darkColor).toBeUndefined();
   });
 
-  it("adds rules under a selector for pages with their own theme switch", () => {
+  it("follows a selector instead of the system setting, for pages with their own theme switch", () => {
+    const plain = render(owl, { seed: 2, dark: true }).svg;
     const svg = render(owl, { seed: 2, dark: true, darkSelector: "[data-theme=dark]" }).svg;
     expect(svg).toMatch(/\[data-theme=dark\] \.bzd[a-z0-9]+-[fsp]\d+\{/);
+    expect(svg).not.toContain("prefers-color-scheme");
+    // The same dark colors, under the selector.
+    const selectorRules = /<style>(.*?)<\/style>/.exec(svg)![1].replaceAll("[data-theme=dark] ", "");
+    expect(`@media (prefers-color-scheme: dark){${selectorRules}}`).toBe(/<style>(.*?)<\/style>/.exec(plain)![1]);
   });
 
   it("leaves masks alone and uses class names unique to the picture", () => {

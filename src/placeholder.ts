@@ -98,7 +98,7 @@ export interface PlaceholdersOptions {
   numbered?: boolean;
   /** Build a dark-mode version into every picture: `true` for the `dim` adjustment, or a palette. */
   dark?: boolean | PaletteSpec;
-  /** Also use the dark colors under this selector, for inline SVG on pages with their own theme switch. */
+  /** Use the dark colors under this selector instead of the system setting, for inline SVG on pages with their own theme switch. */
   darkSelector?: string;
   /** How lists of values are gone through. Default `shuffle`. */
   order?: Order;

@@ -38,8 +38,9 @@ export interface StyleOptions {
    */
   dark?: boolean | PaletteSpec;
   /**
-   * Also use the dark colors under this selector, such as ".dark" or "[data-theme=dark]", for pages
-   * with their own theme switch. Works for inline SVG only: an `<img>` can't see the page's classes.
+   * Use the dark colors under this selector, such as ".dark" or "[data-theme=dark]", instead of the
+   * viewer's system setting, for pages with their own theme switch. Works for inline SVG only: an
+   * `<img>` can't see the page's classes.
    */
   darkSelector?: string;
 }

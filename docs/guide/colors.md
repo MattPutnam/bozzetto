@@ -75,11 +75,17 @@ class its dark color under `@media (prefers-color-scheme: dark)`. The light pict
 ### Pages with their own theme switch
 
 An `<img>` follows the viewer's system setting, because it can't see your page's classes. For
-inline SVG, `darkSelector` also applies the dark colors under a selector of your own:
+inline SVG, `darkSelector` follows a selector of your own instead, so the picture goes dark when
+your page does, whatever the system setting:
 
 ```ts
 container.innerHTML = render(hills, { dark: true, darkSelector: "html.dark" }).svg;
 ```
+
+This site has its own theme switch, which puts `dark` on `<html>`. These pictures are inline, made
+that way: switch the site's appearance (in the top bar, or in the menu on a phone) and they follow.
+
+<DarkDemo />
 
 ## Mixing palettes
 

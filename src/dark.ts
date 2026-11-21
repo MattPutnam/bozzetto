@@ -22,8 +22,9 @@ function paints(svg: string): string[] {
 /**
  * The light picture, with classes and a `<style>` that swap in `dark`'s colors in dark mode.
  * `dark` must be the same picture recolored (as `stylize` makes it), so its colors line up with
- * the light picture's one for one. With a `selector` such as ".dark", the dark colors also apply
- * under that selector, for pages with their own theme switch (inline SVG only).
+ * the light picture's one for one. With a `selector` such as ".dark", the dark colors apply under
+ * that selector instead of the system setting, for pages with their own theme switch (inline SVG
+ * only): such a page decides when it's dark, even against the system setting.
  */
 export function withDarkMode(light: string, dark: string, selector?: string): string {
   const lightPaints = paints(light);
@@ -55,9 +56,9 @@ export function withDarkMode(light: string, dark: string, selector?: string): st
       return `.${name}{${property}:${darkOf.get(color)}}`;
     })
     .join("");
-  const css =
-    `@media (prefers-color-scheme: dark){${rules}}` +
-    (selector ? rules.replace(/\.(bzd[a-z0-9]+-[fsp]\d+)\{/g, `${selector} .$1{`) : "");
+  const css = selector
+    ? rules.replace(/\.(bzd[a-z0-9]+-[fsp]\d+)\{/g, `${selector} .$1{`)
+    : `@media (prefers-color-scheme: dark){${rules}}`;
   // The style goes first inside the root element, so it applies to everything after it.
   return classed.replace(/^(<svg[^>]*>)/, `$1<style>${css}</style>`);
 }

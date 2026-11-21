@@ -173,7 +173,7 @@ placeholders(8, { kind: [portrait.with({ glasses: true }), hills.with({ tree: tr
 
 Color palettes are applied with `mapping: "balanced"` by default, which uses only your exact colors while keeping each picture's light and dark. `"ramp"` blends between your colors for softer shading, and `"nearest"` snaps every color to its closest match. `texture: "grain"` or `"paper"` adds a subtle surface.
 
-`dark: true` builds a dark-mode version into the picture: in dark mode it switches to it by itself, in an `<img>` or inline, using the `dim` adjustment (everything darker, every hue kept), or any palette you give, as in `dark: "sea glass"`. For inline SVG on pages with their own theme switch, `darkSelector: "html.dark"` applies it under your selector too.
+`dark: true` builds a dark-mode version into the picture: in dark mode it switches to it by itself, in an `<img>` or inline, using the `dim` adjustment (everything darker, every hue kept), or any palette you give, as in `dark: "sea glass"`. For inline SVG on pages with their own theme switch, `darkSelector: "html.dark"` follows your selector instead of the system setting.
 
 To build a palette without picking colors by hand, `makePalette` works from a starting color or hue and a color-wheel scheme:
 
