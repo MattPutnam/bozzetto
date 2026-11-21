@@ -15,7 +15,7 @@ pick a picture that stays with it.
 
 - **Pictures as data, not URLs.** Each picture is SVG markup and a data URI you can put straight
   into `<img src>` or CSS. No placeholder service, no network request, nothing to host.
-- **Small.** Most pictures are 1–4 KB as a data URI, because they are drawn from a handful of
+- **Small.** Most pictures are 2–8 KB as a data URI, because they are drawn from a handful of
   shapes: ellipses, curves and gradients.
 - **Any size.** Pictures are drawn to the size you ask for, so a portrait fills a tall frame and a
   landscape fills a wide one.

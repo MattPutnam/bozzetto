@@ -9,7 +9,7 @@ A _bozzetto_ is a painter's small preliminary sketch, made before the real work.
 ![Two seeds of every kind](media/gallery.svg)
 
 - **Deterministic.** The same seed gives the same picture, everywhere. Seeds can be numbers or strings, such as a user id.
-- **Small.** Most pictures are 1–4 KB as a data URI, and none needs a network request.
+- **Small.** Most pictures are 2–8 KB as a data URI, and none needs a network request.
 - **Any size and any palette.** Pictures are drawn to the size you ask for, in their own colors or yours.
 - **No dependencies.** Import only the kinds you use and the rest is tree-shaken away.
 
@@ -137,14 +137,23 @@ The command line writes PNGs with `--format png` (or an output file ending in `.
 
 Categories are plain arrays of kinds. Use them anywhere a list of kinds is accepted, alone or mixed with single kinds, as in `[animals, donut]`.
 
-| Category     | Kinds                                                                                     |
-| ------------ | ----------------------------------------------------------------------------------------- |
-| `landscapes` | `hills`, `mountains`, `sea`, `dunes`, `forest`, `night`, `city`                           |
-| `art`        | `field`, `grid`, `squares`, `orbits`, `cutouts`, `bauhaus`                                |
-| `people`     | `portrait`                                                                                |
-| `animals`    | `cat`, `bird`, `fish`, `owl`, `dog`, `fox`, `penguin`, `whale`, `frog`, `rabbit`, `snail` |
-| `food`       | `donut`, `pizza`, `iceCream`, `sushi`, `cake`, `egg`                                      |
-| `objects`    | `fruitBowl`, `flowers`, `cactus`, `coffee`, `books`, `bottles`                            |
+| Category     | Kinds                                                                                                                                                                                                                                                                                                                                                                                    |
+| ------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `landscapes` | `hills`, `mountains`, `sea`, `dunes`, `forest`, `night`, `city`, `lake`, `beach`, `island`, `lighthouse`, `volcano`, `winter`, `autumn`, `farm`, `rainbow`, `canyon`, `savanna`, `aurora`, `rainyStreet`, `campsite`, `terraces`, `canal`, `reef`, `kelp`, `aquarium`                                                                                                                    |
+| `art`        | `field`, `grid`, `squares`, `orbits`, `cutouts`, `bauhaus`, `waves`, `dots`, `arches`, `confetti`, `triangles`, `sunburst`, `pebbles`, `stripes`                                                                                                                                                                                                                                         |
+| `people`     | `portrait`, `reader`, `worker`, `cafe`, `pair`, `group`, `walker`                                                                                                                                                                                                                                                                                                                        |
+| `animals`    | `cat`, `bird`, `fish`, `owl`, `dog`, `fox`, `penguin`, `whale`, `frog`, `rabbit`, `snail`, `bear`, `panda`, `elephant`, `lion`, `giraffe`, `sheep`, `pig`, `koala`, `turtle`, `duck`, `hedgehog`, `mouse`, `butterfly`, `ladybug`, `bee`, `octopus`, `jellyfish`, `crab`, `horse`, `deer`, `cow`, `squirrel`, `chicken`, `parrot`, `flamingo`, `hummingbird`, `dolphin`, `shark`, `seal` |
+| `food`       | `donut`, `pizza`, `iceCream`, `sushi`, `cake`, `egg`, `burger`, `taco`, `cupcake`, `watermelon`, `popsicle`, `pancakes`, `avocado`, `ramen`, `cookies`, `pie`, `salad`, `bread`, `croissant`, `cocktail`, `smoothie`, `cheeseBoard`, `dumplings`                                                                                                                                         |
+| `objects`    | `fruitBowl`, `flowers`, `coffee`, `books`, `bottles`, `teapot`, `lamp`, `clock`, `candles`, `balloons`, `camera`, `armchair`                                                                                                                                                                                                                                                             |
+| `plants`     | `cactus`, `houseplant`, `succulents`, `sunflower`, `rose`, `tulip`, `daisy`, `poppy`, `hibiscus`, `lotus`                                                                                                                                                                                                                                                                                |
+| `buildings`  | `cottage`, `windmill`, `castle`, `bridge`, `rowHouses`, `greenhouse`                                                                                                                                                                                                                                                                                                                     |
+| `vehicles`   | `car`, `bicycle`, `sailboat`, `hotAirBalloon`, `rocket`, `train`, `bus`, `airplane`                                                                                                                                                                                                                                                                                                      |
+| `products`   | `sneakers`, `watch`, `backpack`, `sunglasses`, `handbag`, `perfume`, `headphones`, `phone`, `laptop`, `speaker`, `controller`                                                                                                                                                                                                                                                            |
+| `music`      | `guitar`, `piano`, `drums`, `record`, `cds`, `notes`                                                                                                                                                                                                                                                                                                                                     |
+| `sports`     | `baseball`, `basketball`, `football`, `hockey`, `tennis`, `skateboard`, `surfboard`                                                                                                                                                                                                                                                                                                      |
+| `holidays`   | `fireworks`, `hearts`, `eggBasket`, `fallLeaves`, `pumpkins`, `snowflakes`, `snowman`, `holidayTree`, `gifts`                                                                                                                                                                                                                                                                            |
+| `space`      | `planets`, `nebula`, `galaxy`, `blackHole`, `astronaut`, `moon`                                                                                                                                                                                                                                                                                                                          |
+| `patterns`   | `terrazzo`, `marble`, `gingham`, `plaid`, `topography`, `gradient`                                                                                                                                                                                                                                                                                                                       |
 
 `kinds` lists every kind, and `categories` maps each category's name to its kinds. Kinds can also be named by id in strings, such as `"owl"` or `"ice-cream"`.
 
@@ -155,13 +164,37 @@ render(cat.with({ tabby: true, pupils: "round" }), { seed: 3 });
 placeholders(8, { kind: [portrait.with({ glasses: true }), hills.with({ tree: true })] });
 ```
 
-| Kind       | Options                                                                                                                        |
-| ---------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| `hills`    | `tree`: `true`, `false`                                                                                                        |
-| `night`    | `moon`: `"crescent"`, `"full"`                                                                                                 |
-| `portrait` | `hair`: `"short"`, `"long"`, `"bun"`, `"curly"`, `"bald"`, `"bob"`; `glasses`: `true`, `false`; `smile`: `"gentle"`, `"broad"` |
-| `cat`      | `tabby`, `muzzle`: `true`, `false`; `pupils`: `"slit"`, `"round"`                                                              |
-| `pizza`    | `topping`: `"pepperoni"`, `"vegetable"`, `"margherita"`; `slices`: `6`, `8`                                                    |
+| Kind         | Options                                                                                                                        |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------ |
+| `hills`      | `tree`: `true`, `false`                                                                                                        |
+| `night`      | `moon`: `"crescent"`, `"full"`                                                                                                 |
+| `beach`      | `item`: `"umbrella"`, `"palm"`, `"shells"`                                                                                     |
+| `dots`       | `pattern`: `"polka"`, `"halftone"`, `"scattered"`                                                                              |
+| `portrait`   | `hair`: `"short"`, `"long"`, `"bun"`, `"curly"`, `"bald"`, `"bob"`; `glasses`: `true`, `false`; `smile`: `"gentle"`, `"broad"` |
+| `walker`     | `place`: `"beach"`, `"park"`, `"hill"`; `dog`: `true`, `false`                                                                 |
+| `cat`        | `tabby`, `muzzle`: `true`, `false`; `pupils`: `"slit"`, `"round"`                                                              |
+| `bear`       | `coat`: `"brown"`, `"black"`, `"polar"`                                                                                        |
+| `lion`       | `mane`: `true`, `false`                                                                                                        |
+| `flamingo`   | `oneLeg`: `true`, `false`                                                                                                      |
+| `dolphin`    | `scene`: `"leap"`, `"swim"`                                                                                                    |
+| `seal`       | `perch`: `"rock"`, `"ice"`                                                                                                     |
+| `pizza`      | `topping`: `"pepperoni"`, `"vegetable"`, `"margherita"`; `slices`: `6`, `8`                                                    |
+| `lamp`       | `stand`: `"table"`, `"floor"`                                                                                                  |
+| `cottage`    | `roof`: `"tiled"`, `"thatched"`                                                                                                |
+| `windmill`   | `setting`: `"tulips"`, `"canal"`                                                                                               |
+| `bridge`     | `style`: `"stone"`, `"suspension"`                                                                                             |
+| `greenhouse` | `roof`: `"gable"`, `"arched"`                                                                                                  |
+| `rocket`     | `scene`: `"launch"`, `"space"`                                                                                                 |
+| `bus`        | `style`: `"city"`, `"school"`, `"double-decker"`                                                                               |
+| `airplane`   | `engine`: `"jet"`, `"propeller"`                                                                                               |
+| `guitar`     | `type`: `"acoustic"`, `"electric"`                                                                                             |
+| `piano`      | `view`: `"upright"`, `"keys"`                                                                                                  |
+| `record`     | `scene`: `"turntable"`, `"sleeve"`                                                                                             |
+| `hockey`     | `headgear`: `"helmet"`, `"goalie"`                                                                                             |
+| `skateboard` | `wall`: `"plaster"`, `"brick"`, `"wood"`, `"concrete"`                                                                         |
+| `surfboard`  | `wall`: `"plaster"`, `"brick"`, `"wood"`, `"concrete"`                                                                         |
+| `snowman`    | `hat`: `"top-hat"`, `"beanie"`, `"bowler"`                                                                                     |
+| `astronaut`  | `tether`: `true`, `false`                                                                                                      |
 
 ## Colors
 

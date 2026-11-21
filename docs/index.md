@@ -21,12 +21,12 @@ hero:
       target: _self
 
 features:
-  - title: 37 kinds of picture
-    details: Rolling hills, night skies and cities; color fields and Bauhaus tiles; portraits; cats, owls, whales and frogs; donuts, pizza and sushi; fruit bowls, cacti and bookshelves.
+  - title: 191 kinds of picture
+    details: Landscapes and cities; abstract art and patterns; people; animals; food; houseplants and flowers; buildings and vehicles; products; music and sports gear; holidays; and space.
     link: /guide/kinds
     linkText: Browse the kinds
   - title: Seeded and tiny
-    details: The same seed always draws the same picture, so tests and screenshots stay stable. Most pictures are 1–4 KB as a data URI, with no network request.
+    details: The same seed always draws the same picture, so tests and screenshots stay stable. Most pictures are 2–8 KB as a data URI, with no network request.
     link: /guide/getting-started
     linkText: Draw a picture
   - title: Made for galleries
