@@ -1363,3 +1363,597 @@ export const crab = defineKind("crab", "Crab", (g, w, h, note) => {
   note.frame(cx - rx * 1.1, cy - ry * 1.85, rx * 2.2, ry * 2.85);
   return out;
 });
+
+/** Path data written in units of a figure's length: every number is multiplied by `L`. */
+const scaled = (L: number, d: string): string => d.replace(/-?\d*\.?\d+/g, v => String(Math.round(+v * L * 10) / 10));
+
+/**
+ * Places a figure drawn facing right around (0, 0), `L` long: at (cx, cy), turned to face `dir`
+ * and tilted by `tilt` degrees (nose up when negative). Returns the group's opening tag and a
+ * function from figure units to picture px.
+ */
+function pose(cx: number, cy: number, L: number, dir: number, tilt: number): [string, (x: number, y: number) => Point] {
+  const a = (dir * tilt * Math.PI) / 180;
+  const at = (x: number, y: number): Point => [
+    cx + Math.cos(a) * dir * x * L - Math.sin(a) * y * L,
+    cy + Math.sin(a) * dir * x * L + Math.cos(a) * y * L,
+  ];
+  return [s`<g transform="translate(${cx} ${cy}) rotate(${dir * tilt}) scale(${dir} 1)">`, at];
+}
+
+/** The box around some figure points, as [x, y, width, height]. */
+function boxAround(points: readonly Point[]): [number, number, number, number] {
+  const xs = points.map(p => p[0]);
+  const ys = points.map(p => p[1]);
+  const x = Math.min(...xs);
+  const y = Math.min(...ys);
+  return [x, y, Math.max(...xs) - x, Math.max(...ys) - y];
+}
+
+/** Open water with light falling from the surface. */
+function underwater(g: Rand, w: number, h: number): string {
+  const hue = g.f(185, 210);
+  const water = g.id("water");
+  let out = el("defs", {}, lin(water, [hsl(hue, 55, 62), hsl(hue + 15, 60, 30)])) + fill(w, h, `url(#${water})`);
+  // Shimmer at the surface, and rays slanting down from it.
+  out += el("rect", { width: w, height: h * 0.04, fill: "#fff", opacity: "0.12" });
+  const slant = g.f(-0.25, 0.25) * h;
+  let rays = "";
+  for (let k = g.i(3, 4); k > 0; k--) {
+    const x = w * g.f(0, 1);
+    const spread = w * g.f(0.04, 0.1);
+    rays += s`M ${x} 0 L ${x + spread} 0 L ${x + spread * 2.2 + slant} ${h} L ${x + slant} ${h} Z `;
+  }
+  out += el("path", { d: rays, fill: "#fff", opacity: "0.08" });
+  return out;
+}
+
+/** A few bubbles rising around (x, y). */
+function bubbles(g: Rand, x: number, y: number, spread: number, r: number): string {
+  let out = "";
+  for (let k = g.i(2, 4); k > 0; k--)
+    out += el("circle", { cx: x + g.f(-0.5, 0.5) * spread, cy: y - k * r * 4.5, r: r * g.f(0.6, 1.2) });
+  return el("g", { fill: "none", stroke: "#fff", "stroke-width": "1.5", opacity: "0.6" }, out);
+}
+
+/** A splash of water thrown up where something meets the surface at (x, y). */
+function splash(x: number, y: number, r: number): string {
+  let out = el("ellipse", { cx: x, cy: y, rx: r * 1.2, ry: r * 0.22, fill: "#fff", opacity: "0.5" });
+  out += el("path", {
+    d: s`M ${x - r} ${y} Q ${x - r * 0.75} ${y - r * 0.55} ${x - r * 0.35} ${y - r * 0.2}
+         Q ${x - r * 0.1} ${y - r * 0.95} ${x + r * 0.15} ${y - r * 0.25}
+         Q ${x + r * 0.55} ${y - r * 0.7} ${x + r} ${y} Z`,
+    fill: "#fff",
+    opacity: "0.85",
+  });
+  for (const [dx, dy] of [
+    [-0.8, 0.8],
+    [-0.3, 1.25],
+    [0.45, 1.05],
+    [0.95, 0.65],
+  ])
+    out += el("circle", { cx: x + dx * r, cy: y - dy * r, r: r * 0.09, fill: "#fff", opacity: "0.85" });
+  return out;
+}
+
+const DOLPHINS = ["#8aa3bd", "#7b95ad", "#93a7bb", "#6f8aa6", "#8fa2b0"] as const;
+
+/** One dolphin facing right, a unit long, around (0, 0). Clip ids come from `g`. */
+function dolphinFigure(g: Rand, L: number, body: string): string {
+  const clip = g.id(`dolphin${g.i(0, 1e6)}`);
+  const dark = mix(body, "#000000", 0.18);
+  const belly = mix(body, "#ffffff", 0.62);
+  const bodyD = scaled(
+    L,
+    `M 0.53 0.03 C 0.5 0.01 0.45 0.0 0.4 -0.005 C 0.37 -0.02 0.37 -0.07 0.32 -0.09
+     C 0.24 -0.13 0.1 -0.13 -0.05 -0.1 C -0.2 -0.07 -0.35 -0.03 -0.43 -0.01 L -0.43 0.02
+     C -0.3 0.04 -0.1 0.12 0.15 0.1 C 0.3 0.09 0.42 0.06 0.53 0.03 Z`,
+  );
+  // Flukes, the dorsal fin and the far flipper sit behind the body.
+  let out = el("path", {
+    d: scaled(
+      L,
+      "M -0.4 0.0 Q -0.47 -0.03 -0.56 -0.11 Q -0.52 -0.02 -0.5 0.005 Q -0.52 0.04 -0.56 0.12 Q -0.47 0.05 -0.4 0.02 Z",
+    ),
+    fill: dark,
+  });
+  out += el("path", {
+    d: scaled(L, "M 0.07 -0.115 C 0.04 -0.16 -0.01 -0.19 -0.1 -0.195 C -0.07 -0.16 -0.08 -0.12 -0.13 -0.095 Z"),
+    fill: dark,
+  });
+  out += el("path", { d: scaled(L, "M 0.26 0.07 Q 0.24 0.15 0.17 0.19 Q 0.18 0.12 0.18 0.08 Z"), fill: dark });
+  out += el("defs", {}, el("clipPath", { id: clip }, el("path", { d: bodyD })));
+  out += el("path", { d: bodyD, fill: body });
+  // Pale belly and throat, clipped to the body, and a sheen along the back.
+  out += el(
+    "g",
+    { "clip-path": `url(#${clip})` },
+    el("ellipse", { cx: 0.12 * L, cy: 0.13 * L, rx: 0.42 * L, ry: 0.085 * L, fill: belly }),
+    el("ellipse", { cx: 0.1 * L, cy: -0.1 * L, rx: 0.28 * L, ry: 0.02 * L, fill: "#fff", opacity: "0.25" }),
+  );
+  // Near flipper, smiling mouth and eye.
+  out += el("path", { d: scaled(L, "M 0.22 0.06 Q 0.18 0.15 0.08 0.18 Q 0.12 0.1 0.12 0.06 Z"), fill: dark });
+  out += el("path", {
+    d: scaled(L, "M 0.52 0.035 Q 0.46 0.05 0.39 0.03"),
+    stroke: mix(body, "#000000", 0.45),
+    "stroke-width": L * 0.008,
+    "stroke-linecap": "round",
+    fill: "none",
+  });
+  out += el("circle", { cx: 0.33 * L, cy: -0.02 * L, r: 0.018 * L, fill: "#1a1a22" });
+  out += el("circle", { cx: 0.336 * L, cy: -0.026 * L, r: 0.006 * L, fill: "#fff" });
+  return out;
+}
+
+/** A dolphin leaping from the sea in an arc, or swimming underwater; sometimes two together. */
+export const dolphin = defineKind("dolphin", "Dolphin", { scene: ["leap", "swim"] }, (g, w, h, note) => {
+  const scene = g.option("scene", g.pick(["leap", "leap", "swim"] as const));
+  const dir = g.pick([-1, 1]);
+  const pair = g.chance(0.4);
+  const body = g.pick(DOLPHINS);
+  // The head, in figure units: what an avatar frames.
+  const head: Point[] = [
+    [0.2, -0.13],
+    [0.56, -0.13],
+    [0.56, 0.11],
+    [0.2, 0.11],
+  ];
+  let out = "";
+  let frame: [number, number, number, number];
+  let eye: Point;
+  if (scene === "leap") {
+    const hz = h * g.f(0.5, 0.6);
+    out += sky(g, w, h, g.f(185, 215));
+    if (g.chance(0.4))
+      out += el("circle", {
+        cx: w * g.pick([g.f(0.1, 0.25), g.f(0.75, 0.9)]),
+        cy: hz * g.f(0.25, 0.45),
+        r: Math.min(w, h) * 0.07,
+        fill: "#fff3c4",
+      });
+    const sea = g.id("sea");
+    const seaHue = g.f(190, 210);
+    out +=
+      el("defs", {}, lin(sea, [hsl(seaHue, 55, 50), hsl(seaHue + 10, 60, 30)])) +
+      el("rect", { y: hz, width: w, height: h - hz, fill: `url(#${sea})` });
+    // Little waves across the sea.
+    let waves = "";
+    for (let k = g.i(4, 6); k > 0; k--) {
+      const x = w * g.f(0, 1);
+      const y = hz + (h - hz) * g.f(0.1, 0.95);
+      const r = Math.min(w, h) * g.f(0.02, 0.035);
+      waves += s`M ${x - r} ${y} Q ${x} ${y - r * 0.5} ${x + r} ${y} `;
+    }
+    out += el("path", {
+      d: waves,
+      stroke: "#fff",
+      "stroke-width": "2",
+      "stroke-linecap": "round",
+      fill: "none",
+      opacity: "0.5",
+    });
+    // Rising with the tail just leaving the water, or diving back in nose first.
+    const phase = g.pick(["rise", "dive"] as const);
+    const tilt = phase === "rise" ? g.f(-32, -18) : g.f(18, 32);
+    const L0 = Math.min(w * 0.55, h * 1.25) * g.f(0.85, 1);
+    const leap = (x: number, wl: number, L: number, fade: string): [Point, Point[]] => {
+      // The low end (tail or beak) touches the water, in a splash.
+      const end: Point = phase === "rise" ? [-0.5, 0.01] : [0.52, 0.03];
+      const cy = wl - pose(x, 0, L, dir, tilt)[1](...end)[1];
+      const [open, at] = pose(x, cy, L, dir, tilt);
+      const low = at(...end);
+      let d = splash(low[0], wl, L * 0.14);
+      d += open + dolphinFigure(g, L, body) + "</g>";
+      if (phase === "rise") {
+        // Drops falling from the tail.
+        for (let k = 1; k <= 3; k++) {
+          const [x, y] = at(-0.5 + k * 0.08, 0.1 + k * 0.03);
+          d += el("circle", { cx: x, cy: y, r: L * 0.011, fill: "#fff", opacity: "0.8" });
+        }
+      }
+      out += el("g", { opacity: fade }, d);
+      return [at(0.33, -0.02), head.map(p => at(p[0], p[1]))];
+    };
+    let cx = w * g.f(0.45, 0.55);
+    if (pair) {
+      cx += dir * w * 0.08;
+      const L = L0 * 0.68;
+      leap(cx - dir * Math.min(L0 * 0.85, w * 0.32), hz + (h - hz) * 0.15, L, "0.9");
+    }
+    const [e, hd] = leap(cx, hz + (h - hz) * g.f(0.3, 0.4), L0, "1");
+    eye = e;
+    frame = boxAround(hd);
+    const what = phase === "rise" ? "leaping from" : "diving back into";
+    note.alt(`${pair ? "Two dolphins" : "A dolphin"} ${what} the sea${pair ? " together" : ""}`);
+  } else {
+    out += underwater(g, w, h);
+    const L0 = Math.min(w * 0.62, h * 1.5) * g.f(0.85, 1);
+    const tilt = g.f(-10, 10);
+    let cx = w * g.f(0.45, 0.55);
+    let cy = h * g.f(0.5, 0.58);
+    if (pair) {
+      cx += dir * w * 0.06;
+      const L = L0 * 0.72;
+      const above = g.chance(0.5);
+      const [open] = pose(cx - dir * Math.min(L0 * 0.5, w * 0.25), cy + (above ? -1 : 1) * L0 * 0.26, L, dir, tilt);
+      out += el("g", { opacity: "0.75" }, open + dolphinFigure(g, L, body) + "</g>");
+      if (!above) cy -= L0 * 0.06;
+    }
+    const [open, at] = pose(cx, cy, L0, dir, tilt);
+    out += open + dolphinFigure(g, L0, body) + "</g>";
+    const nose = at(0.52, 0.02);
+    out += bubbles(g, nose[0] + dir * L0 * 0.04, nose[1], L0 * 0.05, Math.min(w, h) * 0.012);
+    eye = at(0.33, -0.02);
+    frame = boxAround(head.map(p => at(p[0], p[1])));
+    note.alt(`${pair ? "Two dolphins swimming together" : "A dolphin swimming"} underwater, light falling from above`);
+  }
+  note.focus(eye[0], eye[1]);
+  note.frame(...frame);
+  return out;
+});
+
+const SHARKS = ["#7f8fa0", "#6d7f94", "#8c98a6", "#5d7389", "#7a8a8a"] as const;
+
+/** A friendly shark cruising over the seabed in a side view, light rays falling from above. */
+export const shark = defineKind("shark", "Shark", (g, w, h, note) => {
+  const unit = Math.min(w, h);
+  const dir = g.pick([-1, 1]);
+  const body = g.pick(SHARKS);
+  const dark = mix(body, "#000000", 0.2);
+  const belly = mix(body, "#ffffff", 0.75);
+  let out = underwater(g, w, h);
+  // Sandy seabed with a little seaweed.
+  const gy = h * g.f(0.86, 0.9);
+  for (let k = g.i(2, 4); k > 0; k--) {
+    const x = w * g.f(0.03, 0.97);
+    out += el("path", {
+      d: s`M ${x} ${gy + 4}
+           C ${x + g.f(-15, 15)} ${gy - h * 0.1} ${x + g.f(-15, 15)} ${gy - h * 0.18} ${x + g.f(-10, 10)} ${gy - h * g.f(0.15, 0.3)}`,
+      stroke: hsl(g.f(100, 150), 40, g.f(28, 40)),
+      "stroke-width": unit * g.f(0.02, 0.03),
+      "stroke-linecap": "round",
+      fill: "none",
+    });
+  }
+  out += el("path", {
+    d: s`M -5 ${gy} Q ${w * 0.5} ${gy - h * 0.025} ${w + 5} ${gy + h * 0.01} V ${h} H -5 Z`,
+    fill: hsl(g.f(38, 48), 45, g.f(70, 78)),
+  });
+  const L = Math.min(w * 0.7, h * 1.6) * g.f(0.85, 1);
+  const cx = w * g.f(0.46, 0.54);
+  const cy = Math.min(h * g.f(0.45, 0.52), gy - L * 0.25);
+  const tilt = g.f(-8, 8);
+  // A little school of fish in the distance.
+  const school = g.chance(0.5);
+  if (school) {
+    const fx = cx - dir * w * g.f(0.25, 0.35);
+    const fy = h * g.f(0.15, 0.25);
+    const fr = unit * 0.022;
+    let fish = "";
+    for (let k = 0; k < 5; k++) {
+      const x = fx + dir * (k % 3) * fr * 3 + g.f(-1, 1) * fr;
+      const y = fy + Math.floor(k / 2) * fr * 2.2 + g.f(-1, 1) * fr * 0.5;
+      fish += el("ellipse", { cx: x, cy: y, rx: fr, ry: fr * 0.5 });
+      fish += el("polygon", {
+        points: pts([
+          [x - dir * fr * 0.8, y],
+          [x - dir * fr * 1.6, y - fr * 0.5],
+          [x - dir * fr * 1.6, y + fr * 0.5],
+        ]),
+      });
+    }
+    out += el("g", { fill: hsl(g.f(30, 60), 70, 60), opacity: "0.75" }, fish);
+  }
+  // Its shadow on the sand.
+  out += el("ellipse", { cx, cy: gy + h * 0.02, rx: L * 0.38, ry: unit * 0.025, fill: "#000", opacity: "0.1" });
+  const [open, at] = pose(cx, cy, L, dir, tilt);
+  const clip = g.id("shark");
+  const bodyD = scaled(
+    L,
+    `M 0.5 0.01 C 0.49 -0.05 0.4 -0.1 0.22 -0.11 C 0.02 -0.12 -0.25 -0.06 -0.4 -0.02 L -0.4 0.02
+     C -0.25 0.05 0.0 0.11 0.2 0.1 C 0.38 0.09 0.48 0.06 0.5 0.01 Z`,
+  );
+  out += open;
+  // Tail, fins behind the body, then the body.
+  out += el("path", {
+    d: scaled(
+      L,
+      "M -0.37 -0.02 Q -0.45 -0.1 -0.56 -0.23 Q -0.54 -0.08 -0.5 0.0 Q -0.52 0.06 -0.55 0.13 Q -0.46 0.06 -0.37 0.02 Z",
+    ),
+    fill: body,
+  });
+  out += el("path", { d: scaled(L, "M 0.14 -0.1 Q 0.06 -0.2 -0.04 -0.27 Q -0.04 -0.16 -0.1 -0.09 Z"), fill: body });
+  out += el("path", { d: scaled(L, "M -0.24 -0.05 L -0.3 -0.1 L -0.31 -0.03 Z"), fill: body });
+  out += el("path", { d: scaled(L, "M -0.18 0.06 L -0.25 0.11 L -0.26 0.04 Z"), fill: dark });
+  out += el("defs", {}, el("clipPath", { id: clip }, el("path", { d: bodyD })));
+  out += el("path", { d: bodyD, fill: body });
+  // Pale belly, clipped to the body.
+  out += el(
+    "g",
+    { "clip-path": `url(#${clip})` },
+    el("path", { d: scaled(L, "M 0.52 0.02 C 0.3 0.05 0.0 0.04 -0.42 0.0 L -0.42 0.2 L 0.52 0.2 Z"), fill: belly }),
+    el("ellipse", { cx: 0.12 * L, cy: -0.09 * L, rx: 0.25 * L, ry: 0.018 * L, fill: "#fff", opacity: "0.2" }),
+  );
+  // Gill slits, the near fin, eye and a slight smile.
+  out += el("path", {
+    d: scaled(
+      L,
+      "M 0.27 -0.04 Q 0.255 0.0 0.265 0.04 M 0.24 -0.045 Q 0.225 0.0 0.235 0.045 M 0.21 -0.05 Q 0.195 0.0 0.205 0.05",
+    ),
+    stroke: dark,
+    "stroke-width": L * 0.007,
+    "stroke-linecap": "round",
+    fill: "none",
+  });
+  out += el("path", { d: scaled(L, "M 0.18 0.07 Q 0.12 0.17 0.0 0.22 Q 0.06 0.12 0.06 0.08 Z"), fill: dark });
+  out += el("path", {
+    d: scaled(L, "M 0.46 0.045 Q 0.41 0.075 0.35 0.06"),
+    stroke: mix(body, "#000000", 0.5),
+    "stroke-width": L * 0.008,
+    "stroke-linecap": "round",
+    fill: "none",
+  });
+  out += el("circle", { cx: 0.37 * L, cy: -0.03 * L, r: 0.022 * L, fill: "#1a1a22" });
+  out += el("circle", { cx: 0.377 * L, cy: -0.037 * L, r: 0.007 * L, fill: "#fff" });
+  out += el("circle", { cx: 0.38 * L, cy: 0.03 * L, r: 0.02 * L, fill: "#ff8a8a", opacity: "0.25" });
+  out += "</g>";
+  const nose = at(0.52, 0.0);
+  out += bubbles(g, nose[0] + dir * L * 0.03, nose[1], L * 0.05, unit * 0.012);
+  note.alt(
+    `A friendly shark swimming over the seabed${school ? " past a school of small fish" : ""}, light rays above`,
+  );
+  const eye = at(0.37, -0.03);
+  note.focus(eye[0], eye[1]);
+  note.frame(
+    ...boxAround(
+      (
+        [
+          [0.16, -0.13],
+          [0.54, -0.13],
+          [0.54, 0.12],
+          [0.16, 0.12],
+        ] as const
+      ).map(p => at(p[0], p[1])),
+    ),
+  );
+  return out;
+});
+
+const SEALS = ["#8a8f96", "#7d746c", "#9aa3ab", "#666d76", "#a39a8e"] as const;
+
+/** A seal lying on a rock or an ice floe by the sea, head raised, whiskers out. */
+export const seal = defineKind("seal", "Seal", { perch: ["rock", "ice"] }, (g, w, h, note) => {
+  const unit = Math.min(w, h);
+  const perch = g.option("perch", g.pick(["rock", "ice"] as const));
+  const ice = perch === "ice";
+  const dir = g.pick([-1, 1]);
+  const body = g.pick(SEALS);
+  const dark = mix(body, "#000000", 0.25);
+  const light = mix(body, "#ffffff", 0.35);
+  const spotted = g.chance(0.5);
+  const hz = h * g.f(0.4, 0.5);
+  let out = sky(g, w, h, ice ? g.f(195, 215) : g.f(185, 215));
+  if (ice && g.chance(0.6)) {
+    // Far-off icebergs on the horizon.
+    for (let k = g.i(1, 2); k > 0; k--) {
+      const x = w * g.f(0.05, 0.95);
+      const r = unit * g.f(0.06, 0.12);
+      out += el("polygon", {
+        points: pts([
+          [x - r, hz + 1],
+          [x - r * 0.4, hz - r * 0.5],
+          [x, hz - r * 0.35],
+          [x + r * 0.35, hz - r * 0.7],
+          [x + r, hz + 1],
+        ]),
+        fill: "#eef6fb",
+      });
+    }
+  }
+  const sea = g.id("sea");
+  const seaHue = g.f(190, 210);
+  out +=
+    el("defs", {}, lin(sea, [hsl(seaHue, 50, ice ? 45 : 50), hsl(seaHue + 10, 55, 30)])) +
+    el("rect", { y: hz, width: w, height: h - hz, fill: `url(#${sea})` });
+  const L = Math.min(w * 0.56, h * 1.1) * g.f(0.85, 1);
+  const cx = w * g.f(0.46, 0.54);
+  const top = h * g.f(0.7, 0.75);
+  const half = L * 0.62;
+  // The perch: the seal lies on its flat top.
+  if (ice) {
+    const depth = (h - top) * 0.35;
+    const rim = L * 0.07;
+    out += el("polygon", {
+      points: pts([
+        [cx - half - rim, top + rim * 0.4],
+        [cx + half + rim * 1.2, top + rim * 0.6],
+        [cx + half + rim, top + rim * 0.6 + depth],
+        [cx - half - rim * 0.8, top + rim * 0.4 + depth],
+      ]),
+      fill: "#a9d4e6",
+    });
+    out += el("polygon", {
+      points: pts([
+        [cx - half - rim * 0.2, top - rim],
+        [cx + half * 0.6, top - rim * 1.2],
+        [cx + half + rim * 1.4, top - rim * 0.3],
+        [cx + half + rim * 1.2, top + rim * 0.6],
+        [cx - half - rim, top + rim * 0.4],
+        [cx - half - rim * 1.3, top - rim * 0.2],
+      ]),
+      fill: "#f4fafd",
+    });
+  } else {
+    const rock = hsl(g.f(200, 230), g.f(6, 12), g.f(38, 46));
+    const r = L * 0.12;
+    const base = top + Math.min((h - top) * 0.75, L * 0.32);
+    // A boulder with a flat top, a smaller one leaning on it, and a lit upper edge.
+    out += el("path", {
+      d: s`M ${cx - half - r * 1.8} ${base}
+           C ${cx - half - r * 1.9} ${top + r * 0.9} ${cx - half - r * 0.8} ${top} ${cx - half + r * 0.4} ${top}
+           L ${cx + half - r * 0.3} ${top}
+           C ${cx + half + r * 0.6} ${top - r * 0.1} ${cx + half + r * 1.5} ${top + r * 0.4} ${cx + half + r * 1.6} ${top + r}
+           C ${cx + half + r * 2.3} ${top + r * 1.1} ${cx + half + r * 2.4} ${base - r} ${cx + half + r * 2.5} ${base} Z`,
+      fill: rock,
+    });
+    const side = g.pick([-1, 1]);
+    const bx = cx + side * (half + r * 1.2);
+    out += el("ellipse", {
+      cx: bx,
+      cy: base - r * 0.3,
+      rx: r * 1.5,
+      ry: r * 1.1,
+      fill: mix("#5a6470", "#000000", 0.15),
+    });
+    out += el("path", {
+      d: s`M ${cx - half - r * 0.9} ${top + r * 0.35} Q ${cx - half - r * 0.6} ${top + r * 0.05} ${cx - half + r * 0.4} ${top + r * 0.05}
+           L ${cx + half - r * 0.3} ${top + r * 0.05}`,
+      stroke: "#fff",
+      "stroke-width": r * 0.22,
+      "stroke-linecap": "round",
+      fill: "none",
+      opacity: "0.15",
+    });
+    out += el("path", {
+      d: s`M ${cx - half * 0.5} ${base - r * 0.2} q ${r * 0.3} ${-r * 0.7} ${r * 0.1} ${-r * 1.3}
+           M ${cx + half * 0.45} ${base - r * 0.2} q ${-r * 0.2} ${-r * 0.5} ${r * 0.2} ${-r * 1}`,
+      stroke: "#000",
+      "stroke-width": r * 0.12,
+      "stroke-linecap": "round",
+      fill: "none",
+      opacity: "0.15",
+    });
+    // Water lapping at the foot of the rock.
+    out += el("rect", { y: base - r * 0.3, width: w, height: h, fill: hsl(seaHue + 5, 55, 36) });
+    out += el("path", {
+      d: s`M ${cx - half - r * 2.2} ${base - r * 0.3} Q ${cx - half - r} ${base - r * 0.7} ${cx - half} ${base - r * 0.3}
+           M ${cx + half} ${base - r * 0.3} Q ${cx + half + r} ${base - r * 0.7} ${cx + half + r * 2.4} ${base - r * 0.3}`,
+      stroke: "#fff",
+      "stroke-width": "2.5",
+      "stroke-linecap": "round",
+      fill: "none",
+      opacity: "0.7",
+    });
+  }
+  // Shadow under the seal.
+  out += el("ellipse", {
+    cx: cx - dir * L * 0.08,
+    cy: top,
+    rx: L * 0.45,
+    ry: L * 0.025,
+    fill: "#000",
+    opacity: "0.18",
+  });
+  // How high the head is held.
+  const lift = Math.round(g.f(0, 0.08) * 1000) / 1000;
+  const hx = 0.33;
+  const hy = -0.36 - lift;
+  const [open, at] = pose(cx - dir * L * 0.05, top, L, dir, 0);
+  const clip = g.id("seal");
+  const bodyD = scaled(
+    L,
+    `M 0.28 ${-0.22 - lift * 0.5} C 0.3 -0.05 0.2 0 0.05 0 L -0.3 0 C -0.42 0 -0.48 -0.03 -0.52 -0.06
+     C -0.46 -0.12 -0.3 -0.2 -0.1 -0.24 C 0.05 -0.27 0.18 ${-0.33 - lift} 0.25 ${-0.4 - lift} Z`,
+  );
+  out += open;
+  // Hind flippers, fanned at the tail.
+  out += el("path", {
+    d: scaled(
+      L,
+      "M -0.48 -0.05 Q -0.58 -0.14 -0.66 -0.16 Q -0.62 -0.1 -0.65 -0.06 Q -0.6 -0.06 -0.63 0.0 Q -0.56 -0.01 -0.47 -0.03 Z",
+    ),
+    fill: dark,
+  });
+  out += el(
+    "defs",
+    {},
+    el("clipPath", { id: clip }, el("path", { d: bodyD }), el("circle", { cx: hx * L, cy: hy * L, r: 0.13 * L })),
+  );
+  out += el("path", { d: bodyD, fill: body });
+  out += el("circle", { cx: hx * L, cy: hy * L, r: 0.13 * L, fill: body });
+  // Paler underside and a sheen on the back, then spots, all clipped to body and head.
+  let marks = el("ellipse", { cx: 0.0, cy: 0.02 * L, rx: 0.4 * L, ry: 0.07 * L, fill: light });
+  marks += el("ellipse", { cx: -0.1 * L, cy: -0.23 * L, rx: 0.22 * L, ry: 0.02 * L, fill: "#fff", opacity: "0.2" });
+  if (spotted) {
+    let spots = "";
+    for (let k = g.i(10, 16); k > 0; k--) {
+      const x = g.f(-0.45, 0.35);
+      const backY = x > 0.2 ? -0.3 : -0.24 + Math.abs(x + 0.1) * 0.25;
+      spots += el("ellipse", {
+        cx: x * L,
+        cy: g.f(backY + 0.02, -0.07) * L,
+        rx: g.f(0.008, 0.016) * L,
+        ry: g.f(0.006, 0.012) * L,
+      });
+    }
+    marks += el("g", { fill: dark, opacity: "0.55" }, spots);
+  }
+  out += el("g", { "clip-path": `url(#${clip})` }, marks);
+  // Front flipper against the side.
+  out += el("ellipse", {
+    cx: 0.12 * L,
+    cy: -0.05 * L,
+    rx: 0.09 * L,
+    ry: 0.03 * L,
+    fill: dark,
+    transform: s`rotate(25 ${0.12 * L} ${-0.05 * L})`,
+  });
+  // Muzzle, nose, eye and whiskers.
+  out += el("ellipse", { cx: (hx + 0.1) * L, cy: (hy + 0.04) * L, rx: 0.075 * L, ry: 0.055 * L, fill: light });
+  out += el("ellipse", { cx: (hx + 0.165) * L, cy: (hy + 0.01) * L, rx: 0.02 * L, ry: 0.015 * L, fill: "#2a2424" });
+  out += el("path", {
+    d: scaled(L, `M ${hx + 0.12} ${hy + 0.075} Q ${hx + 0.1} ${hy + 0.09} ${hx + 0.07} ${hy + 0.075}`),
+    stroke: "#2a2424",
+    "stroke-width": L * 0.007,
+    "stroke-linecap": "round",
+    fill: "none",
+  });
+  const sleepy = g.chance(0.2);
+  const ex = (hx + 0.04) * L;
+  const ey = (hy - 0.03) * L;
+  if (sleepy)
+    out += el("path", {
+      d: s`M ${ex - L * 0.025} ${ey} Q ${ex} ${ey + L * 0.02} ${ex + L * 0.025} ${ey}`,
+      stroke: "#1a1414",
+      "stroke-width": L * 0.009,
+      "stroke-linecap": "round",
+      fill: "none",
+    });
+  else {
+    out += el("circle", { cx: ex, cy: ey, r: L * 0.032, fill: "#1a1414" });
+    out += el("circle", { cx: ex + L * 0.01, cy: ey - L * 0.01, r: L * 0.01, fill: "#fff" });
+  }
+  let whiskers = "";
+  for (const [dy, ty] of [
+    [0.03, -0.01],
+    [0.045, 0.035],
+    [0.06, 0.08],
+  ])
+    whiskers += scaled(L, `M ${hx + 0.13} ${hy + dy} L ${hx + 0.25} ${hy + ty} `);
+  out += el("path", {
+    d: whiskers,
+    stroke: light,
+    "stroke-width": L * 0.005,
+    "stroke-linecap": "round",
+    opacity: "0.9",
+  });
+  out += "</g>";
+  note.alt(
+    `A ${spotted ? "spotted harbor " : ""}seal ${sleepy ? "dozing" : "lying"} on ${ice ? "an ice floe" : "a rock"} by the sea`,
+  );
+  const eye = at(hx + 0.04, hy - 0.03);
+  note.focus(eye[0], eye[1]);
+  note.frame(
+    ...boxAround(
+      (
+        [
+          [hx - 0.15, hy - 0.15],
+          [hx + 0.27, hy - 0.15],
+          [hx + 0.27, hy + 0.14],
+          [hx - 0.15, hy + 0.14],
+        ] as const
+      ).map(p => at(p[0], p[1])),
+    ),
+  );
+  return out;
+});

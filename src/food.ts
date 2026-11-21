@@ -2219,3 +2219,1507 @@ export const salad = defineKind("salad", "Salad", (g, w, h, note) => {
   note.focus(cx, cy);
   return out;
 });
+
+const CRUSTS = ["#c98a4a", "#b8743a", "#d39552", "#a8652f"];
+const CRUMBS = ["#f3e2bf", "#f1dcb0", "#f6e8c8"];
+const BOARDS = ["#d9b07a", "#c8955c", "#e3c290", "#b98250"];
+
+/** The face of a sandwich loaf's slice, `fw` wide and `fh` tall, standing on (x, y): a square base under a dome. */
+function sliceFace(x: number, y: number, fw: number, fh: number): string {
+  const hw = fw / 2;
+  const r = fw * 0.12;
+  return s`M ${x - hw} ${y - r} L ${x - hw} ${y - fh * 0.62}
+    C ${x - hw * 1.15} ${y - fh * 1.08} ${x + hw * 1.15} ${y - fh * 1.08} ${x + hw} ${y - fh * 0.62}
+    L ${x + hw} ${y - r} Q ${x + hw} ${y} ${x + hw - r} ${y} L ${x - hw + r} ${y} Q ${x - hw} ${y} ${x - hw} ${y - r} Z`;
+}
+
+/** A knife lying flat on a surface, squashed by `sq`: its handle starts at x0 and the blade points along `dir`. */
+function flatKnife(x0: number, y: number, len: number, width: number, dir: number, sq: number, handle: string): string {
+  const hw = (width / 2) * sq;
+  const x1 = x0 + dir * len * 0.34;
+  const x2 = x0 + dir * len;
+  const grip: Point[] = [
+    [x0, y - hw * 0.75],
+    [x1, y - hw * 0.75],
+    [x1, y + hw * 0.75],
+    [x0, y + hw * 0.75],
+  ];
+  const blade: Point[] = [
+    [x1, y - hw],
+    [x2, y - hw],
+    [x2 - dir * len * 0.12, y + hw],
+    [x1, y + hw],
+  ];
+  const shift = (p: Point[]) => p.map(([x, py]): Point => [x + width * 0.08, py + width * 0.12]);
+  return (
+    el("polygon", { points: pts(shift(blade)), fill: "#000", opacity: "0.12" }) +
+    el("polygon", { points: pts(shift(grip)), fill: "#000", opacity: "0.12" }) +
+    el("polygon", { points: pts(blade), fill: "#cfd3d8" }) +
+    el("polygon", {
+      points: pts(grip),
+      fill: handle,
+      stroke: handle,
+      "stroke-width": hw * 0.5,
+      "stroke-linejoin": "round",
+    })
+  );
+}
+
+/** A loaf on a board: a scored round loaf, a baguette or a sandwich loaf, sometimes with slices and a knife. */
+export const bread = defineKind("bread", "Bread", (g, w, h, note) => {
+  const unit = Math.min(w, h);
+  const loaf = g.pick(["boule", "boule", "baguette", "sliced"] as const);
+  const crust = g.pick(CRUSTS);
+  const crumb = g.pick(CRUMBS);
+  const count = g.chance(loaf === "sliced" ? 0.85 : 0.45) ? g.i(2, 3) : 0;
+  const knife = g.chance(count ? 0.65 : 0.3);
+  const slate = g.chance(0.15);
+  const board = slate ? "#454b52" : g.pick(BOARDS);
+  const boardW = Math.min(w * 0.9, unit * 1.45);
+  const depth = unit * 0.22;
+  const thick = unit * 0.04;
+  // The loaf's length and height and a slice's width, before they are fitted to the board
+  let ll = loaf === "baguette" ? boardW * (count ? 0.6 : 0.82) : loaf === "boule" ? unit * 0.6 : unit * 0.58;
+  let lh = loaf === "baguette" ? unit * 0.15 : loaf === "boule" ? unit * 0.4 : unit * 0.36;
+  let sw = loaf === "baguette" ? lh * 1.3 : loaf === "boule" ? ll * 0.62 : lh * 0.9;
+  const span = () => sw * (1 + (count - 1) * 0.62);
+  const extent = () => ll / 2 + (count ? ll * 0.2 + span() : ll / 2);
+  const f = Math.min(1, (boardW * 0.9) / extent());
+  ll *= f;
+  lh *= f;
+  sw *= f;
+  const cx = w / 2;
+  const lx = cx - extent() / 2 + ll / 2;
+  // The board's front edge, so that the loaf and board sit in the middle of the picture
+  const front = Math.min(h * 0.95 - thick, (h * 1.04 + depth * 0.58 + lh - thick) / 2);
+  const back = front - depth;
+  let out = table(g, w, h, Math.max(h * 0.1, back - unit * 0.07), hsl(g.f(0, 360), 30, 86), hsl(g.f(20, 40), 35, 62));
+  // The board: shadow, front edge, top and a little grain
+  const bx = cx - boardW / 2;
+  const corner = unit * 0.03;
+  out += el("rect", {
+    x: bx + unit * 0.01,
+    y: back + depth * 0.4,
+    width: boardW,
+    height: depth * 0.6 + thick + unit * 0.02,
+    rx: corner,
+    fill: "#000",
+    opacity: "0.12",
+  });
+  out += el("rect", {
+    x: bx,
+    y: back + depth * 0.5,
+    width: boardW,
+    height: depth * 0.5 + thick,
+    rx: corner,
+    fill: mix(board, "#000000", 0.22),
+  });
+  out += el("rect", { x: bx, y: back, width: boardW, height: depth, rx: corner, ry: corner * 0.6, fill: board });
+  if (!slate) {
+    let grain = "";
+    for (let k = 0; k < 3; k++) {
+      const gy = back + depth * (0.25 + k * 0.25 + g.f(-0.05, 0.05));
+      const gx = bx + boardW * g.f(0.05, 0.3);
+      grain += s`M${gx} ${gy}h${boardW * g.f(0.3, 0.6)}`;
+    }
+    out += el("path", { d: grain, stroke: "#000", "stroke-width": unit * 0.005, opacity: "0.1" });
+  }
+  const yb = back + depth * 0.42;
+  const shade = mix(crust, "#000000", 0.2);
+  const light = mix(crust, crumb, 0.55);
+  // A soft shadow under the loaf
+  out += el("ellipse", { cx: lx, cy: yb, rx: ll * 0.52, ry: depth * 0.1, fill: "#000", opacity: "0.15" });
+  let what: string;
+  if (loaf === "boule") {
+    const hw = ll / 2;
+    const dome = s`M ${lx - hw * 0.88} ${yb} Q ${lx - hw} ${yb} ${lx - hw} ${yb - lh * 0.3}
+      C ${lx - hw} ${yb - lh * 1.25} ${lx + hw} ${yb - lh * 1.25} ${lx + hw} ${yb - lh * 0.3}
+      Q ${lx + hw} ${yb} ${lx + hw * 0.88} ${yb} Z`;
+    const clip = g.id("boule");
+    out += el("defs", {}, el("clipPath", { id: clip }, el("path", { d: dome })));
+    let inside = el("path", { d: dome, fill: crust });
+    inside += el("ellipse", { cx: lx, cy: yb, rx: hw * 1.1, ry: lh * 0.3, fill: "#000", opacity: "0.12" });
+    const floured = g.chance(0.5);
+    if (floured)
+      inside += el("ellipse", {
+        cx: lx - hw * 0.1,
+        cy: yb - lh * 0.9,
+        rx: hw * 0.7,
+        ry: lh * 0.3,
+        fill: "#fff",
+        opacity: "0.3",
+      });
+    out += el("g", { "clip-path": `url(#${clip})` }, inside);
+    // The scoring: cuts opened up in the oven, each a dark groove with a pale edge
+    const score = g.pick(["cross", "slash", "wheat", "lines"] as const);
+    let d = "";
+    if (score === "cross")
+      d = s`M ${lx - hw * 0.55} ${yb - lh * 0.7} Q ${lx} ${yb - lh * 0.56} ${lx + hw * 0.55} ${yb - lh * 0.7}
+            M ${lx + hw * 0.04} ${yb - lh * 0.95} Q ${lx - hw * 0.04} ${yb - lh * 0.66} ${lx} ${yb - lh * 0.36}`;
+    else if (score === "slash")
+      d = s`M ${lx - hw * 0.62} ${yb - lh * 0.5} Q ${lx - hw * 0.1} ${yb - lh * 1.02} ${lx + hw * 0.58} ${yb - lh * 0.78}`;
+    else if (score === "lines")
+      for (let k = 0; k < 3; k++) {
+        const ly = yb - lh * (0.85 - k * 0.2);
+        const lw = hw * (0.5 + k * 0.12);
+        d += s`M ${lx - lw} ${ly} Q ${lx} ${ly + lh * 0.12} ${lx + lw} ${ly}`;
+      }
+    else {
+      d = s`M ${lx} ${yb - lh * 0.95} Q ${lx - hw * 0.03} ${yb - lh * 0.65} ${lx} ${yb - lh * 0.35}`;
+      for (let k = 0; k < 3; k++) {
+        const ly = yb - lh * (0.85 - k * 0.18);
+        for (const side of [-1, 1]) d += s`M ${lx + side * hw * 0.06} ${ly} l ${side * hw * 0.28} ${lh * 0.1}`;
+      }
+    }
+    out += el("path", { d, stroke: shade, "stroke-width": lh * 0.075, fill: "none", "stroke-linecap": "round" });
+    out += el("path", {
+      d,
+      stroke: light,
+      "stroke-width": lh * 0.04,
+      fill: "none",
+      "stroke-linecap": "round",
+      transform: s`translate(0 ${-lh * 0.018})`,
+    });
+    what = `A round sourdough loaf${floured ? ", dusted with flour," : ""} with ${
+      {
+        cross: "a scored cross",
+        slash: "a single curved score",
+        wheat: "a scored wheat pattern",
+        lines: "scored lines",
+      }[score]
+    }`;
+  } else if (loaf === "baguette") {
+    const xL = lx - ll / 2;
+    const xR = lx + ll / 2;
+    const cut = count > 0;
+    const right = cut
+      ? s`L ${xR} ${yb} L ${xR} ${yb - lh * 0.8} Q ${xR} ${yb - lh} ${xR - lh * 0.3} ${yb - lh}`
+      : s`L ${xR - lh * 0.7} ${yb} Q ${xR - lh * 0.15} ${yb} ${xR} ${yb - lh * 0.3}
+          Q ${xR - lh * 0.25} ${yb - lh * 0.95} ${xR - lh * 1.1} ${yb - lh}`;
+    out += el("path", {
+      d: s`M ${xL} ${yb - lh * 0.3} Q ${xL + lh * 0.15} ${yb} ${xL + lh * 0.7} ${yb} ${right}
+           L ${xL + lh * 1.1} ${yb - lh} Q ${xL + lh * 0.25} ${yb - lh * 0.95} ${xL} ${yb - lh * 0.3} Z`,
+      fill: crust,
+    });
+    out += el("rect", {
+      x: xL + lh * 0.5,
+      y: yb - lh * 0.28,
+      width: ll - lh,
+      height: lh * 0.2,
+      fill: "#000",
+      opacity: "0.08",
+    });
+    // Diagonal scores along the top
+    const n = Math.max(3, Math.round((ll - lh * 2) / (lh * 1.25)));
+    const seg = (ll - lh * 2) / n;
+    for (let k = 0; k < n; k++) {
+      const sx = xL + lh + seg * (k + 0.5);
+      const rot = s`rotate(-14 ${sx} ${yb - lh * 0.75})`;
+      out += el("ellipse", { cx: sx, cy: yb - lh * 0.72, rx: seg * 0.42, ry: lh * 0.1, fill: shade, transform: rot });
+      out += el("ellipse", { cx: sx, cy: yb - lh * 0.77, rx: seg * 0.38, ry: lh * 0.07, fill: light, transform: rot });
+    }
+    if (cut) {
+      out += el("ellipse", { cx: xR, cy: yb - lh * 0.5, rx: lh * 0.2, ry: lh * 0.5, fill: shade });
+      out += el("ellipse", { cx: xR, cy: yb - lh * 0.5, rx: lh * 0.15, ry: lh * 0.42, fill: crumb });
+    }
+    what = cut ? "A baguette, cut" : "A baguette";
+  } else {
+    // The loaf's side, then its cut end facing the slices: the same cross-section as a slice
+    const fw = lh * 0.9;
+    const xL = lx - ll / 2;
+    const xF = lx + ll / 2 - fw / 2;
+    const r = lh * 0.1;
+    out += el("path", {
+      d: s`M ${xL + r} ${yb} L ${xF} ${yb} L ${xF} ${yb - lh * 0.96} L ${xL + lh * 0.3} ${yb - lh * 0.96}
+           Q ${xL} ${yb - lh * 0.96} ${xL} ${yb - lh * 0.62} L ${xL} ${yb - r} Q ${xL} ${yb} ${xL + r} ${yb} Z`,
+      fill: crust,
+    });
+    out += el("path", {
+      d: s`M ${xL + lh * 0.2} ${yb - lh * 0.84} Q ${xL + lh * 0.3} ${yb - lh * 0.9} ${xF - lh * 0.2} ${yb - lh * 0.9}`,
+      stroke: "#fff",
+      "stroke-width": lh * 0.05,
+      fill: "none",
+      "stroke-linecap": "round",
+      opacity: "0.25",
+    });
+    out += el("path", { d: sliceFace(xF, yb, fw, lh), fill: shade });
+    out += el("path", { d: sliceFace(xF, yb - lh * 0.045, fw * 0.88, lh * 0.89), fill: crumb });
+    what = "A sandwich loaf, cut";
+  }
+  // Slices lying flat in front of the loaf, each overlapping the one before
+  const sq = 0.38;
+  const sy = back + depth * 0.68;
+  let sx = lx + ll * 0.2 + sw / 2;
+  for (let k = 0; k < count; k++) {
+    const x = sx + sw * g.f(-0.04, 0.04);
+    const y = sy + depth * g.f(-0.04, 0.04);
+    if (loaf === "sliced") {
+      // The loaf's cross-section, as on its cut end
+      const fh = sw / 0.9;
+      const flat = (d: string, fillColor: string, op?: string) =>
+        el("path", {
+          d,
+          fill: fillColor,
+          opacity: op,
+          transform: s`translate(0 ${y}) scale(1 ${sq}) translate(0 ${-y})`,
+        });
+      out += flat(sliceFace(x + sw * 0.05, y + fh / 2 + sw * 0.12, sw, fh), "#000", "0.12");
+      out += flat(sliceFace(x, y + fh / 2, sw, fh), crust);
+      out += flat(sliceFace(x, y + fh / 2 - fh * 0.045, sw * 0.88, fh * 0.89), crumb);
+    } else {
+      const rx = sw / 2;
+      const ry = Math.min(rx * (loaf === "boule" ? 0.5 : 0.55), depth * 0.2);
+      out += el("ellipse", { cx: x + rx * 0.05, cy: y + ry * 0.25, rx, ry, fill: "#000", opacity: "0.12" });
+      out += el("ellipse", { cx: x, cy: y, rx, ry, fill: crust });
+      out += el("ellipse", { cx: x, cy: y - ry * 0.04, rx: rx * 0.86, ry: ry * 0.8, fill: crumb });
+    }
+    sx += sw * 0.62;
+  }
+  if (knife) {
+    const dir = g.chance(0.5) ? 1 : -1;
+    const kl = Math.min(boardW * 0.48, unit * 0.62);
+    const kx = dir > 0 ? bx + boardW * 0.06 : bx + boardW * 0.06 + kl;
+    out += flatKnife(kx, back + depth * 0.87, kl, unit * 0.09, dir, 0.45, g.pick(["#2b2b2b", "#6b4a2e", "#8b5a3c"]));
+  }
+  const extras = andList([count > 0 && `${numberWord(count)} slices`, knife && "a knife"]);
+  note.alt(`${what} on a ${slate ? "slate" : "wooden"} board${extras ? `, with ${extras}` : ""}`);
+  note.focus(lx, yb - lh * 0.55);
+  return out;
+});
+
+const PASTRIES = ["#d98c3f", "#e3a04f", "#cf8236"];
+
+/** A croissant `size` across, the middle of its underside resting at (x, y): a crescent, its tips curling toward us. */
+function croissantShape(g: Rand, x: number, y: number, size: number, color: string): string {
+  const hc = size * 0.4;
+  const reach = size * 0.46;
+  const drop = hc * 0.35;
+  const base = (t: number) => y + drop * t * t;
+  const thick = (t: number) => hc * Math.max(0.12, 1 - 0.8 * Math.abs(t) ** 1.6);
+  const ring: Point[] = [];
+  for (let k = -6; k <= 6; k++) ring.push([x + (k / 6) * reach, base(k / 6) - thick(k / 6)]);
+  for (let k = 5; k >= -5; k--) ring.push([x + (k / 6) * reach * 0.97, base(k / 6)]);
+  const body = smoothClosed(ring);
+  const dark = mix(color, "#000000", 0.25);
+  const lit = mix(color, "#ffffff", 0.3);
+  const clip = g.id(`croissant${Math.round(x)}`);
+  let out = el("ellipse", {
+    cx: x,
+    cy: y + drop * 0.35,
+    rx: size * 0.44,
+    ry: hc * 0.12,
+    fill: "#000",
+    opacity: "0.15",
+  });
+  out += el("defs", {}, el("clipPath", { id: clip }, el("path", { d: body })));
+  let inside = el("path", { d: body, fill: color });
+  // Each layer's highlight, then the grooves between the layers, bowed away from the middle
+  let grooves = "";
+  const edges = [-0.82, -0.55, -0.22, 0.22, 0.55, 0.82];
+  const mids = [-0.95, -0.69, -0.39, 0, 0.39, 0.69, 0.95];
+  for (const t of mids) {
+    const th = thick(t);
+    inside += el("ellipse", {
+      cx: x + t * reach - reach * 0.04,
+      cy: base(t) - th * 0.68,
+      rx: reach * 0.09 * (1 - 0.4 * Math.abs(t)),
+      ry: th * 0.2,
+      fill: lit,
+      opacity: "0.55",
+    });
+  }
+  for (const t of edges) {
+    const th = thick(t);
+    const sx = x + t * reach;
+    const bow = Math.sign(t) * th * 0.28;
+    grooves += s`M ${sx - bow * 0.3} ${base(t) - th - hc * 0.1} Q ${sx + bow} ${base(t) - th * 0.5} ${sx - bow * 0.3} ${base(t) + hc * 0.1}`;
+  }
+  inside += el("path", { d: grooves, stroke: dark, "stroke-width": hc * 0.07, fill: "none" });
+  // Darker underside
+  inside += el("path", {
+    d: s`M ${x - reach} ${base(1) - hc * 0.1} Q ${x} ${y - drop - hc * 0.1} ${x + reach} ${base(1) - hc * 0.1}`,
+    stroke: dark,
+    "stroke-width": hc * 0.2,
+    fill: "none",
+    opacity: "0.35",
+  });
+  out += el("g", { "clip-path": `url(#${clip})` }, inside);
+  return out;
+}
+
+/** One or two croissants on a plate, sometimes with a cup of coffee beside them. */
+export const croissant = defineKind("croissant", "Croissant", (g, w, h, note) => {
+  const unit = Math.min(w, h);
+  const two = g.chance(0.4);
+  const cupWanted = g.chance(0.55);
+  const cup = cupWanted && w >= h * 1.2;
+  const size = unit * (two ? 0.5 : 0.6);
+  const cr = unit * 0.13;
+  const prx = Math.min(size * (two ? 0.98 : 0.8), (w * 0.94 - (cup ? unit * 0.08 + cr * 3 : 0)) / 2);
+  const pry = prx * 0.26;
+  const rowW = prx * 2 + (cup ? unit * 0.08 + cr * 3 : 0);
+  const cx = w / 2 - rowW / 2 + prx;
+  const hc = size * 0.42;
+  const plateY = Math.min(h * 0.95 - pry * 1.12, h / 2 + hc * 0.5 + (two ? pry * 0.3 : 0));
+  let out = table(
+    g,
+    w,
+    h,
+    Math.max(h * 0.12, plateY - pry - unit * 0.08),
+    hsl(g.f(0, 360), 30, 86),
+    hsl(g.f(20, 40), 35, 62),
+  );
+  out += sidePlate(cx, plateY, prx, pry, g.pick(["#ffffff", "#ffffff", "#d8ebe4", "#f3e6d0", "#dfe7f5"]));
+  const color = g.pick(PASTRIES);
+  if (two) {
+    out += croissantShape(g, cx - prx * 0.26, plateY - pry * 0.25, size * 0.85, g.pick(PASTRIES));
+    out += croissantShape(g, cx + prx * 0.2, plateY + pry * 0.35, size * 0.9, color);
+  } else out += croissantShape(g, cx, plateY + pry * 0.1, size, color);
+  let latte = false;
+  if (cup) {
+    // A cup of coffee on its saucer, a little behind the plate
+    const x = cx + prx + unit * 0.08 + cr * 1.5;
+    const base = plateY - pry * 0.2;
+    const china = g.pick(["#ffffff", "#ffffff", "#f3e6d0", "#d8ebe4", "#2b5d8a"]);
+    const shade = mix(china, "#000000", 0.12);
+    const ch = cr * 1.05;
+    const top = base - cr * 0.12 - ch;
+    out += el("ellipse", { cx: x, cy: base + cr * 0.05, rx: cr * 1.5, ry: cr * 0.36, fill: "#000", opacity: "0.12" });
+    out += el("ellipse", { cx: x, cy: base, rx: cr * 1.5, ry: cr * 0.34, fill: shade });
+    out += el("ellipse", { cx: x, cy: base - cr * 0.04, rx: cr * 1.42, ry: cr * 0.3, fill: china });
+    // Handle, body and rim
+    out += el("path", {
+      d: s`M ${x + cr * 0.9} ${top + ch * 0.25} C ${x + cr * 1.55} ${top + ch * 0.2} ${x + cr * 1.5} ${top + ch * 0.75} ${x + cr * 0.75} ${top + ch * 0.8}`,
+      stroke: shade,
+      "stroke-width": cr * 0.16,
+      fill: "none",
+    });
+    out += el("path", {
+      d: s`M ${x - cr} ${top} L ${x + cr} ${top} C ${x + cr} ${top + ch * 0.9} ${x + cr * 0.6} ${top + ch} ${x} ${top + ch}
+           C ${x - cr * 0.6} ${top + ch} ${x - cr} ${top + ch * 0.9} ${x - cr} ${top} Z`,
+      fill: china,
+    });
+    out += el("path", {
+      d: s`M ${x + cr * 0.55} ${top + ch * 0.15} C ${x + cr * 0.6} ${top + ch * 0.6} ${x + cr * 0.4} ${top + ch * 0.85} ${x} ${top + ch * 0.95}`,
+      stroke: "#000",
+      "stroke-width": cr * 0.12,
+      fill: "none",
+      opacity: "0.06",
+    });
+    out += el("ellipse", { cx: x, cy: top, rx: cr, ry: cr * 0.26, fill: shade });
+    latte = g.chance(0.6);
+    out += el("ellipse", {
+      cx: x,
+      cy: top + cr * 0.02,
+      rx: cr * 0.88,
+      ry: cr * 0.2,
+      fill: latte ? "#c8955c" : "#4a2c1d",
+    });
+    if (latte)
+      out += el("path", {
+        d: s`M ${x} ${top + cr * 0.15} C ${x - cr * 0.5} ${top} ${x - cr * 0.2} ${top - cr * 0.14} ${x} ${top - cr * 0.04}
+             C ${x + cr * 0.2} ${top - cr * 0.14} ${x + cr * 0.5} ${top} ${x} ${top + cr * 0.15} Z`,
+        fill: "#f3e2bf",
+      });
+  }
+  note.alt(
+    `${two ? "Two croissants" : "A croissant"} on a plate${cup ? `, with ${latte ? "a latte" : "a cup of coffee"} beside it` : ""}`,
+  );
+  note.focus(cx, plateY - hc * 0.5);
+  return out;
+});
+
+/**
+ * A glass's outline from its rim at rimY to its bottom at botY, `half(t)` wide at t (0 at the rim,
+ * 1 at the bottom), with its rim and bottom seen as ellipses squashed by `tilt`.
+ */
+function vessel(cx: number, rimY: number, botY: number, half: (t: number) => number, tilt: number): string {
+  const side: Point[] = [];
+  for (let k = 0; k <= 12; k++) side.push([half(k / 12), rimY + ((botY - rimY) * k) / 12]);
+  const rb = half(1);
+  const rr = half(0);
+  let d = s`M ${cx - rr} ${rimY}`;
+  for (const [hw, y] of side) d += s` L ${cx - hw} ${y}`;
+  d += s` A ${rb} ${rb * tilt} 0 0 0 ${cx + rb} ${botY}`;
+  for (const [hw, y] of [...side].reverse()) d += s` L ${cx + hw} ${y}`;
+  return d + s` A ${rr} ${rr * tilt} 0 0 0 ${cx - rr} ${rimY} Z`;
+}
+
+const CITRUS: [string, string][] = [
+  ["#f2c94c", "#f7e08a"],
+  ["#7cb342", "#c5e17a"],
+  ["#f39a3d", "#f9c37a"],
+  ["#f06a5a", "#f7a89a"],
+];
+
+/** A wheel of citrus, or of kiwi, seen face on. */
+function fruitWheel(x: number, y: number, r: number, rind: string, flesh: string, kiwi = false): string {
+  let out = el("circle", { cx: x, cy: y, r, fill: rind });
+  out += el("circle", { cx: x, cy: y, r: r * 0.88, fill: kiwi ? flesh : "#fbf3d6" });
+  if (kiwi) {
+    let d = "";
+    for (let k = 0; k < 10; k++) {
+      const a = (k * Math.PI) / 5;
+      d += s`M${x + Math.cos(a) * r * 0.42} ${y + Math.sin(a) * r * 0.42}h0.01`;
+    }
+    out += el("circle", { cx: x, cy: y, r: r * 0.3, fill: "#eef2c8" });
+    return out + el("path", { d, stroke: "#2b2b2b", "stroke-width": r * 0.1, "stroke-linecap": "round" });
+  }
+  out += el("circle", { cx: x, cy: y, r: r * 0.8, fill: flesh });
+  let d = "";
+  for (let k = 0; k < 8; k++) {
+    const a = (k * Math.PI) / 4;
+    d += s`M${x} ${y}l${Math.cos(a) * r * 0.8} ${Math.sin(a) * r * 0.8}`;
+  }
+  return out + el("path", { d, stroke: "#fbf3d6", "stroke-width": r * 0.07 });
+}
+
+/** A strawberry `r` across its shoulders, centered on (x, y) and turned `rot` degrees from tip-down. */
+function strawberry(x: number, y: number, r: number, rot: number): string {
+  let seeds = "";
+  for (const [u, v] of [
+    [-0.45, -0.3],
+    [0, -0.35],
+    [0.45, -0.3],
+    [-0.25, 0.15],
+    [0.25, 0.15],
+    [0, 0.6],
+  ])
+    seeds += s`M${u * r} ${v * r}h0.01`;
+  return el(
+    "g",
+    { transform: s`translate(${x} ${y}) rotate(${rot})` },
+    el("path", {
+      d: s`M 0 ${r * 1.1} C ${-r * 1.15} ${r * 0.3} ${-r * 1.1} ${-r * 0.85} 0 ${-r * 0.7}
+           C ${r * 1.1} ${-r * 0.85} ${r * 1.15} ${r * 0.3} 0 ${r * 1.1} Z`,
+      fill: "#e0384f",
+    }),
+    el("path", { d: seeds, stroke: "#f7e08a", "stroke-width": r * 0.1, "stroke-linecap": "round" }),
+    el("path", {
+      d: s`M ${-r * 0.65} ${-r * 0.62} L ${-r * 0.2} ${-r * 0.55} L 0 ${-r * 0.4} L ${r * 0.2} ${-r * 0.55}
+           L ${r * 0.65} ${-r * 0.62} L ${r * 0.25} ${-r * 0.8} L 0 ${-r * 1.05} L ${-r * 0.25} ${-r * 0.8} Z`,
+      fill: "#5aa547",
+    }),
+  );
+}
+
+const DRINKS = ["#e0a03a", "#f28aa0", "#f6d365", "#a8dcc4", "#e8553a", "#e4eef2", "#9b2f45", "#f3b562"];
+const GARNISHES: Record<string, string[]> = {
+  coupe: ["citrus", "cherry", "umbrella"],
+  martini: ["olive", "olive", "cherry", "citrus"],
+  highball: ["citrus", "mint", "umbrella"],
+  tumbler: ["citrus", "cherry", "mint"],
+};
+
+/** A cocktail on a bar or table: a coupe, martini glass, highball or tumbler, with a garnish and sometimes ice. */
+export const cocktail = defineKind("cocktail", "Cocktail", (g, w, h, note) => {
+  const unit = Math.min(w, h);
+  const type = g.pick(["coupe", "martini", "highball", "tumbler"] as const);
+  const garnish = g.pick(GARNISHES[type]);
+  const liquid = g.pick(DRINKS);
+  const dark = g.chance(0.4);
+  const coaster = g.chance(0.35);
+  const straw = type === "highball" || (type === "tumbler" && garnish !== "cherry" && g.chance(0.4));
+  const stemmed = type === "coupe" || type === "martini";
+  // Sizes as fractions of the scale S: rim half-width, bowl height, stem height and foot
+  const [r0, bowl0, stem0] = {
+    coupe: [0.21, 0.13, 0.2],
+    martini: [0.22, 0.21, 0.19],
+    highball: [0.115, 0.44, 0],
+    tumbler: [0.16, 0.26, 0],
+  }[type];
+  const extra0 = Math.max(
+    { umbrella: 0.2, mint: 0.13, citrus: 0.1, olive: 0.1, cherry: 0.05 }[garnish] ?? 0,
+    straw ? 0.12 : 0,
+  );
+  const S = unit * Math.min(1.45, 0.82 / (bowl0 + stem0 + extra0 + 0.03));
+  const R = r0 * S;
+  const bowl = bowl0 * S;
+  const stem = stem0 * S;
+  const extra = extra0 * S;
+  const tilt = 0.2;
+  const cx = w / 2;
+  const foot = stemmed ? S * 0.12 : R;
+  // Low enough to center the glass, high enough to keep a coaster in the picture
+  const baseY = Math.min(
+    h * 0.93,
+    h - Math.max(foot, R) * 1.45 * 0.22 * 1.3 - unit * 0.02,
+    h / 2 + (bowl + stem + extra) / 2 + S * 0.02,
+  );
+  const rimY = baseY - stem - bowl;
+  const wall = dark ? hsl(g.f(0, 360), g.f(20, 35), g.f(22, 30)) : hsl(g.f(0, 360), 30, 86);
+  const wood = dark ? hsl(g.f(15, 35), 35, g.f(30, 40)) : hsl(g.f(20, 40), 35, 62);
+  let out = table(g, w, h, Math.max(h * 0.08, baseY - unit * 0.14), wall, wood);
+  if (coaster) {
+    const cr = Math.max(foot, R) * 1.45;
+    const paper = g.pick(["#fbfaf4", "#2b2b2b", "#c23b22", "#2b5d8a", "#d9b07a"]);
+    out += el("ellipse", { cx, cy: baseY + cr * 0.05, rx: cr, ry: cr * 0.22, fill: mix(paper, "#000000", 0.25) });
+    out += el("ellipse", { cx, cy: baseY, rx: cr, ry: cr * 0.22, fill: paper });
+  }
+  out += el("ellipse", { cx, cy: baseY, rx: foot * 1.05, ry: foot * 0.22, fill: "#000", opacity: "0.18" });
+  const glass = (d: string) => el("path", { d, fill: "#ffffff", opacity: dark ? "0.18" : "0.4" });
+  const edge = (d: string) =>
+    el("path", { d, fill: "none", stroke: "#ffffff", "stroke-width": unit * 0.007, opacity: "0.85" });
+  // The glass's outline and the inside its drink fills
+  let outer: string;
+  let inner: string;
+  let half: (t: number) => number;
+  let innerBot: number;
+  let level: number;
+  if (stemmed) {
+    const bowlBot = rimY + bowl;
+    half = type === "coupe" ? t => R * Math.sqrt(1 - 0.97 * t * t) : t => R * (1 - 0.96 * t);
+    outer = vessel(cx, rimY, bowlBot, half, tilt);
+    innerBot = bowlBot - S * 0.01;
+    inner = vessel(cx, rimY, innerBot, t => half(t) * 0.95, tilt);
+    level = type === "coupe" ? 0.2 : 0.16;
+    // Foot and stem
+    const fy = baseY - foot * 0.2;
+    out += el("ellipse", { cx, cy: fy, rx: foot, ry: foot * 0.2, fill: "#ffffff", opacity: dark ? "0.3" : "0.55" });
+    out += el("ellipse", {
+      cx,
+      cy: fy,
+      rx: foot,
+      ry: foot * 0.2,
+      fill: "none",
+      stroke: "#ffffff",
+      "stroke-width": unit * 0.006,
+    });
+    out += el("rect", {
+      x: cx - S * 0.012,
+      y: bowlBot - S * 0.01,
+      width: S * 0.024,
+      height: fy - bowlBot + S * 0.01,
+      fill: "#ffffff",
+      opacity: dark ? "0.45" : "0.75",
+    });
+  } else {
+    const taper = type === "highball" ? 0.06 : 0.1;
+    half = t => R * (1 - taper * t);
+    outer = vessel(cx, rimY, baseY - R * (1 - taper) * tilt, half, tilt);
+    innerBot = baseY - bowl * (type === "highball" ? 0.08 : 0.14) - R * tilt;
+    inner = vessel(cx, rimY, innerBot, t => half(t) - S * 0.012, tilt);
+    level = type === "highball" ? 0.14 : 0.36;
+  }
+  const halfIn = (t: number) => (stemmed ? half(t) * 0.95 : half(t) - S * 0.012);
+  const levelY = rimY + (innerBot - rimY) * level;
+  out += glass(outer);
+  // The drink, its surface and any ice, all inside the glass
+  const clip = g.id("drink");
+  out += el("defs", {}, el("clipPath", { id: clip }, el("path", { d: inner })));
+  const sr = halfIn(level);
+  let drink = el("rect", {
+    x: cx - R * 1.2,
+    y: levelY,
+    width: R * 2.4,
+    height: baseY - levelY,
+    fill: liquid,
+    opacity: "0.85",
+  });
+  drink += el("ellipse", { cx, cy: levelY, rx: sr, ry: sr * tilt, fill: mix(liquid, "#ffffff", 0.3), opacity: "0.9" });
+  const ice = g.fork("ice");
+  const cube = (x: number, y: number, c: number) =>
+    el("rect", {
+      x: x - c / 2,
+      y: y - c / 2,
+      width: c,
+      height: c,
+      rx: c * 0.18,
+      fill: "#ffffff",
+      "fill-opacity": "0.35",
+      stroke: "#ffffff",
+      "stroke-opacity": "0.75",
+      "stroke-width": c * 0.05,
+      transform: s`rotate(${ice.f(-15, 15)} ${x} ${y})`,
+    });
+  const cherryLeft = type === "tumbler" && garnish === "cherry";
+  if (type === "highball") {
+    const c = halfIn(0.5) * 1.05;
+    for (let k = 0; k < 3; k++) drink += cube(cx + c * ice.f(-0.25, 0.25), innerBot - c * (0.4 + k * 0.92), c);
+  } else if (type === "tumbler") {
+    const c = halfIn(0.5) * (cherryLeft ? 0.95 : 1.1);
+    drink += cube(cx + (cherryLeft ? halfIn(0.5) * 0.25 : c * ice.f(-0.1, 0.1)), innerBot - c * 0.52, c);
+  }
+  out += el("g", { "clip-path": `url(#${clip})` }, drink);
+  if (straw) {
+    const top: Point = [cx + R * 0.7, rimY - extra];
+    out += el("path", {
+      d: s`M ${cx - halfIn(0.8) * 0.3} ${innerBot - S * 0.02} L ${top[0]} ${top[1]}`,
+      stroke: g.pick(["#f25c78", "#2b2b2b", "#4fb4e6", "#f6d365", "#fbfaf4"]),
+      "stroke-width": S * 0.018,
+      "stroke-linecap": "round",
+    });
+  }
+  const gg = g.fork("garnish");
+  if (garnish === "citrus") {
+    const [rind, flesh] = gg.pick(CITRUS);
+    const wr = S * 0.075;
+    out += fruitWheel(cx + R * 0.9, rimY - wr * 0.35, wr, rind, flesh);
+  } else if (garnish === "cherry") {
+    const cr = S * 0.035;
+    const x = cherryLeft ? cx - halfIn(0.8) * 0.55 : cx;
+    // Sunk to the bottom of the glass
+    const y = cherryLeft ? innerBot - cr : type === "coupe" ? innerBot - cr * 1.1 : rimY + (innerBot - rimY) * 0.84;
+    out += el("path", {
+      d: s`M ${x} ${y - cr * 0.8} Q ${x + cr * 0.6} ${y - cr * 3} ${x + cr * 2.2} ${y - cr * 4}`,
+      stroke: "#5a3a1a",
+      "stroke-width": cr * 0.22,
+      fill: "none",
+      "stroke-linecap": "round",
+    });
+    out += el("circle", { cx: x, cy: y, r: cr, fill: "#b3121f" });
+    out += el("circle", { cx: x - cr * 0.35, cy: y - cr * 0.35, r: cr * 0.25, fill: "#fff", opacity: "0.5" });
+  } else if (garnish === "olive") {
+    const a: Point = [cx - R * 0.8, rimY - S * 0.09];
+    const b: Point = [cx + R * 0.12, rimY + bowl * 0.72];
+    out += el("path", {
+      d: s`M ${a[0]} ${a[1]} L ${b[0]} ${b[1]}`,
+      stroke: "#e8d5b0",
+      "stroke-width": S * 0.008,
+      "stroke-linecap": "round",
+    });
+    out += el("circle", { cx: a[0], cy: a[1], r: S * 0.012, fill: "#c23b22" });
+    const angle = (Math.atan2(b[1] - a[1], b[0] - a[0]) * 180) / Math.PI;
+    for (const f of [0.55, 0.78]) {
+      const x = a[0] + (b[0] - a[0]) * f;
+      const y = a[1] + (b[1] - a[1]) * f;
+      out += el("ellipse", {
+        cx: x,
+        cy: y,
+        rx: S * 0.038,
+        ry: S * 0.029,
+        fill: "#8a9a3b",
+        transform: s`rotate(${angle} ${x} ${y})`,
+      });
+      out += el("circle", { cx: x - S * 0.012, cy: y - S * 0.008, r: S * 0.012, fill: "#d9442b" });
+    }
+  } else if (garnish === "mint") {
+    const a: Point = [cx - R * 0.2, levelY + S * 0.02];
+    const b: Point = [cx - R * 0.45, rimY - extra * 0.85];
+    out += el("path", { d: s`M ${a[0]} ${a[1]} L ${b[0]} ${b[1]}`, stroke: "#4f8f34", "stroke-width": S * 0.008 });
+    const angle = (Math.atan2(b[1] - a[1], b[0] - a[0]) * 180) / Math.PI;
+    [0.45, 0.6, 0.75, 0.88, 1].forEach((f, k) => {
+      const x = a[0] + (b[0] - a[0]) * f;
+      const y = a[1] + (b[1] - a[1]) * f;
+      const side = k === 4 ? 0 : k % 2 ? 1 : -1;
+      const turn = angle + side * 55;
+      const lx = x + Math.cos((turn * Math.PI) / 180) * S * 0.03;
+      const ly = y + Math.sin((turn * Math.PI) / 180) * S * 0.03;
+      out += el("ellipse", {
+        cx: lx,
+        cy: ly,
+        rx: S * 0.034,
+        ry: S * 0.018,
+        fill: k % 2 ? "#5aa547" : "#6fbf4f",
+        transform: s`rotate(${turn} ${lx} ${ly})`,
+      });
+    });
+  } else if (garnish === "umbrella") {
+    const a: Point = [cx - R * 0.15, levelY + S * 0.03];
+    const b: Point = [cx + R * 0.45 + S * 0.05, rimY - extra * 0.72];
+    out += el("path", { d: s`M ${a[0]} ${a[1]} L ${b[0]} ${b[1]}`, stroke: "#e8d5b0", "stroke-width": S * 0.008 });
+    const angle = (Math.atan2(b[1] - a[1], b[0] - a[0]) * 180) / Math.PI + 90;
+    const ur = S * 0.1;
+    const paper = gg.pick(["#f25c78", "#4fb4e6", "#f2c14e", "#7bd389", "#9b6bd6"]);
+    let scallops = "";
+    for (let k = 0; k < 4; k++) scallops += s` Q ${ur * (0.75 - k * 0.5)} ${ur * 0.12} ${ur * (0.5 - k * 0.5)} 0`;
+    out += el(
+      "g",
+      { transform: s`translate(${b[0]} ${b[1]}) rotate(${angle})` },
+      el("path", { d: s`M ${-ur} 0 Q 0 ${-ur * 0.75} ${ur} 0${scallops} Z`, fill: paper }),
+      el("path", {
+        d: s`M 0 ${-ur * 0.37} L ${-ur * 0.5} 0 M 0 ${-ur * 0.37} L 0 0 M 0 ${-ur * 0.37} L ${ur * 0.5} 0`,
+        stroke: "#fff",
+        "stroke-width": ur * 0.05,
+        opacity: "0.6",
+      }),
+    );
+  }
+  // The glass in front: its edges, rim and a highlight
+  out += edge(outer);
+  out += el("path", {
+    d: s`M ${cx - half(0.15) * 0.72} ${rimY + (innerBot - rimY) * 0.15} L ${cx - half(0.6) * 0.72} ${rimY + (innerBot - rimY) * 0.6}`,
+    stroke: "#ffffff",
+    "stroke-width": S * 0.014,
+    "stroke-linecap": "round",
+    opacity: "0.55",
+  });
+  const what = {
+    coupe: "A cocktail in a coupe glass",
+    martini: "A martini",
+    highball: "A tall cocktail over ice",
+    tumbler: "A cocktail on the rocks",
+  }[type];
+  const extras = andList([
+    {
+      citrus: "a citrus wheel",
+      cherry: "a cherry",
+      olive: "olives on a pick",
+      mint: "a sprig of mint",
+      umbrella: "a paper umbrella",
+    }[garnish],
+    straw && "a straw",
+  ]);
+  note.alt(`${what} with ${extras} on a ${dark ? "bar" : "table"}`);
+  note.focus(cx, (rimY + innerBot) / 2);
+  return out;
+});
+
+const SMOOTHIES = ["#f28aa0", "#c2416b", "#8e5aa8", "#f6b941", "#9cc95a", "#f3e6cf", "#f39a6b", "#e8d27a"];
+
+/** A smoothie in a tall glass or a jar with a straw, layered or swirled, fruit on the rim and beside it. */
+export const smoothie = defineKind("smoothie", "Smoothie", (g, w, h, note) => {
+  const unit = Math.min(w, h);
+  const jar = g.chance(0.4);
+  const layered = g.chance(0.5);
+  const pool = [...SMOOTHIES];
+  const colors: string[] = [];
+  for (let k = 0; k < 3; k++) colors.push(pool.splice(g.i(0, pool.length - 1), 1)[0]);
+  const rim = g.pick(["strawberry", "citrus", "kiwi"] as const);
+  const side = g.pick(["strawberries", "banana", "blueberries", "kiwi"] as const);
+  const r0 = jar ? 0.15 : 0.13;
+  const h0 = jar ? 0.46 : 0.5;
+  const fw0 = { strawberries: 0.3, banana: 0.36, blueberries: 0.2, kiwi: 0.26 }[side];
+  const gap0 = 0.06;
+  // The row: fruit on the rim hanging past the glass, the glass, a gap and the fruit beside it
+  const row0 = 0.07 + r0 * 2 + gap0 + fw0;
+  const S = Math.min(unit * Math.min(1.4, 0.84 / (h0 + 0.16)), (w * 0.9) / row0);
+  const R = r0 * S;
+  const H = h0 * S;
+  const cx = w / 2 - (row0 * S) / 2 + 0.07 * S + R;
+  const baseY = Math.min(h * 0.92, h / 2 + (H + S * 0.14) / 2 + S * 0.02);
+  const rimY = baseY - H;
+  const tilt = 0.2;
+  let out = table(g, w, h, Math.max(h * 0.08, baseY - unit * 0.14), hsl(g.f(0, 360), 30, 86), hsl(g.f(20, 40), 35, 62));
+  out += el("ellipse", { cx, cy: baseY, rx: R * 1.08, ry: R * 0.22, fill: "#000", opacity: "0.15" });
+  const half = jar
+    ? (t: number) => R * (t < 0.06 ? 0.88 : t < 0.12 ? 0.88 + ((t - 0.06) / 0.06) * 0.12 : 1)
+    : (t: number) => R * (1 - 0.12 * t);
+  const wallW = S * 0.012;
+  const outer = vessel(cx, rimY, baseY - half(1) * tilt, half, tilt);
+  const innerBot = baseY - S * 0.03 - half(1) * tilt;
+  const inner = vessel(cx, rimY, innerBot, t => half(t) - wallW, tilt);
+  const level = jar ? 0.13 : 0.07;
+  const levelY = rimY + (innerBot - rimY) * level;
+  out += el("path", { d: outer, fill: "#ffffff", opacity: "0.45" });
+  const clip = g.id("smoothie");
+  out += el("defs", {}, el("clipPath", { id: clip }, el("path", { d: inner })));
+  let body = el("rect", { x: cx - R * 1.2, y: levelY, width: R * 2.4, height: baseY - levelY, fill: colors[0] });
+  const sg = g.fork("swirl");
+  const layers = sg.i(2, 3);
+  if (layered) {
+    for (let k = 1; k < layers; k++) {
+      const y = innerBot - ((innerBot - levelY) * k) / layers;
+      const amp = S * 0.014;
+      let d = s`M ${cx - R * 1.2} ${levelY - S * 0.05} L ${cx - R * 1.2} ${y}`;
+      for (let j = 0; j < 4; j++) {
+        const x0 = cx - R * 1.2 + j * R * 0.6;
+        d += s` Q ${x0 + R * 0.3} ${y + (j % 2 ? amp : -amp) * sg.f(0.6, 1.4)} ${x0 + R * 0.6} ${y}`;
+      }
+      d += s` L ${cx + R * 1.2} ${levelY - S * 0.05} Z`;
+      body += el("path", { d, fill: colors[k] });
+    }
+  } else {
+    // Ribbons of a second flavor swirled through the first
+    let d = "";
+    for (let k = 0; k < 3; k++) {
+      const y = levelY + (innerBot - levelY) * (0.2 + k * 0.3);
+      d += s`M ${cx - R * 1.1} ${y + S * 0.05} C ${cx - R * 0.3} ${y - S * 0.08} ${cx + R * 0.3} ${y + S * 0.1} ${cx + R * 1.1} ${y - S * 0.04}`;
+    }
+    body += el("path", { d, stroke: colors[1], "stroke-width": R * 0.32, fill: "none", opacity: "0.9" });
+  }
+  const sr = half(level) - wallW;
+  const top = mix(layered ? colors[layers - 1] : colors[0], "#ffffff", 0.2);
+  body += el("ellipse", { cx, cy: levelY, rx: sr, ry: sr * tilt, fill: top });
+  if (g.chance(0.5)) {
+    // Seeds or granola sprinkled on top
+    let d = "";
+    for (const [x, y] of spread(sg, cx, levelY, sr * 0.8, 9, tilt)) d += s`M${x} ${y}h0.01`;
+    body += el("path", {
+      d,
+      stroke: sg.pick(["#2b2b2b", "#c8955c"]),
+      "stroke-width": S * 0.014,
+      "stroke-linecap": "round",
+    });
+  }
+  out += el("g", { "clip-path": `url(#${clip})` }, body);
+  // A thick straw, coming up out of the smoothie
+  const strawColor = g.pick(["#f25c78", "#4fb4e6", "#7bd389", "#fbfaf4", "#2b2b2b"]);
+  const strawD = s`M ${cx + sr * 0.2} ${levelY} L ${cx + R * 0.65} ${rimY - S * 0.14}`;
+  out += el("path", { d: strawD, stroke: strawColor, "stroke-width": S * 0.028, "stroke-linecap": "round" });
+  if (g.chance(0.5))
+    out += el("path", {
+      d: strawD,
+      stroke: strawColor === "#fbfaf4" ? "#f25c78" : "#ffffff",
+      "stroke-width": S * 0.028,
+      "stroke-dasharray": `${Math.max(1, Math.round(S * 0.02))} ${Math.max(1, Math.round(S * 0.02))}`,
+      opacity: "0.8",
+    });
+  // Fruit on the rim, on the side away from the straw
+  const gr = S * 0.055;
+  const rx = cx - R * 0.88;
+  if (rim === "strawberry") out += strawberry(cx - R * 0.95, rimY + gr * 0.05, gr, -15);
+  else if (rim === "kiwi") out += fruitWheel(rx, rimY - gr * 0.4, gr * 1.2, "#8b6a3e", "#8cc152", true);
+  else {
+    const [rind, flesh] = g.pick(CITRUS);
+    out += fruitWheel(rx, rimY - gr * 0.4, gr * 1.2, rind, flesh);
+  }
+  // The glass in front
+  out += el("path", { d: outer, fill: "none", stroke: "#ffffff", "stroke-width": unit * 0.007, opacity: "0.85" });
+  if (jar) {
+    let d = "";
+    for (const t of [0.015, 0.035, 0.055]) {
+      const y = rimY + H * t;
+      d += s`M ${cx - half(0) * 0.98} ${y + R * 0.05} Q ${cx} ${y + R * tilt * 1.2} ${cx + half(0) * 0.98} ${y}`;
+    }
+    out += el("path", { d, stroke: "#ffffff", "stroke-width": S * 0.01, fill: "none", opacity: "0.8" });
+  }
+  out += el("path", {
+    d: s`M ${cx - R * 0.68} ${rimY + H * 0.2} L ${cx - R * 0.68} ${rimY + H * 0.65}`,
+    stroke: "#ffffff",
+    "stroke-width": S * 0.016,
+    "stroke-linecap": "round",
+    opacity: "0.5",
+  });
+  // Fruit on the table beside the glass, resting on it
+  const fg = g.fork("fruit");
+  const fx = cx + R + gap0 * S;
+  const ground = baseY + S * 0.02;
+  const fwid = fw0 * S;
+  if (side === "strawberries") {
+    const n = fg.i(2, 3);
+    const r = S * 0.055;
+    for (let k = 0; k < n; k++)
+      out += strawberry(
+        fx + r + ((fwid - r * 2) * k) / (n - 1) + fg.f(-1, 1),
+        ground - r * 0.95,
+        r,
+        fg.pick([-90, 90]) + fg.f(-10, 10),
+      );
+  } else if (side === "banana") {
+    const bl = fwid;
+    const bt = S * 0.075;
+    const x0 = fx;
+    const x1 = fx + bl;
+    const xm = (x0 + x1) / 2;
+    const yt = ground - bt * 0.9;
+    out += el("ellipse", { cx: xm, cy: ground, rx: bl * 0.4, ry: bt * 0.18, fill: "#000", opacity: "0.12" });
+    out += el("path", {
+      d: s`M ${x0} ${yt} Q ${xm} ${2 * ground - yt} ${x1} ${yt} Q ${xm} ${2 * (ground - bt) - yt} ${x0} ${yt} Z`,
+      fill: "#f6d365",
+      stroke: "#f6d365",
+      "stroke-width": bt * 0.25,
+      "stroke-linejoin": "round",
+    });
+    out += el("path", {
+      d: s`M ${x0 + bl * 0.12} ${yt + bt * 0.05} Q ${xm} ${ground - bt * 0.2} ${x1 - bl * 0.12} ${yt + bt * 0.05}`,
+      stroke: "#e3b43f",
+      "stroke-width": bt * 0.15,
+      fill: "none",
+    });
+    out += el("path", {
+      d: s`M ${x1 - bt * 0.1} ${yt + bt * 0.05} L ${x1 + bt * 0.35} ${yt - bt * 0.35}`,
+      stroke: "#8a6a3a",
+      "stroke-width": bt * 0.3,
+      "stroke-linecap": "round",
+    });
+    out += el("circle", { cx: x0 + bt * 0.05, cy: yt, r: bt * 0.16, fill: "#5a3a1a" });
+  } else if (side === "blueberries") {
+    const r = S * 0.027;
+    const spots: Point[] = [];
+    for (let k = 0; k < 4; k++) spots.push([fx + r + k * r * 2.05, ground - r]);
+    for (let k = 0; k < 2; k++) spots.push([fx + r * 2.05 + k * r * 2.05, ground - r * 2.75]);
+    for (const [x, y] of spots) {
+      const bx = x + fg.f(-0.1, 0.1) * r;
+      out += el("circle", { cx: bx, cy: y, r, fill: "#3b4a8a" });
+      out += el("circle", { cx: bx - r * 0.3, cy: y - r * 0.3, r: r * 0.25, fill: "#fff", opacity: "0.3" });
+      out += el("circle", { cx: bx + r * 0.15, cy: y - r * 0.1, r: r * 0.22, fill: "#232d5a" });
+    }
+  } else {
+    const n = fg.i(1, 2);
+    const r = S * 0.065;
+    for (let k = 0; k < n; k++) {
+      const x = fx + r + k * r * 2.1;
+      const y = ground - r;
+      out += el("ellipse", { cx: x + r * 0.15, cy: y, rx: r * 0.95, ry: r, fill: "#8b6a3e" });
+      out += el("ellipse", { cx: x, cy: y, rx: r * 0.85, ry: r * 0.95, fill: "#8cc152" });
+      let d = "";
+      for (let j = 0; j < 10; j++) {
+        const a = (j * Math.PI) / 5;
+        d += s`M${x + Math.cos(a) * r * 0.38} ${y + Math.sin(a) * r * 0.45}h0.01`;
+      }
+      out += el("ellipse", { cx: x, cy: y, rx: r * 0.25, ry: r * 0.3, fill: "#eef2c8" });
+      out += el("path", { d, stroke: "#2b2b2b", "stroke-width": r * 0.09, "stroke-linecap": "round" });
+    }
+  }
+  const rimText = { strawberry: "a strawberry", citrus: "a citrus wheel", kiwi: "a kiwi slice" }[rim];
+  const sideText = { strawberries: "strawberries", banana: "a banana", blueberries: "blueberries", kiwi: "kiwi" }[side];
+  note.alt(
+    `A ${layered ? "layered" : "swirled"} smoothie in a ${jar ? "jar" : "tall glass"} with a straw and ${rimText} on the rim, ${sideText} beside it`,
+  );
+  note.focus(cx, (rimY + baseY) / 2);
+  return out;
+});
+
+const CHEESES: [string, string][] = [
+  // Paste and rind
+  ["#f6d365", "#e0b04a"],
+  ["#f2b84b", "#d9962e"],
+  ["#fbeec1", "#e8d39a"],
+  ["#f7e3a1", "#c0392b"],
+];
+
+/** A cheese board from above: cheeses, crackers, grapes and more on a wooden or slate board. */
+export const cheeseBoard = defineKind("cheese-board", "Cheese board", (g, w, h, note) => {
+  const unit = Math.min(w, h);
+  let out = fill(w, h, g.pick(["#e9dccb", "#d9cbb5", "#dfe7e2", "#f1e6d2", "#c89a64", "#a87444", "#e3e6ea"]));
+  const slate = g.chance(0.2);
+  const board = slate ? "#3f454c" : g.pick(BOARDS);
+  const bw = w * 0.9;
+  const bh = h * 0.84;
+  const bx = (w - bw) / 2;
+  const by = (h - bh) / 2;
+  const corner = unit * 0.05;
+  out += el("rect", {
+    x: bx + unit * 0.012,
+    y: by + unit * 0.025,
+    width: bw,
+    height: bh,
+    rx: corner,
+    fill: "#000",
+    opacity: "0.15",
+  });
+  out += el("rect", { x: bx, y: by, width: bw, height: bh, rx: corner, fill: board });
+  if (!slate) {
+    // Grain along the board
+    let d = "";
+    const along = bw >= bh;
+    for (let k = 0; k < 7; k++) {
+      const off = g.f(0.05, 0.95);
+      const from = g.f(0.02, 0.4);
+      const len = g.f(0.3, 0.55);
+      d += along
+        ? s`M${bx + bw * from} ${by + bh * off}h${bw * len}`
+        : s`M${bx + bw * off} ${by + bh * from}v${bh * len}`;
+    }
+    out += el("path", { d, stroke: "#000", "stroke-width": unit * 0.005, opacity: "0.08", "stroke-linecap": "round" });
+  }
+  // Six spots on a grid shaped like the board, each holding one thing
+  const aspect = bw / bh;
+  const rows = Math.max(1, Math.round(Math.sqrt(6 / aspect)));
+  const cols = Math.round(6 / rows);
+  const cw = bw / cols;
+  const ch = bh / rows;
+  const rr = Math.min(cw, ch) * 0.48;
+  const extras = ["brie", "slices", "nuts", "blue", "figs"];
+  for (let k = extras.length - 1; k > 0; k--) {
+    const j = g.i(0, k);
+    [extras[k], extras[j]] = [extras[j], extras[k]];
+  }
+  const honey = g.chance(0.8);
+  const items = ["wedge", "crackers", "grapes", ...(honey ? ["honey"] : []), ...extras].slice(0, rows * cols);
+  for (let k = items.length - 1; k > 0; k--) {
+    const j = g.i(0, k);
+    [items[k], items[j]] = [items[j], items[k]];
+  }
+  const ig = g.fork("items");
+  const shadow = (d: string, dx = rr * 0.03, dy = rr * 0.06) =>
+    el("path", { d, fill: "#000", opacity: "0.15", transform: s`translate(${dx} ${dy})` });
+  const sector = (x: number, y: number, a: number, len: number, span: number) =>
+    s`M ${x} ${y} L ${x + Math.cos(a - span) * len} ${y + Math.sin(a - span) * len}
+      A ${len} ${len} 0 0 1 ${x + Math.cos(a + span) * len} ${y + Math.sin(a + span) * len} Z`;
+  items.forEach((item, k) => {
+    const x = bx + cw * ((k % cols) + 0.5) + cw * ig.f(-0.06, 0.06);
+    const y = by + ch * (Math.floor(k / cols) + 0.5) + ch * ig.f(-0.06, 0.06);
+    const a = ig.f(0, Math.PI * 2);
+    if (item === "wedge" || item === "blue") {
+      // A wedge lying on its side: rind along the curved back, holes or veins in the paste
+      const [paste, rind] = item === "blue" ? ["#f1ecd9", "#ddd3b6"] : ig.pick(CHEESES);
+      const len = rr * 1.65;
+      const tx = x - Math.cos(a) * len * 0.58;
+      const ty = y - Math.sin(a) * len * 0.58;
+      out += shadow(sector(tx, ty, a, len, 0.42));
+      out += el("path", { d: sector(tx, ty, a, len, 0.42), fill: rind });
+      out += el("path", { d: sector(tx, ty, a, len * 0.9, 0.4), fill: paste });
+      let d = "";
+      for (const [px, py] of spread(
+        ig,
+        x - Math.cos(a) * len * 0.05,
+        y - Math.sin(a) * len * 0.05,
+        rr * 0.3,
+        item === "blue" ? 8 : 3,
+      ))
+        d += s`M${px} ${py}h0.01`;
+      if (item === "blue" || ig.chance(0.5))
+        out += el("path", {
+          d,
+          stroke: item === "blue" ? "#6f88a6" : mix(paste, "#000000", 0.12),
+          "stroke-width": rr * (item === "blue" ? 0.08 : 0.16),
+          "stroke-linecap": "round",
+        });
+    } else if (item === "slices") {
+      // Slices fanned out, each overlapping the last
+      const [paste] = ig.pick(CHEESES.slice(0, 3));
+      const side = rr * 0.85;
+      const squares: Point[][] = [];
+      for (let j = 0; j < 4; j++) {
+        const sx = x + Math.cos(a) * rr * (j - 1.5) * 0.32;
+        const sy = y + Math.sin(a) * rr * (j - 1.5) * 0.32;
+        const b = a + j * 0.14;
+        const [ux, uy] = [(Math.cos(b) * side) / 2, (Math.sin(b) * side) / 2];
+        squares.push([
+          [sx - ux + uy, sy - uy - ux],
+          [sx + ux + uy, sy + uy - ux],
+          [sx + ux - uy, sy + uy + ux],
+          [sx - ux - uy, sy - uy + ux],
+        ]);
+      }
+      out += el("path", {
+        d: squares.map(q => `M${pts(q).replace(/ /g, "L")}Z`).join(""),
+        fill: "#000",
+        opacity: "0.12",
+        transform: s`translate(${rr * 0.03} ${rr * 0.06})`,
+      });
+      for (const q of squares)
+        out += el("polygon", {
+          points: pts(q),
+          fill: paste,
+          stroke: mix(paste, "#000000", 0.1),
+          "stroke-width": side * 0.03,
+          "stroke-linejoin": "round",
+        });
+    } else if (item === "brie") {
+      // A wheel with a wedge cut and pulled out a little
+      const r = rr * 0.8;
+      const span = 0.38;
+      const cut = s`M ${x} ${y} L ${x + Math.cos(a + span) * r} ${y + Math.sin(a + span) * r}
+                    A ${r} ${r} 0 1 1 ${x + Math.cos(a - span) * r} ${y + Math.sin(a - span) * r} Z`;
+      out += shadow(cut);
+      out += el("path", {
+        d: cut,
+        fill: "#f6f1e4",
+        stroke: "#efd99a",
+        "stroke-width": rr * 0.05,
+        "stroke-linejoin": "round",
+      });
+      out += el("circle", { cx: x, cy: y, r: r * 0.75, fill: "#000", opacity: "0.03" });
+      const ox = x + Math.cos(a) * rr * 0.15;
+      const oy = y + Math.sin(a) * rr * 0.15;
+      out += shadow(sector(ox, oy, a, r, span * 0.9));
+      out += el("path", {
+        d: sector(ox, oy, a, r, span * 0.9),
+        fill: "#f6f1e4",
+        stroke: "#efd99a",
+        "stroke-width": rr * 0.05,
+        "stroke-linejoin": "round",
+      });
+    } else if (item === "crackers") {
+      const round = ig.chance(0.6);
+      const color = ig.pick(["#e3b06a", "#d9a15b", "#ecc88a"]);
+      const cr = rr * 0.38;
+      const b = a + Math.PI / 4;
+      const [ux, uy] = [Math.cos(b) * cr, Math.sin(b) * cr];
+      let dots = "";
+      for (let j = 0; j < 5; j++) {
+        const px = x + Math.cos(a) * rr * (j - 2) * 0.28;
+        const py = y + Math.sin(a) * rr * (j - 2) * 0.28;
+        const square: Point[] = [
+          [px - ux + uy, py - uy - ux],
+          [px + ux + uy, py + uy - ux],
+          [px + ux - uy, py + uy + ux],
+          [px - ux - uy, py - uy + ux],
+        ];
+        const shape = (fillColor: string, dx: number, dy: number, op?: string) =>
+          round
+            ? el("circle", { cx: px + dx, cy: py + dy, r: cr, fill: fillColor, opacity: op })
+            : el("polygon", {
+                points: pts(square.map(([qx, qy]): Point => [qx + dx, qy + dy])),
+                fill: fillColor,
+                opacity: op,
+              });
+        out += shape("#000", rr * 0.03, rr * 0.05, "0.12");
+        out += shape(color, 0, 0);
+        // Docking holes, on the one on top
+        if (j === 4)
+          for (const [u, v] of [
+            [-0.4, -0.4],
+            [0.4, -0.4],
+            [-0.4, 0.4],
+            [0.4, 0.4],
+            [0, 0],
+          ])
+            dots += s`M${px + (u * ux - v * uy) * 1.1} ${py + (u * uy + v * ux) * 1.1}h0.01`;
+      }
+      out += el("path", {
+        d: dots,
+        stroke: mix(color, "#000000", 0.25),
+        "stroke-width": cr * 0.12,
+        "stroke-linecap": "round",
+      });
+    } else if (item === "grapes") {
+      // A bunch, widest at the stem, with each grape lit from the top left
+      const grape = ig.pick(["#7a3b69", "#a8c66c", "#9b2d4a"]);
+      const gr = rr * 0.19;
+      const ux = Math.cos(a);
+      const uy = Math.sin(a);
+      const spots: Point[] = [];
+      [4, 4, 3, 2, 1].forEach((count, row) => {
+        for (let j = 0; j < count; j++) {
+          const along = -rr * 0.68 + row * gr * 1.55;
+          const across = (j - (count - 1) / 2) * gr * 1.75 + ig.f(-0.1, 0.1) * gr;
+          spots.push([x + ux * along - uy * across, y + uy * along + ux * across]);
+        }
+      });
+      out += el("path", {
+        d: s`M ${x - ux * rr * 0.95} ${y - uy * rr * 0.95} L ${x - ux * rr * 0.4} ${y - uy * rr * 0.4}`,
+        stroke: "#7a5a3a",
+        "stroke-width": rr * 0.06,
+        "stroke-linecap": "round",
+      });
+      let shadows = "";
+      for (const [px, py] of spots) shadows += s`M${px + gr * 0.15} ${py + gr * 0.3}h0.01`;
+      out += el("path", {
+        d: shadows,
+        stroke: "#000",
+        "stroke-width": gr * 2,
+        "stroke-linecap": "round",
+        opacity: "0.12",
+      });
+      let dots = "";
+      let shine = "";
+      for (const [px, py] of spots) {
+        dots += s`M${px} ${py}h0.01`;
+        shine += s`M${px - gr * 0.35} ${py - gr * 0.35}h0.01`;
+      }
+      out += el("path", { d: dots, stroke: grape, "stroke-width": gr * 2, "stroke-linecap": "round" });
+      out += el("path", {
+        d: shine,
+        stroke: "#fff",
+        "stroke-width": gr * 0.5,
+        "stroke-linecap": "round",
+        opacity: "0.35",
+      });
+    } else if (item === "nuts") {
+      // Almonds in a little bowl
+      const r = rr * 0.82;
+      const bowl = ig.pick(["#fbfaf4", "#2b5d8a", "#d8ebe4", "#c96f4a"]);
+      out += el("circle", { cx: x + rr * 0.03, cy: y + rr * 0.06, r, fill: "#000", opacity: "0.15" });
+      out += el("circle", { cx: x, cy: y, r, fill: bowl });
+      out += el("circle", { cx: x, cy: y, r: r * 0.86, fill: mix(bowl, "#000000", 0.15) });
+      let d = "";
+      for (const [px, py] of spread(ig, x, y, r * 0.6, 10)) {
+        const b = ig.f(0, Math.PI);
+        d += s`M${px - Math.cos(b) * r * 0.08} ${py - Math.sin(b) * r * 0.08}l${Math.cos(b) * r * 0.16} ${Math.sin(b) * r * 0.16}`;
+      }
+      out += el("path", { d, stroke: "#b9824f", "stroke-width": r * 0.2, "stroke-linecap": "round" });
+    } else if (item === "honey") {
+      // A pot of honey, its dipper resting on the rim
+      const r = rr * 0.62;
+      const pot = ig.pick(["#f3e6d0", "#fbfaf4", "#d8ebe4"]);
+      out += el("circle", { cx: x + rr * 0.03, cy: y + rr * 0.06, r, fill: "#000", opacity: "0.15" });
+      out += el("circle", { cx: x, cy: y, r, fill: pot });
+      out += el("circle", { cx: x, cy: y, r: r * 0.8, fill: "#e8a628" });
+      out += el("ellipse", {
+        cx: x - r * 0.3,
+        cy: y - r * 0.3,
+        rx: r * 0.22,
+        ry: r * 0.12,
+        fill: "#fff",
+        opacity: "0.35",
+      });
+      const ex = x + Math.cos(a) * rr * 1.05;
+      const ey = y + Math.sin(a) * rr * 1.05;
+      out += el("path", {
+        d: s`M ${x + Math.cos(a) * r * 0.2} ${y + Math.sin(a) * r * 0.2} L ${ex} ${ey}`,
+        stroke: "#000",
+        "stroke-width": rr * 0.1,
+        "stroke-linecap": "round",
+        opacity: "0.15",
+        transform: s`translate(${rr * 0.03} ${rr * 0.06})`,
+      });
+      out += el("path", {
+        d: s`M ${x + Math.cos(a) * r * 0.2} ${y + Math.sin(a) * r * 0.2} L ${ex} ${ey}`,
+        stroke: "#c8955c",
+        "stroke-width": rr * 0.1,
+        "stroke-linecap": "round",
+      });
+    } else {
+      // Figs cut in half
+      const n = 3;
+      for (let j = 0; j < n; j++) {
+        const b = a + (j * Math.PI * 2) / n;
+        const px = x + Math.cos(b) * rr * 0.45;
+        const py = y + Math.sin(b) * rr * 0.45;
+        const fr = rr * 0.36;
+        const turn = ig.f(0, 360);
+        const rot = s`rotate(${turn} ${px} ${py})`;
+        const fig = s`M ${px} ${py - fr * 1.25} C ${px + fr * 0.5} ${py - fr * 1.1} ${px + fr} ${py - fr * 0.3} ${px + fr} ${py + fr * 0.15}
+          A ${fr} ${fr * 0.95} 0 0 1 ${px - fr} ${py + fr * 0.15}
+          C ${px - fr} ${py - fr * 0.3} ${px - fr * 0.5} ${py - fr * 1.1} ${px} ${py - fr * 1.25} Z`;
+        out += el("path", {
+          d: fig,
+          fill: "#000",
+          opacity: "0.15",
+          transform: s`translate(${fr * 0.08} ${fr * 0.16}) ${rot}`,
+        });
+        out += el("path", { d: fig, fill: "#6b3a5e", transform: rot });
+        // The flesh, a little below the middle (turned with the fig)
+        const fx = px - Math.sin((turn * Math.PI) / 180) * fr * 0.12;
+        const fy = py + Math.cos((turn * Math.PI) / 180) * fr * 0.12;
+        out += el("circle", { cx: fx, cy: fy, r: fr * 0.8, fill: "#e8b0a0" });
+        out += el("circle", { cx: fx, cy: fy, r: fr * 0.55, fill: "#c44d6b" });
+      }
+    }
+  });
+  // Sprigs of rosemary or a few loose almonds where four spots meet
+  const fg = g.fork("filler");
+  const sprig = fg.chance(0.5);
+  for (let i = 1; i < cols; i++)
+    for (let j = 1; j < rows; j++) {
+      const x = bx + cw * i;
+      const y = by + ch * j;
+      const a = fg.f(0, Math.PI);
+      const len = Math.min(cw, ch) * 0.3;
+      if (sprig) {
+        const ux = Math.cos(a) * len;
+        const uy = Math.sin(a) * len;
+        let d = s`M${x - ux} ${y - uy}L${x + ux} ${y + uy}`;
+        for (let k = 1; k < 8; k++) {
+          const f = -1 + (k * 2) / 8;
+          const px = x + ux * f;
+          const py = y + uy * f;
+          for (const side of [-1, 1])
+            d += s`M${px} ${py}l${(-uy * side + ux * 0.6) * 0.22} ${(ux * side + uy * 0.6) * 0.22}`;
+        }
+        out += el("path", { d, stroke: "#4f7a3a", "stroke-width": len * 0.06, "stroke-linecap": "round" });
+      } else {
+        let d = "";
+        for (let k = 0; k < 3; k++) {
+          const px = x + fg.f(-0.5, 0.5) * len;
+          const py = y + fg.f(-0.5, 0.5) * len;
+          const b = fg.f(0, Math.PI);
+          d += s`M${px - Math.cos(b) * len * 0.1} ${py - Math.sin(b) * len * 0.1}l${Math.cos(b) * len * 0.2} ${Math.sin(b) * len * 0.2}`;
+        }
+        out += el("path", { d, stroke: "#b9824f", "stroke-width": len * 0.26, "stroke-linecap": "round" });
+      }
+    }
+  const names: Record<string, string> = {
+    wedge: "a wedge of cheese",
+    blue: "a veined cheese",
+    slices: "sliced cheese",
+    brie: "a cut wheel of brie",
+    crackers: "crackers",
+    grapes: "grapes",
+    nuts: "a bowl of almonds",
+    honey: "a pot of honey",
+    figs: "figs",
+  };
+  const order = ["wedge", "blue", "brie", "slices", "crackers", "grapes", "figs", "nuts", "honey"].filter(i =>
+    items.includes(i),
+  );
+  note.alt(`A cheese board with ${andList(order.map(i => names[i]))}`);
+  note.focus(w / 2, h / 2);
+  return out;
+});
+
+/** A pleated round dumpling `r` across, seen from above. */
+function roundDumpling(x: number, y: number, r: number, color: string, twist: number): string {
+  let out = el("circle", { cx: x + r * 0.06, cy: y + r * 0.12, r, fill: "#000", opacity: "0.15" });
+  out += el("circle", { cx: x, cy: y, r, fill: color });
+  // Pleats gathered and twisted into a knot on top
+  let d = "";
+  for (let k = 0; k < 8; k++) {
+    const a = twist + (k * Math.PI * 2) / 8;
+    const b = a + 0.9;
+    d += s`M ${x + Math.cos(a) * r * 0.88} ${y + Math.sin(a) * r * 0.88}
+           Q ${x + Math.cos(a + 0.5) * r * 0.55} ${y + Math.sin(a + 0.5) * r * 0.55} ${x + Math.cos(b) * r * 0.14} ${y + Math.sin(b) * r * 0.14}`;
+  }
+  out += el("path", {
+    d,
+    stroke: mix(color, "#000000", 0.14),
+    "stroke-width": r * 0.05,
+    fill: "none",
+    "stroke-linecap": "round",
+  });
+  return out + el("circle", { cx: x, cy: y, r: r * 0.13, fill: mix(color, "#000000", 0.08) });
+}
+
+/** A half-moon dumpling `len` long, lying at (x, y) with its pleated edge turned `rot` degrees from up. */
+function crescentDumpling(x: number, y: number, len: number, color: string, rot: number, browned: boolean): string {
+  const l = len / 2;
+  const hgt = len * 0.6;
+  const shape = s`M ${-l} ${hgt * 0.2} Q 0 ${-hgt * 0.05} ${l} ${hgt * 0.2} C ${l * 0.9} ${-hgt * 0.9} ${-l * 0.9} ${-hgt * 0.9} ${-l} ${hgt * 0.2} Z`;
+  // Pleats just inside the curved edge
+  let pleats = "";
+  for (let k = 0; k < 5; k++) {
+    const u = -0.6 + k * 0.3;
+    const edge = -hgt * 0.62 * (1 - u * u);
+    pleats += s`M ${u * l} ${edge * 0.65} L ${u * l * 1.08} ${edge * 0.95}`;
+  }
+  return el(
+    "g",
+    { transform: s`translate(${x} ${y}) rotate(${rot})` },
+    el("path", { d: shape, fill: "#000", opacity: "0.15", transform: s`translate(${len * 0.03} ${len * 0.06})` }),
+    el("path", { d: shape, fill: color, stroke: mix(color, "#000000", 0.25), "stroke-width": len * 0.025 }),
+    browned
+      ? el("ellipse", { cx: 0, cy: -hgt * 0.12, rx: l * 0.68, ry: hgt * 0.26, fill: "#c98a4a", opacity: "0.75" })
+      : "",
+    el("path", {
+      d: pleats,
+      stroke: mix(color, "#000000", 0.28),
+      "stroke-width": len * 0.03,
+      "stroke-linecap": "round",
+    }),
+  );
+}
+
+/** Dumplings from above: in a bamboo steamer, or in rows on a plate, with dipping sauce and chopsticks. */
+export const dumplings = defineKind("dumplings", "Dumplings", (g, w, h, note) => {
+  const unit = Math.min(w, h);
+  const wide = w >= h;
+  const main = wide ? w : h;
+  const cross = wide ? h : w;
+  let out = fill(w, h, g.pick(["#c89a64", "#a87444", "#2f3a3a", "#e9dccb", "#d9cbb5", "#dfe7e2"]));
+  const steamer = g.chance(0.55);
+  const dish = g.chance(steamer ? 0.7 : 0.85);
+  const sticks = g.chance(0.65);
+  // What lies beside, in a row along the long side of the picture
+  const items: ["dish" | "sticks", number][] = [];
+  if (dish) items.push(["dish", unit * 0.26]);
+  if (sticks && (items.length === 0 || main >= cross * 1.4)) items.push(["sticks", unit * 0.1]);
+  const gap = unit * 0.06;
+  const beside = items.reduce((sum, [, size]) => sum + gap + size, 0);
+  const R = Math.min(unit * (items.length ? 0.41 : 0.44), (main * 0.94 - beside) / 2);
+  let along = main / 2 - beside / 2;
+  const cx = wide ? along : w / 2;
+  const cy = wide ? h / 2 : along;
+  along += R;
+  const sauce = (x: number, y: number, r: number) => {
+    const bowl = g.pick(["#fbfaf4", "#2b5d8a", "#1f2328", "#d8ebe4"]);
+    let d = el("circle", { cx: x + r * 0.05, cy: y + r * 0.1, r, fill: "#000", opacity: "0.15" });
+    d += el("circle", { cx: x, cy: y, r, fill: bowl });
+    d += el("circle", { cx: x, cy: y, r: r * 0.78, fill: "#4a2414" });
+    const sg = g.fork("sauce");
+    let oil = "";
+    for (const [px, py] of spread(sg, x, y, r * 0.6, 5)) oil += s`M${px} ${py}h0.01`;
+    if (sg.chance(0.6))
+      d += el("path", {
+        d: oil,
+        stroke: "#c8501e",
+        "stroke-width": r * 0.18,
+        "stroke-linecap": "round",
+        opacity: "0.75",
+      });
+    d += sprinkles(sg, x, y, 0, r * 0.62, 7, r * 0.07, ["#f3e6c0"], r * 0.05);
+    if (sg.chance(0.6)) {
+      let rings = "";
+      for (const [px, py] of spread(sg, x, y, r * 0.55, 4))
+        rings += s`M${px - r * 0.06} ${py}a${r * 0.06} ${r * 0.06} 0 1 0 ${r * 0.12} 0a${r * 0.06} ${r * 0.06} 0 1 0 ${-r * 0.12} 0`;
+      d += el("path", { d: rings, stroke: "#7bc043", "stroke-width": r * 0.04, fill: "none" });
+    }
+    return (
+      d + el("ellipse", { cx: x - r * 0.3, cy: y - r * 0.35, rx: r * 0.2, ry: r * 0.1, fill: "#fff", opacity: "0.3" })
+    );
+  };
+  const dough = g.pick(["#f6efe1", "#fbf6ec", "#f3ead8", "#e8efd6"]);
+  let style: string;
+  if (steamer) {
+    // The steamer: a bamboo ring, then a liner of paper or a cabbage leaf
+    out += el("circle", { cx: cx + R * 0.03, cy: cy + R * 0.06, r: R, fill: "#000", opacity: "0.18" });
+    out += el("circle", { cx, cy, r: R, fill: "#d9b07a" });
+    out += el("circle", { cx, cy, r: R * 0.95, fill: "none", stroke: "#b98250", "stroke-width": R * 0.015 });
+    out += el("circle", { cx, cy, r: R * 0.89, fill: "#c8955c" });
+    const leaf = g.chance(0.4);
+    out += el("circle", { cx, cy, r: R * 0.84, fill: leaf ? "#c5dd9a" : "#f4ecd8" });
+    if (!leaf) {
+      let holes = "";
+      for (const [px, py] of spread(g, cx, cy, R * 0.78, 22)) holes += s`M${px} ${py}h0.01`;
+      out += el("path", {
+        d: holes,
+        stroke: "#000",
+        "stroke-width": R * 0.025,
+        "stroke-linecap": "round",
+        opacity: "0.12",
+      });
+    } else {
+      let veins = "";
+      for (let k = 0; k < 7; k++) {
+        const a = (k * Math.PI * 2) / 7;
+        veins += s`M${cx} ${cy}l${Math.cos(a) * R * 0.8} ${Math.sin(a) * R * 0.8}`;
+      }
+      out += el("path", { d: veins, stroke: "#eef5d8", "stroke-width": R * 0.025, opacity: "0.8" });
+    }
+    // A ring of dumplings, with one in the middle when there are six or more
+    const count = g.i(4, 8);
+    const centered = count >= 6;
+    const m = centered ? count - 1 : count;
+    const ringK = Math.max(centered ? 2.1 : 0, 1.1 / Math.sin(Math.PI / m));
+    const c = (R * 0.8) / (ringK + 1);
+    const a0 = g.f(0, Math.PI * 2);
+    const dg = g.fork("dumplings");
+    if (centered) out += roundDumpling(cx, cy, c, dough, dg.f(0, 6));
+    for (let k = 0; k < m; k++) {
+      const a = a0 + (k * Math.PI * 2) / m;
+      out += roundDumpling(
+        cx + Math.cos(a) * c * ringK,
+        cy + Math.sin(a) * c * ringK,
+        c * dg.f(0.94, 1),
+        dough,
+        dg.f(0, 6),
+      );
+    }
+    style = "Pleated dumplings in a bamboo steamer";
+  } else {
+    out += topPlate(cx, cy, R, g.pick(["#ffffff", "#ffffff", "#1f2328", "#d8ebe4", "#2b5d8a"]));
+    const browned = g.chance(0.5);
+    // Two or three overlapping rows, the back row first, turned a little as a whole
+    const rows = g.i(2, 3);
+    const per = rows === 3 ? 3 : g.i(3, 4);
+    const step = 0.62;
+    const rise = 0.5;
+    const bw = 1 + step * (per - 1);
+    const bh = 0.5 + rise * (rows - 1);
+    const len = Math.min((R * 1.55) / bw, (R * 1.2) / bh);
+    const turn = g.f(-15, 15);
+    const ca = Math.cos((turn * Math.PI) / 180);
+    const sa = Math.sin((turn * Math.PI) / 180);
+    const dg = g.fork("dumplings");
+    for (let row = 0; row < rows; row++)
+      for (let k = 0; k < per; k++) {
+        const u = (k * step - (bw - 1) / 2) * len + dg.f(-0.03, 0.03) * len;
+        const v = (row * rise - (bh - 0.5) / 2 + 0.1) * len;
+        out += crescentDumpling(cx + u * ca - v * sa, cy + u * sa + v * ca, len, dough, turn + dg.f(-6, 6), browned);
+      }
+    style = `${browned ? "Pan-fried" : "Steamed"} dumplings in rows on a plate`;
+  }
+  // What lies beside
+  for (const [item, size] of items) {
+    along += gap + size / 2;
+    const [x, y]: Point = wide ? [along, h / 2] : [w / 2, along];
+    along += size / 2;
+    if (item === "dish") out += sauce(x, y, size / 2);
+    else {
+      // A pair of chopsticks lying lengthwise across the row
+      const len = Math.min(cross * 0.84, R * 2.1);
+      const color = g.pick(["#8b5a3c", "#c23b22", "#2b2b2b", "#e8d5b0"]);
+      let d = "";
+      for (const side of [-1, 1]) {
+        const u = side * size * 0.22;
+        const tip = side * size * 0.08;
+        const poly: Point[] = [
+          [u - unit * 0.014, -len / 2],
+          [u + unit * 0.014, -len / 2],
+          [tip + unit * 0.007, len / 2],
+          [tip - unit * 0.007, len / 2],
+        ];
+        d += `M${pts(poly.map(([p, q]): Point => (wide ? [x + p, y + q] : [x + q, y + p]))).replace(/ /g, "L")}Z`;
+      }
+      out += el("path", { d, fill: "#000", opacity: "0.15", transform: s`translate(${unit * 0.01} ${unit * 0.018})` });
+      out += el("path", { d, fill: color, stroke: color, "stroke-width": unit * 0.004, "stroke-linejoin": "round" });
+    }
+  }
+  const side = items.map(([item]) => (item === "dish" ? "a dish of dipping sauce" : "chopsticks"));
+  note.alt(`${style}${side.length ? `, ${andList(side)} beside it` : ""}`);
+  note.focus(cx, cy);
+  return out;
+});

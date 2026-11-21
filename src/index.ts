@@ -17,12 +17,15 @@ import {
   bear,
   bird,
   cat,
+  cow,
+  deer,
   dog,
   elephant,
   fish,
   fox,
   frog,
   giraffe,
+  horse,
   koala,
   lion,
   owl,
@@ -32,6 +35,7 @@ import {
   rabbit,
   sheep,
   snail,
+  squirrel,
   whale,
 } from "./animals";
 import {
@@ -50,8 +54,24 @@ import {
   triangles,
   waves,
 } from "./art";
-import { bee, butterfly, crab, duck, hedgehog, jellyfish, ladybug, mouse, octopus, turtle } from "./critters";
+import {
+  bee,
+  butterfly,
+  crab,
+  dolphin,
+  duck,
+  hedgehog,
+  jellyfish,
+  ladybug,
+  mouse,
+  octopus,
+  seal,
+  shark,
+  turtle,
+} from "./critters";
 import { daisy, hibiscus, lotus, poppy, rose, sunflower, tulip } from "./blooms";
+import { chicken, flamingo, hummingbird, parrot } from "./birds";
+import { bridge, castle, cottage, greenhouse, rowHouses, windmill } from "./buildings";
 import { portrait } from "./faces";
 import { backpack, handbag, perfume, sneakers, sunglasses, watch } from "./products";
 import { controller, headphones, laptop, phone, speaker } from "./gadgets";
@@ -59,11 +79,16 @@ import { cafe, group, pair, reader, walker, worker } from "./people";
 import { gingham, gradient, marble, plaid, terrazzo, topography } from "./patterns";
 import {
   avocado,
+  bread,
   burger,
   cake,
+  cheeseBoard,
+  cocktail,
   cookies,
+  croissant,
   cupcake,
   donut,
+  dumplings,
   egg,
   iceCream,
   pancakes,
@@ -72,13 +97,18 @@ import {
   popsicle,
   ramen,
   salad,
+  smoothie,
   sushi,
   taco,
   watermelon,
 } from "./food";
 import {
+  aurora,
   autumn,
   beach,
+  campsite,
+  canal,
+  canyon,
   city,
   dunes,
   farm,
@@ -89,7 +119,11 @@ import {
   lighthouse,
   mountains,
   night,
+  rainbow,
+  rainyStreet,
+  savanna,
   sea,
+  terraces,
   volcano,
   winter,
 } from "./landscapes";
@@ -121,12 +155,15 @@ export {
   bear,
   bird,
   cat,
+  cow,
+  deer,
   dog,
   elephant,
   fish,
   fox,
   frog,
   giraffe,
+  horse,
   koala,
   lion,
   owl,
@@ -136,6 +173,7 @@ export {
   rabbit,
   sheep,
   snail,
+  squirrel,
   whale,
 } from "./animals";
 export {
@@ -154,8 +192,24 @@ export {
   triangles,
   waves,
 } from "./art";
-export { bee, butterfly, crab, duck, hedgehog, jellyfish, ladybug, mouse, octopus, turtle } from "./critters";
+export {
+  bee,
+  butterfly,
+  crab,
+  dolphin,
+  duck,
+  hedgehog,
+  jellyfish,
+  ladybug,
+  mouse,
+  octopus,
+  seal,
+  shark,
+  turtle,
+} from "./critters";
 export { daisy, hibiscus, lotus, poppy, rose, sunflower, tulip } from "./blooms";
+export { chicken, flamingo, hummingbird, parrot } from "./birds";
+export { bridge, castle, cottage, greenhouse, rowHouses, windmill } from "./buildings";
 export { portrait } from "./faces";
 export { backpack, handbag, perfume, sneakers, sunglasses, watch } from "./products";
 export { controller, headphones, laptop, phone, speaker } from "./gadgets";
@@ -163,11 +217,16 @@ export { cafe, group, pair, reader, walker, worker } from "./people";
 export { gingham, gradient, marble, plaid, terrazzo, topography } from "./patterns";
 export {
   avocado,
+  bread,
   burger,
   cake,
+  cheeseBoard,
+  cocktail,
   cookies,
+  croissant,
   cupcake,
   donut,
+  dumplings,
   egg,
   iceCream,
   pancakes,
@@ -176,13 +235,18 @@ export {
   popsicle,
   ramen,
   salad,
+  smoothie,
   sushi,
   taco,
   watermelon,
 } from "./food";
 export {
+  aurora,
   autumn,
   beach,
+  campsite,
+  canal,
+  canyon,
   city,
   dunes,
   farm,
@@ -193,7 +257,11 @@ export {
   lighthouse,
   mountains,
   night,
+  rainbow,
+  rainyStreet,
+  savanna,
   sea,
+  terraces,
   volcano,
   winter,
 } from "./landscapes";
@@ -264,6 +332,14 @@ export const landscapes = [
   winter,
   autumn,
   farm,
+  rainbow,
+  canyon,
+  savanna,
+  aurora,
+  rainyStreet,
+  campsite,
+  terraces,
+  canal,
 ] as const;
 export const art = [
   field,
@@ -312,6 +388,17 @@ export const animals = [
   octopus,
   jellyfish,
   crab,
+  horse,
+  deer,
+  cow,
+  squirrel,
+  chicken,
+  parrot,
+  flamingo,
+  hummingbird,
+  dolphin,
+  shark,
+  seal,
 ] as const;
 export const food = [
   donut,
@@ -331,6 +418,12 @@ export const food = [
   cookies,
   pie,
   salad,
+  bread,
+  croissant,
+  cocktail,
+  smoothie,
+  cheeseBoard,
+  dumplings,
 ] as const;
 export const objects = [
   fruitBowl,
@@ -361,6 +454,7 @@ export const products = [
   controller,
 ] as const;
 export const patterns = [terrazzo, marble, gingham, plaid, topography, gradient] as const;
+export const buildings = [cottage, windmill, castle, bridge, rowHouses, greenhouse] as const;
 export const vehicles = [car, bicycle, sailboat, hotAirBalloon, rocket, train, bus, airplane] as const;
 
 /** Every category by name, for listing them (in a demo, say). */
@@ -372,6 +466,7 @@ export const categories = {
   food,
   objects,
   plants,
+  buildings,
   vehicles,
   products,
   patterns,
@@ -386,6 +481,7 @@ export const kinds = [
   ...food,
   ...objects,
   ...plants,
+  ...buildings,
   ...vehicles,
   ...products,
   ...patterns,
@@ -426,6 +522,17 @@ export const faces = [
   mouse,
   octopus,
   crab,
+  horse,
+  deer,
+  cow,
+  squirrel,
+  chicken,
+  parrot,
+  flamingo,
+  hummingbird,
+  dolphin,
+  shark,
+  seal,
 ] as const;
 
 /**

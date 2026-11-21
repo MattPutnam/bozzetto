@@ -1,5 +1,5 @@
 import { defineKind, el, facing, fill, hsl, lin, mix, pts, qpt, s, type Notes, type Point, type Rand } from "./core";
-import { blob } from "./shapes";
+import { atLeast, blob } from "./shapes";
 import { andList } from "./words";
 
 const COATS = [
@@ -1128,9 +1128,11 @@ function arm(
   );
 }
 
-/** Path data for a tube along a quadratic curve, `w0` wide at p0 and `w1` at p2, with round ends. */
-function tube(p0: Point, p1: Point, p2: Point, w0: number, w1: number): string {
-  const steps = 8;
+/**
+ * Path data for a tube along a quadratic curve, `w0` wide at p0 and `w1` at p2, with round ends.
+ * Fewer `steps` keep straight or gently bent tubes small.
+ */
+function tube(p0: Point, p1: Point, p2: Point, w0: number, w1: number, steps = 8): string {
   const left: Point[] = [];
   const right: Point[] = [];
   for (let k = 0; k <= steps; k++) {
@@ -2328,5 +2330,962 @@ export const koala = defineKind("koala", "Koala", (g, w, h, note) => {
   note.focus(fx, hy);
   // Head and its big ears.
   note.frame(cx - rx * 1.45, hy - ry * 1.2, rx * 2.9, ry * 2.4);
+  return out;
+});
+
+// Shapes shared by the hoofed animals below.
+
+/**
+ * Points on a head that runs from the poll `p` toward the muzzle at `a` degrees from straight down
+ * (90 is level, pointing forward): `t` along the head and `k` out toward the forehead side.
+ */
+function headAxis(p: Point, a: number): (t: number, k: number) => Point {
+  const ux = Math.sin((a * Math.PI) / 180);
+  const uy = Math.cos((a * Math.PI) / 180);
+  return (t, k) => [p[0] + ux * t + uy * k, p[1] + uy * t - ux * k];
+}
+
+/** The bounds of some points, padded by `pad`, as [x, y, width, height]. */
+function bounds(points: readonly Point[], pad: number): [number, number, number, number] {
+  const xs = points.map(p => p[0]);
+  const ys = points.map(p => p[1]);
+  const x = Math.min(...xs) - pad;
+  const y = Math.min(...ys) - pad;
+  return [x, y, Math.max(...xs) + pad - x, Math.max(...ys) + pad - y];
+}
+
+/**
+ * A hoofed leg: a tapering upper leg from `top` to the knee or hock, a slim lower leg to `foot`,
+ * then a hoof. `sock` paints the lower part (`sockLen` of it, from the hoof up) in another color.
+ */
+function hoofLeg(
+  top: Point,
+  knee: Point,
+  foot: Point,
+  w0: number,
+  w1: number,
+  paint: string,
+  hoof: string,
+  hoofLen: number,
+  sock = "",
+  sockLen = 0.5,
+): string {
+  const dx = foot[0] - knee[0];
+  const dy = foot[1] - knee[1];
+  const len = Math.hypot(dx, dy) || 1;
+  // The upper leg: a quad tapering from w0 at the top to the lower leg's width at the knee
+  const ul = Math.hypot(knee[0] - top[0], knee[1] - top[1]) || 1;
+  const nx = (knee[1] - top[1]) / ul;
+  const ny = -(knee[0] - top[0]) / ul;
+  const a0 = w0 / 2;
+  const a1 = (w1 * 1.2) / 2;
+  let out = el("polygon", {
+    points: pts([
+      [top[0] + nx * a0, top[1] + ny * a0],
+      [knee[0] + nx * a1, knee[1] + ny * a1],
+      [knee[0] - nx * a1, knee[1] - ny * a1],
+      [top[0] - nx * a0, top[1] - ny * a0],
+    ]),
+    fill: paint,
+  });
+  out += el("circle", { cx: knee[0], cy: knee[1], r: a1, fill: paint });
+  out += limb(knee[0], knee[1], foot[0], foot[1], w1, paint);
+  if (sock) out += limb(foot[0] - dx * sockLen, foot[1] - dy * sockLen, foot[0], foot[1], w1 * 1.04, sock);
+  out += el("path", {
+    d: s`M ${foot[0]} ${foot[1]} L ${foot[0] + (dx / len) * hoofLen} ${foot[1] + (dy / len) * hoofLen}`,
+    stroke: hoof,
+    "stroke-width": w1 * 1.2,
+  });
+  return out;
+}
+
+/** Path data for a circle, so many small ones can share one path. */
+const dot = (x: number, y: number, r: number): string =>
+  s`M ${x - r} ${y} a ${r} ${r} 0 1 0 ${r * 2} 0 a ${r} ${r} 0 1 0 ${-r * 2} 0 `;
+
+/** Grass flowers scattered over the ground below the horizon. */
+function meadowFlowers(g: Rand, w: number, h: number, hz: number, size: number): string {
+  let out = "";
+  for (let k = g.i(4, 9); k > 0; k--)
+    out += el("circle", {
+      cx: w * g.f(0, 1),
+      cy: hz + (h - hz) * g.f(0.3, 1),
+      r: size * 0.008,
+      fill: g.pick(["#ffffff", "#f6d25c", "#f4a3c0"]),
+    });
+  return out;
+}
+
+const HORSES = [
+  { coat: "#8b4a26", mane: "#231a16", points: "#2a1d17" },
+  { coat: "#b45f2c", mane: "#8f431c" },
+  { coat: "#a8562a", mane: "#ecd7a6" },
+  { coat: "#bdbab5", mane: "#77726f", dapple: "#dedbd6" },
+  { coat: "#2c2725", mane: "#151211" },
+  { coat: "#d8a85c", mane: "#f5ebd3" },
+  { coat: "#7d4a2b", mane: "#2a1d17", patch: "#f5f0e8" },
+] as const;
+
+/** A horse side on in a paddock or meadow, standing, walking or grazing, with a flowing mane and tail. */
+export const horse = defineKind("horse", "Horse", (g, w, h, note) => {
+  const coat = g.pick(HORSES);
+  const dir = g.pick([-1, 1]);
+  const sz = Math.min(h * 0.64, w * 0.5) * g.f(0.9, 1);
+  const hz = h * g.f(0.48, 0.58);
+  const gy = h * g.f(0.86, 0.91);
+  const grazing = g.chance(0.35);
+  const walking = !grazing && g.chance(0.45);
+  const brx = sz * 0.36;
+  const bry = sz * 0.15;
+  const legLen = sz * 0.42;
+  const cy = gy - legLen - bry * 0.75;
+  const cx = w / 2 - dir * sz * 0.08 + w * g.f(-0.03, 0.03);
+  const far = mix(coat.coat, "#000000", 0.2);
+  const hoofPaint = "#3b322d";
+  // Neck from the shoulders up to the poll, then the head
+  const n0: Point = [cx + brx * 0.58, cy + bry * 0.1];
+  const a = grazing ? g.f(10, 25) : g.f(40, 58);
+  const hl = sz * 0.24;
+  const poll: Point = grazing
+    ? [cx + brx * 1.42, gy - sz * 0.03 - hl * Math.cos((a * Math.PI) / 180)]
+    : [cx + brx * 1.1 + sz * 0.04, cy - sz * g.f(0.36, 0.42)];
+  const n1: Point = grazing ? [cx + brx * 1.2, cy - bry * 0.5] : [cx + brx * 0.9, cy - sz * 0.22];
+  const at = headAxis(poll, a);
+  const scene = g.fork("scene");
+  let out = field(scene, w, h, hz, scene.f(190, 215), [scene.f(80, 115), 40, scene.f(50, 58)]);
+  const fenced = scene.chance(0.6);
+  if (fenced) out += fence(w, hz + (gy - hz) * 0.2, Math.min(w, h) * 0.12, scene.pick(["#a07a54", "#efe9df"]));
+  out += meadowFlowers(scene, w, h, hz, Math.min(w, h));
+  // Shadow
+  out += el("ellipse", {
+    cx: cx + dir * sz * 0.08,
+    cy: gy,
+    rx: sz * 0.55,
+    ry: sz * 0.04,
+    fill: "#000",
+    opacity: "0.15",
+  });
+  out += facing(cx, dir);
+  const fx = cx + brx * 0.55;
+  const bx = cx - brx * 0.6;
+  const ty = cy + bry * 0.3;
+  const hoofLen = sz * 0.035;
+  const socks = !("points" in coat) && g.chance(0.35);
+  const sock = "points" in coat ? coat.points : socks ? "#f5f0e8" : "";
+  const sockLen = "points" in coat ? 1 : 0.55;
+  const front = (x: number, paint: string, lift: boolean, up: number) =>
+    lift
+      ? hoofLeg(
+          [x, ty],
+          [x + sz * 0.07, gy - legLen * 0.52],
+          [x + sz * 0.02, gy - legLen * 0.2],
+          sz * 0.085,
+          sz * 0.042,
+          paint,
+          hoofPaint,
+          hoofLen,
+          sock,
+          sockLen,
+        )
+      : hoofLeg(
+          [x, ty],
+          [x + sz * 0.005, gy - legLen * 0.42 - up],
+          [x, gy - hoofLen - up],
+          sz * 0.085,
+          sz * 0.042,
+          paint,
+          hoofPaint,
+          hoofLen,
+          sock,
+          sockLen,
+        );
+  const hind = (x: number, paint: string, reach: number, up: number) =>
+    hoofLeg(
+      [x, ty - bry * 0.2],
+      [x - sz * 0.04 - reach * 0.5, gy - legLen * 0.38 - up],
+      [x - sz * 0.012 - reach, gy - hoofLen - up],
+      sz * 0.11,
+      sz * 0.042,
+      paint,
+      hoofPaint,
+      hoofLen,
+      sock,
+      sockLen,
+    );
+  // Far legs, a step behind and darker
+  out += hind(bx + sz * 0.04, far, walking ? sz * 0.07 : 0, sz * 0.012);
+  out += front(fx + sz * 0.04, far, false, sz * 0.012);
+  // Tail, in two overlapping locks
+  const swish = g.f(-0.04, 0.06) * sz;
+  const tailTop: Point = [cx - brx * 0.95, cy - bry * 0.6];
+  const tailEnd: Point = [cx - brx * 1.16 - swish, cy + bry + legLen * g.f(0.45, 0.65)];
+  out += el("path", {
+    d:
+      tube(tailTop, [cx - brx * 1.3, cy - bry * 0.1], tailEnd, sz * 0.045, sz * 0.06, 6) +
+      tube(tailTop, [cx - brx * 1.18, cy], [tailEnd[0] + sz * 0.035, tailEnd[1] - sz * 0.03], sz * 0.04, sz * 0.05, 6),
+    fill: coat.mane,
+  });
+  // Body: rump, barrel and chest
+  const body =
+    el("ellipse", { cx: cx - brx * 0.55, cy: cy - bry * 0.08, rx: brx * 0.5, ry: bry * 1.05 }) +
+    el("ellipse", { cx, cy, rx: brx, ry: bry }) +
+    el("ellipse", { cx: cx + brx * 0.6, cy: cy - bry * 0.05, rx: brx * 0.45, ry: bry });
+  const neck = el("path", { d: tube(n0, n1, poll, sz * 0.3, sz * 0.16, 6) });
+  out += el("g", { fill: coat.coat }, body, neck);
+  // Pinto patches or dapples, clipped to the body and neck
+  if ("patch" in coat || "dapple" in coat) {
+    const clip = g.id("hide");
+    const m = g.fork("marks");
+    let marks = "";
+    if ("patch" in coat)
+      for (let k = m.i(3, 5); k > 0; k--)
+        marks += el("path", {
+          d: blob(
+            m,
+            cx + brx * m.f(-1, 1.2),
+            cy + bry * m.f(-1.4, 0.8),
+            sz * m.f(0.08, 0.14),
+            sz * m.f(0.07, 0.11),
+            2,
+            0.2,
+          ),
+          fill: coat.patch,
+        });
+    else {
+      let d = "";
+      for (let k = m.i(14, 22); k > 0; k--)
+        d += dot(cx + brx * m.f(-1, 0.9), cy + bry * m.f(-0.9, 0.6), sz * m.f(0.018, 0.03));
+      marks = el("path", { d, fill: coat.dapple, opacity: "0.7" });
+    }
+    out += el("defs", {}, el("clipPath", { id: clip }, body, neck));
+    out += el("g", { "clip-path": `url(#${clip})` }, marks);
+  }
+  // Near legs
+  out += hind(bx, coat.coat, 0, 0);
+  out += front(fx, coat.coat, walking, 0);
+  // Mane along the crest of the neck
+  const cl = Math.hypot(poll[0] - n0[0], poll[1] - n0[1]) || 1;
+  const nb: Point = [(poll[1] - n0[1]) / cl, -(poll[0] - n0[0]) / cl];
+  const crest = (p: Point, off: number): Point => [p[0] + nb[0] * off, p[1] + nb[1] * off];
+  out += el("path", {
+    d: tube(
+      crest(qpt(n0, n1, poll, 0.25), sz * 0.11),
+      crest(n1, sz * 0.1),
+      crest(poll, sz * 0.065),
+      sz * 0.065,
+      sz * 0.055,
+      6,
+    ),
+    fill: coat.mane,
+  });
+  // Far ear, then the head and cheek
+  const ear = (t: number, k: number, paint: string) =>
+    el("polygon", {
+      points: pts([
+        at(sz * 0.01 + t, sz * 0.032 + k),
+        at(-sz * 0.095 + t, sz * 0.07 + k),
+        at(sz * 0.025 + t, -sz * 0.012 + k),
+      ]),
+      fill: paint,
+    });
+  out += ear(-sz * 0.008, -sz * 0.016, far);
+  out += el("path", { d: tube(poll, at(hl * 0.5, 0), at(hl, 0), sz * 0.13, sz * 0.09, 2), fill: coat.coat });
+  const cheek = at(hl * 0.25, -sz * 0.015);
+  out += el("circle", { cx: cheek[0], cy: cheek[1], r: sz * 0.068, fill: coat.coat });
+  // A blaze or a star on the face
+  const marking = g.pick(["none", "none", "blaze", "star"]);
+  if (marking === "blaze")
+    out += el("path", {
+      d: tube(
+        at(hl * 0.12, sz * 0.042),
+        at(hl * 0.55, sz * 0.042),
+        at(hl * 0.96, sz * 0.03),
+        sz * 0.025,
+        sz * 0.035,
+        2,
+      ),
+      fill: "#f5f0e8",
+    });
+  if (marking === "star") {
+    const star = at(hl * 0.18, sz * 0.04);
+    out += el("circle", { cx: star[0], cy: star[1], r: sz * 0.016, fill: "#f5f0e8" });
+  }
+  // Soft muzzle, nostril and mouth
+  const muzzle = at(hl * 0.98, 0);
+  out += el("circle", { cx: muzzle[0], cy: muzzle[1], r: sz * 0.045, fill: "#000", opacity: "0.12" });
+  const nostril = at(hl * 0.9, sz * 0.018);
+  out += el("circle", { cx: nostril[0], cy: nostril[1], r: sz * 0.011, fill: "#000", opacity: "0.45" });
+  const m0 = at(hl * 0.86, -sz * 0.03);
+  const m1 = at(hl * 1.02, -sz * 0.03);
+  out += el("path", {
+    d: s`M ${m0[0]} ${m0[1]} L ${m1[0]} ${m1[1]}`,
+    stroke: "#000",
+    "stroke-opacity": "0.35",
+    "stroke-width": sz * 0.008,
+    "stroke-linecap": "round",
+  });
+  // Eye with a highlight
+  const eye = at(hl * 0.3, sz * 0.022);
+  out += el("circle", { cx: eye[0], cy: eye[1], r: sz * 0.016, fill: "#1a1412" });
+  out += el("circle", { cx: eye[0] + sz * 0.005, cy: eye[1] - sz * 0.005, r: sz * 0.005, fill: "#ffffff" });
+  // Near ear and forelock
+  out += ear(0, 0, coat.coat);
+  const fl0 = at(-sz * 0.005, sz * 0.035);
+  const fl1 = at(sz * 0.06, sz * 0.05);
+  const flAngle = (Math.atan2(fl1[1] - fl0[1], fl1[0] - fl0[0]) * 180) / Math.PI;
+  out += el("path", { d: leafShape(fl0[0], fl0[1], flAngle, sz * 0.075, 0.3), fill: coat.mane });
+  out += "</g>";
+  const pose = grazing ? "grazing" : walking ? "walking" : "standing";
+  const kind = "patch" in coat ? "A pinto horse" : "dapple" in coat ? "A dappled horse" : "A horse";
+  note.alt(
+    `${kind}${marking === "blaze" ? " with a blaze" : ""} ${pose} in a ${fenced ? "paddock" : "meadow"}, facing ${dir > 0 ? "right" : "left"}`,
+  );
+  note.focus(flipX(cx, dir, eye[0]), eye[1]);
+  // Head and ears, grown to a size an avatar can crop when the horse is small.
+  const [x, y, fw, fh] = atLeast(
+    bounds(
+      [at(-sz * 0.095, sz * 0.07), at(0, sz * 0.06), at(0, -sz * 0.06), at(hl, sz * 0.05), at(hl, -sz * 0.05)],
+      sz * 0.04,
+    ),
+    Math.min(w, h) * 0.26,
+  );
+  flipFrame(note, cx, dir, x, y, fw, fh);
+  return out;
+});
+
+/** A forest clearing: sky, a wall of round treetops and pines on the horizon, and a grassy floor. */
+function clearing(g: Rand, w: number, h: number, hz: number): string {
+  const size = Math.min(w, h);
+  const sky = g.id("sky");
+  const hue = g.f(95, 135);
+  let out =
+    el("defs", {}, lin(sky, [hsl(g.f(190, 210), 45, 78), hsl(g.f(170, 190), 45, 92)])) + fill(w, h, `url(#${sky})`);
+  // Far treetops, then nearer and darker ones, standing on the horizon
+  for (const [shade, lift, scale] of [
+    [44, 0.55, 0.11],
+    [34, 0.25, 0.13],
+  ]) {
+    let d = s`M 0 ${hz} `;
+    // Treetops grow with a wide picture's width, so a panorama doesn't need dozens
+    const unit = Math.max(size, w * 0.4);
+    for (let x = -unit * 0.05; x < w + unit * 0.1; x += unit * scale * g.f(0.9, 1.3)) {
+      const r = unit * scale * g.f(0.8, 1.15);
+      const y = hz - r * lift - size * g.f(0.02, 0.08);
+      d += s`M ${x + r} ${y} A ${r} ${r} 0 1 0 ${x - r} ${y} V ${hz + 1} H ${x + r} Z `;
+    }
+    out += el("path", { d, fill: hsl(hue, 30, shade) });
+  }
+  for (let k = g.i(2, 4); k > 0; k--)
+    out += pine(w * g.f(0, 1), hz + size * 0.01, size * g.f(0.3, 0.42), hsl(hue + 20, 30, g.f(26, 32)));
+  // The grassy clearing, with a patch of sunlight
+  out += el("rect", { y: hz, width: w, height: h - hz, fill: hsl(hue - 20, 40, g.f(52, 58)) });
+  out += el("ellipse", {
+    cx: w * g.f(0.3, 0.7),
+    cy: hz + (h - hz) * 0.6,
+    rx: w * 0.4,
+    ry: (h - hz) * 0.3,
+    fill: "#fff6c8",
+    opacity: "0.18",
+  });
+  return out;
+}
+
+const DEER = [
+  { coat: "#a8703f", pale: "#f4ece0" },
+  { coat: "#94603a", pale: "#efe5d6" },
+  { coat: "#b9824f", pale: "#f6efe4" },
+  { coat: "#8a6046", pale: "#ece3d6" },
+] as const;
+
+/** A deer in a forest clearing: a buck with antlers, a doe, or a spotted fawn, alert or grazing. */
+export const deer = defineKind("deer", "Deer", (g, w, h, note) => {
+  const coat = g.pick(DEER);
+  const dir = g.pick([-1, 1]);
+  const age = g.pick(["buck", "buck", "doe", "doe", "fawn"] as const);
+  const fawn = age === "fawn";
+  const sz = Math.min(h * 0.68, w * 0.56) * g.f(0.9, 1) * (fawn ? 0.78 : 1);
+  const hz = h * g.f(0.5, 0.58);
+  const gy = h * g.f(0.86, 0.91);
+  const grazing = g.chance(0.35);
+  const brx = sz * (fawn ? 0.27 : 0.3);
+  const bry = sz * 0.13;
+  const legLen = sz * (fawn ? 0.48 : 0.44);
+  const cy = gy - legLen - bry * 0.75;
+  const cx = w / 2 - dir * sz * 0.06 + w * g.f(-0.03, 0.03);
+  const far = mix(coat.coat, "#000000", 0.2);
+  const hoofPaint = "#2e2622";
+  const a = grazing ? g.f(15, 30) : g.f(58, 78);
+  const hl = sz * 0.17;
+  const n0: Point = [cx + brx * 0.6, cy + bry * 0.1];
+  const poll: Point = grazing
+    ? [cx + brx * 1.45, gy - sz * 0.02 - hl * Math.cos((a * Math.PI) / 180)]
+    : [cx + brx * 1.05, cy - sz * g.f(0.3, 0.36)];
+  const n1: Point = grazing ? [cx + brx * 1.2, cy - bry * 0.4] : [cx + brx * 0.95, cy - sz * 0.15];
+  const at = headAxis(poll, a);
+  let out = clearing(g.fork("scene"), w, h, hz);
+  // Shadow
+  out += el("ellipse", {
+    cx: cx + dir * sz * 0.08,
+    cy: gy,
+    rx: sz * 0.45,
+    ry: sz * 0.035,
+    fill: "#000",
+    opacity: "0.15",
+  });
+  out += facing(cx, dir);
+  const fx = cx + brx * 0.6;
+  const bx = cx - brx * 0.65;
+  const ty = cy + bry * 0.3;
+  const hoofLen = sz * 0.03;
+  const stride = g.chance(0.4) ? sz * 0.05 : 0;
+  const front = (x: number, paint: string, up: number, reach: number) =>
+    hoofLeg(
+      [x, ty],
+      [x + reach * 0.5, gy - legLen * 0.45 - up],
+      [x + reach, gy - hoofLen - up],
+      sz * 0.065,
+      sz * 0.03,
+      paint,
+      hoofPaint,
+      hoofLen,
+    );
+  const hind = (x: number, paint: string, up: number, reach: number) =>
+    hoofLeg(
+      [x, ty - bry * 0.2],
+      [x - sz * 0.045 - reach * 0.5, gy - legLen * 0.4 - up],
+      [x - sz * 0.01 - reach, gy - hoofLen - up],
+      sz * 0.09,
+      sz * 0.03,
+      paint,
+      hoofPaint,
+      hoofLen,
+    );
+  // Far legs
+  out += hind(bx + sz * 0.035, far, sz * 0.012, stride);
+  out += front(fx + sz * 0.035, far, sz * 0.012, -stride);
+  // Body and neck
+  const body =
+    el("ellipse", { cx: cx - brx * 0.5, cy: cy - bry * 0.1, rx: brx * 0.52, ry: bry * 1.05 }) +
+    el("ellipse", { cx, cy, rx: brx, ry: bry }) +
+    el("ellipse", { cx: cx + brx * 0.55, cy: cy - bry * 0.05, rx: brx * 0.48, ry: bry });
+  const neck = el("path", { d: tube(n0, n1, poll, sz * 0.2, sz * 0.1, 6) });
+  out += el("g", { fill: coat.coat }, body, neck);
+  // Pale belly and, on a fawn, rows of spots, clipped to the body
+  const clip = g.id("hide");
+  let marks = el("ellipse", {
+    cx,
+    cy: cy + bry * 1.05,
+    rx: brx * 0.75,
+    ry: bry * 0.4,
+    fill: coat.pale,
+    opacity: "0.8",
+  });
+  if (fawn) {
+    // Rows of spots: dotted lines of zero-length dashes with round caps
+    const m = g.fork("spots");
+    let d = "";
+    for (const row of [-0.55, -0.15, 0.25]) d += s`M ${cx - brx * m.f(0.9, 1)} ${cy + bry * row} h ${brx * 1.9} `;
+    marks += el("path", {
+      d,
+      stroke: coat.pale,
+      "stroke-width": sz * 0.024,
+      "stroke-linecap": "round",
+      "stroke-dasharray": s`0 ${brx * m.f(0.17, 0.22)}`,
+    });
+  }
+  out += el("defs", {}, el("clipPath", { id: clip }, body));
+  out += el("g", { "clip-path": `url(#${clip})` }, marks);
+  // Pale rump and a short tail
+  out += el("ellipse", { cx: cx - brx * 0.92, cy: cy - bry * 0.05, rx: brx * 0.12, ry: bry * 0.55, fill: coat.pale });
+  out += el("ellipse", {
+    cx: cx - brx * 1.03,
+    cy: cy - bry * 0.55,
+    rx: sz * 0.022,
+    ry: sz * 0.05,
+    fill: coat.coat,
+    transform: s`rotate(${g.f(15, 40)} ${cx - brx * 1.03} ${cy - bry * 0.55})`,
+  });
+  // Near legs
+  out += hind(bx, coat.coat, 0, -stride);
+  out += front(fx, coat.coat, 0, stride);
+  // Ears: long leaves out from behind the poll; the near one has a pale lining
+  const earAngle = (spread: number) => {
+    const tip = at(-sz * 0.06, sz * (0.03 + spread));
+    return (Math.atan2(tip[1] - poll[1], tip[0] - poll[0]) * 180) / Math.PI;
+  };
+  const earBase = at(sz * 0.01, sz * 0.005);
+  out += el("path", { d: leafShape(earBase[0], earBase[1], earAngle(0.03), sz * 0.13, 0.33), fill: far });
+  // Antlers: a beam sweeping back and up, then forward, with tines; drawn for a head held at 70 degrees
+  if (age === "buck") {
+    const base = at(-sz * 0.005, sz * 0.035);
+    const tines = g.i(2, 3);
+    const lean = g.f(-6, 6);
+    const antler = (dx: number, paint: string) => {
+      const p0: Point = [base[0] + dx, base[1]];
+      const p1: Point = [p0[0] - sz * 0.1, p0[1] - sz * 0.1];
+      const p2: Point = [p0[0] + sz * 0.035, p0[1] - sz * 0.2];
+      let d = s`M ${p0[0]} ${p0[1]} Q ${p1[0]} ${p1[1]} ${p2[0]} ${p2[1]}`;
+      const brow = qpt(p0, p1, p2, 0.12);
+      d += s` M ${brow[0]} ${brow[1]} l ${sz * 0.035} ${-sz * 0.03}`;
+      for (let k = 0; k < tines; k++) {
+        const [x, y] = qpt(p0, p1, p2, 0.42 + (k * 0.45) / tines);
+        d += s` M ${x} ${y} l ${sz * 0.012} ${-sz * (0.075 - k * 0.012)}`;
+      }
+      return el("path", {
+        d,
+        stroke: paint,
+        "stroke-width": sz * 0.016,
+        "stroke-linecap": "round",
+        "stroke-linejoin": "round",
+        fill: "none",
+      });
+    };
+    out += s`<g transform="rotate(${70 - a + lean} ${base[0]} ${base[1]})">`;
+    out += antler(sz * 0.03, "#b8a684") + antler(0, "#e3d4b4");
+    out += "</g>";
+  }
+  // Head, tapering to the nose
+  out += el("path", { d: tube(poll, at(hl * 0.5, 0), at(hl, 0), sz * 0.1, sz * 0.05, 2), fill: coat.coat });
+  // A pale band behind the dark nose
+  const band = at(hl * 0.8, 0);
+  out += el("circle", { cx: band[0], cy: band[1], r: sz * 0.024, fill: coat.pale, opacity: "0.6" });
+  const nose = at(hl * 0.98, sz * 0.006);
+  out += el("circle", { cx: nose[0], cy: nose[1], r: sz * 0.02, fill: "#2a2220" });
+  // Big dark eye
+  const eye = at(hl * 0.32, sz * 0.016);
+  out += el("circle", { cx: eye[0], cy: eye[1], r: sz * 0.017, fill: "#1a1412" });
+  out += el("circle", { cx: eye[0] + sz * 0.005, cy: eye[1] - sz * 0.005, r: sz * 0.005, fill: "#ffffff" });
+  // Near ear
+  out += el("path", { d: leafShape(earBase[0], earBase[1], earAngle(-0.01), sz * 0.14, 0.33), fill: coat.coat });
+  out += el("path", {
+    d: leafShape(earBase[0], earBase[1], earAngle(-0.01), sz * 0.1, 0.2),
+    fill: coat.pale,
+    opacity: "0.7",
+  });
+  out += "</g>";
+  const who = age === "buck" ? "A deer with antlers" : age === "fawn" ? "A spotted fawn" : "A deer";
+  note.alt(
+    `${who} ${grazing ? "grazing" : "standing alert"} in a forest clearing, facing ${dir > 0 ? "right" : "left"}`,
+  );
+  note.focus(flipX(cx, dir, eye[0]), eye[1]);
+  // Head and ears; antlers would make the frame too tall to read as a face. A deer's head is small in
+  // the scene, so the frame grows about its center to a size an avatar can crop.
+  const [x, y, fw, fh] = atLeast(
+    bounds([at(-sz * 0.1, sz * 0.06), at(0, -sz * 0.05), at(hl, sz * 0.03), at(hl, -sz * 0.03)], sz * 0.04),
+    Math.min(w, h) * 0.26,
+  );
+  flipFrame(note, cx, dir, x, y, fw, fh);
+  return out;
+});
+
+const COWS = [
+  { coat: "#f6f3ee", patch: "#262224", muzzle: "#f0bdb8", dairy: true },
+  { coat: "#f4efe6", patch: "#b7703a", muzzle: "#f2c6b4", dairy: true },
+  { coat: "#c98b52", muzzle: "#4a3a34", dairy: true },
+  { coat: "#2a2526", muzzle: "#463c3e" },
+  { coat: "#9c4a2a", face: "#f4efe6", muzzle: "#f2c6b4" },
+  { coat: "#b8865a", muzzle: "#e8c8b0" },
+] as const;
+
+/** A cow side on in a pasture, grazing or looking up, sometimes with horns or a bell. */
+export const cow = defineKind("cow", "Cow", (g, w, h, note) => {
+  const coat = g.pick(COWS);
+  const dir = g.pick([-1, 1]);
+  const sz = Math.min(h * 0.62, w * 0.5) * g.f(0.9, 1);
+  const hz = h * g.f(0.48, 0.58);
+  const gy = h * g.f(0.86, 0.91);
+  const grazing = g.chance(0.35);
+  const horns = g.chance(0.4);
+  const bell = g.chance(0.4);
+  const brx = sz * 0.4;
+  const bry = sz * 0.19;
+  const legLen = sz * 0.26;
+  const cy = gy - legLen - bry * 0.85;
+  const cx = w / 2 - dir * sz * 0.08 + w * g.f(-0.03, 0.03);
+  const far = mix(coat.coat, "#000000", 0.2);
+  const face = "face" in coat ? coat.face : coat.coat;
+  const a = grazing ? g.f(12, 25) : g.f(40, 62);
+  const hl = sz * 0.25;
+  const n0: Point = [cx + brx * 0.7, cy + bry * 0.25];
+  const poll: Point = grazing
+    ? [cx + brx * 1.25, gy - sz * 0.02 - hl * Math.cos((a * Math.PI) / 180)]
+    : [cx + brx * 1.22, cy - bry * g.f(0.6, 1.1)];
+  const n1: Point = grazing ? [cx + brx * 1.1, cy - bry * 0.1] : [cx + brx * 1.05, cy - bry * 0.4];
+  const at = headAxis(poll, a);
+  const scene = g.fork("scene");
+  let out = field(scene, w, h, hz, scene.f(190, 215), [scene.f(75, 115), 42, scene.f(50, 58)]);
+  const fenced = scene.chance(0.45);
+  if (fenced) out += fence(w, hz + (gy - hz) * 0.2, Math.min(w, h) * 0.12, "#9a7650");
+  out += meadowFlowers(scene, w, h, hz, Math.min(w, h));
+  // Shadow
+  out += el("ellipse", {
+    cx: cx + dir * sz * 0.08,
+    cy: gy,
+    rx: sz * 0.55,
+    ry: sz * 0.045,
+    fill: "#000",
+    opacity: "0.15",
+  });
+  out += facing(cx, dir);
+  const fx = cx + brx * 0.62;
+  const bx = cx - brx * 0.68;
+  const ty = cy + bry * 0.3;
+  const hoofLen = sz * 0.03;
+  const front = (x: number, paint: string, up: number) =>
+    hoofLeg(
+      [x, ty],
+      [x, gy - legLen * 0.45 - up],
+      [x, gy - hoofLen - up],
+      sz * 0.1,
+      sz * 0.06,
+      paint,
+      "#3a302b",
+      hoofLen,
+    );
+  const hind = (x: number, paint: string, up: number) =>
+    hoofLeg(
+      [x, ty - bry * 0.2],
+      [x - sz * 0.03, gy - legLen * 0.45 - up],
+      [x - sz * 0.005, gy - hoofLen - up],
+      sz * 0.13,
+      sz * 0.06,
+      paint,
+      "#3a302b",
+      hoofLen,
+    );
+  // Far legs
+  out += hind(bx + sz * 0.05, far, sz * 0.012) + front(fx + sz * 0.05, far, sz * 0.012);
+  // Tail with a tuft
+  const tailEnd: Point = [cx - brx * 1.06 - sz * g.f(0, 0.04), cy + bry + legLen * g.f(0.5, 0.7)];
+  out += el("path", {
+    d: s`M ${cx - brx * 0.95} ${cy - bry * 0.7} Q ${cx - brx * 1.08} ${cy} ${tailEnd[0]} ${tailEnd[1]}`,
+    stroke: coat.coat,
+    "stroke-width": sz * 0.018,
+    fill: "none",
+    "stroke-linecap": "round",
+  });
+  out += el("ellipse", {
+    cx: tailEnd[0],
+    cy: tailEnd[1] + sz * 0.03,
+    rx: sz * 0.02,
+    ry: sz * 0.045,
+    fill: "patch" in coat ? coat.patch : mix(coat.coat, "#000000", 0.3),
+  });
+  // Body: a boxy barrel with a bony hip, and the neck
+  const body =
+    el("rect", { x: cx - brx, y: cy - bry, width: brx * 2, height: bry * 2, rx: bry * 0.75 }) +
+    el("ellipse", { cx: cx + brx * 0.05, cy: cy + bry * 0.3, rx: brx * 0.85, ry: bry * 0.85 }) +
+    el("circle", { cx: cx - brx * 0.72, cy: cy - bry * 0.78, r: bry * 0.3 });
+  const neck = el("path", { d: tube(n0, n1, poll, sz * 0.32, sz * 0.18, 5) });
+  const headD = tube(poll, at(hl * 0.5, 0), at(hl, 0), sz * 0.17, sz * 0.14, 2);
+  const headShape = el("path", { d: headD });
+  out += el("g", { fill: coat.coat }, body, neck);
+  // Udder, between the hind legs
+  if ("dairy" in coat) {
+    out += el("ellipse", { cx: cx - brx * 0.4, cy: cy + bry * 1.05, rx: sz * 0.07, ry: sz * 0.05, fill: "#f0b4b0" });
+    for (const k of [-1, 1])
+      out += limb(
+        cx - brx * 0.4 + k * sz * 0.03,
+        cy + bry * 1.1,
+        cx - brx * 0.4 + k * sz * 0.032,
+        cy + bry * 1.1 + sz * 0.05,
+        sz * 0.016,
+        "#e8a19c",
+      );
+  }
+  // Near legs
+  out += hind(bx, coat.coat, 0) + front(fx, coat.coat, 0);
+  // Far ear, then the head
+  const earBase = at(sz * 0.04, -sz * 0.01);
+  const back = at(-sz, -sz * 1.6);
+  const earAngle = (Math.atan2(back[1] - earBase[1], back[0] - earBase[0]) * 180) / Math.PI;
+  out += el("path", { d: leafShape(earBase[0], earBase[1], earAngle - 25, sz * 0.13, 0.42), fill: far });
+  out += el("path", { d: headD, fill: face });
+  // Patches, clipped to the body, neck and head
+  if ("patch" in coat) {
+    const clip = g.id("hide");
+    const m = g.fork("patches");
+    let marks = "";
+    for (let k = m.i(4, 5); k > 0; k--)
+      marks += el("path", {
+        d: blob(
+          m,
+          cx + brx * m.f(-1.1, 1.3),
+          cy + bry * m.f(-1.6, 1),
+          sz * m.f(0.08, 0.15),
+          sz * m.f(0.07, 0.12),
+          2,
+          0.25,
+        ),
+        fill: coat.patch,
+      });
+    const eyePatch = at(hl * 0.3, sz * 0.045);
+    if (m.chance(0.5)) marks += el("circle", { cx: eyePatch[0], cy: eyePatch[1], r: sz * 0.05, fill: coat.patch });
+    out += el("defs", {}, el("clipPath", { id: clip }, body, neck, headShape));
+    out += el("g", { "clip-path": `url(#${clip})` }, marks);
+  }
+  // Horns curving up from the poll
+  if (horns)
+    out += el("path", {
+      d: tube(
+        at(sz * 0.01, sz * 0.05),
+        at(-sz * 0.05, sz * 0.045),
+        at(-sz * 0.08, sz * 0.09),
+        sz * 0.035,
+        sz * 0.014,
+        5,
+      ),
+      fill: "#efe6d2",
+    });
+  // Broad muzzle, nostril and eye
+  const muzzle = at(hl * 0.95, -sz * 0.005);
+  out += el("circle", { cx: muzzle[0], cy: muzzle[1], r: sz * 0.078, fill: coat.muzzle });
+  const nostril = at(hl * 1.02, sz * 0.035);
+  out += el("ellipse", {
+    cx: nostril[0],
+    cy: nostril[1],
+    rx: sz * 0.012,
+    ry: sz * 0.009,
+    fill: "#000",
+    opacity: "0.4",
+  });
+  const eye = at(hl * 0.3, sz * 0.045);
+  out += el("circle", { cx: eye[0], cy: eye[1], r: sz * 0.017, fill: "#1a1412" });
+  out += el("circle", { cx: eye[0] + sz * 0.005, cy: eye[1] - sz * 0.005, r: sz * 0.005, fill: "#ffffff" });
+  // Near ear, sticking out sideways with a pale lining
+  out += el("path", { d: leafShape(earBase[0], earBase[1], earAngle, sz * 0.14, 0.45), fill: face });
+  out += el("path", {
+    d: leafShape(earBase[0], earBase[1], earAngle, sz * 0.1, 0.3),
+    fill: "#f0b4b0",
+    opacity: "0.6",
+  });
+  // A bell on a strap around the neck
+  if (bell) {
+    const c = qpt(n0, n1, poll, 0.42);
+    const nl = Math.hypot(poll[0] - n0[0], poll[1] - n0[1]) || 1;
+    const nx = -(poll[1] - n0[1]) / nl;
+    const ny = (poll[0] - n0[0]) / nl;
+    const half = sz * 0.11;
+    const low: Point = [c[0] - nx * half, c[1] - ny * half];
+    out += el("path", {
+      d: s`M ${c[0] + nx * half} ${c[1] + ny * half} L ${low[0]} ${low[1]}`,
+      stroke: "#6a4a32",
+      "stroke-width": sz * 0.028,
+      "stroke-linecap": "round",
+    });
+    const bw = sz * 0.06;
+    const [lx, ly] = low[1] > c[1] ? low : [c[0] + nx * half, c[1] + ny * half];
+    out += el("path", {
+      d: s`M ${lx - bw * 0.4} ${ly} L ${lx + bw * 0.4} ${ly} L ${lx + bw * 0.6} ${ly + bw * 1.1}
+           Q ${lx} ${ly + bw * 1.3} ${lx - bw * 0.6} ${ly + bw * 1.1} Z`,
+      fill: "#e2b544",
+    });
+    out += el("circle", { cx: lx, cy: ly + bw * 1.2, r: bw * 0.18, fill: "#8a6a2a" });
+  }
+  out += "</g>";
+  const features = andList([horns && "horns", bell && "a bell"]);
+  note.alt(
+    `A ${"patch" in coat ? "patched " : ""}cow${features ? ` with ${features}` : ""} ${grazing ? "grazing" : "standing"} in a pasture, facing ${dir > 0 ? "right" : "left"}`,
+  );
+  note.focus(flipX(cx, dir, eye[0]), eye[1]);
+  // Head, ears and horns.
+  const [x, y, fw, fh] = bounds(
+    [
+      at(-sz * 0.09, sz * 0.1),
+      at(0, -sz * 0.09),
+      at(hl + sz * 0.07, sz * 0.08),
+      at(hl + sz * 0.07, -sz * 0.08),
+      [
+        earBase[0] + Math.cos((earAngle * Math.PI) / 180) * sz * 0.14,
+        earBase[1] + Math.sin((earAngle * Math.PI) / 180) * sz * 0.14,
+      ],
+    ],
+    sz * 0.03,
+  );
+  flipFrame(note, cx, dir, x, y, fw, fh);
+  return out;
+});
+
+const SQUIRRELS = [
+  { fur: "#c4622d", belly: "#f3e3cc", tufts: true },
+  { fur: "#b3552a", belly: "#f6e8d4", tufts: true },
+  { fur: "#8e8c8a", belly: "#eeeae4" },
+  { fur: "#7d7774", belly: "#ebe5de" },
+  { fur: "#8a5a3a", belly: "#e9d6bd" },
+  { fur: "#b9743e", belly: "#e8b77c" },
+] as const;
+
+/** A squirrel sitting up on a branch or the ground, its bushy tail curled over its back, holding a nut. */
+export const squirrel = defineKind("squirrel", "Squirrel", (g, w, h, note) => {
+  const coat = g.pick(SQUIRRELS);
+  const dir = g.pick([-1, 1]);
+  const size = Math.min(w, h);
+  const bh = size * g.f(0.36, 0.41);
+  const onBranch = g.chance(0.5);
+  const gy = h * (onBranch ? g.f(0.74, 0.8) : g.f(0.82, 0.87));
+  const cx = w / 2 + dir * bh * 0.12 + w * g.f(-0.03, 0.03);
+  const far = mix(coat.fur, "#000000", 0.18);
+  const tufts = "tufts" in coat && g.chance(0.7);
+  const acorn = g.chance(0.6);
+  const scene = g.fork("scene");
+  let out = "";
+  if (onBranch) {
+    // Soft leafy woods behind, and a branch across the picture
+    const hue = scene.f(85, 130);
+    out += fill(w, h, hsl(hue, 30, scene.f(80, 86)));
+    for (let k = scene.i(9, 14); k > 0; k--)
+      out += el("circle", {
+        cx: w * scene.f(0, 1),
+        cy: h * scene.f(0, 0.9),
+        r: size * scene.f(0.08, 0.2),
+        fill: hsl(hue + scene.f(-15, 15), 35, scene.f(62, 74)),
+        opacity: "0.6",
+      });
+    const thick = size * 0.075;
+    const slope = scene.f(-0.08, 0.08);
+    const yAt = (x: number) => gy + (x - cx) * slope;
+    const bark = hsl(scene.f(20, 32), 28, scene.f(32, 40));
+    out += el("polygon", {
+      points: pts([
+        [-2, yAt(-2) - thick * 0.05],
+        [w + 2, yAt(w + 2) - thick * 0.05],
+        [w + 2, yAt(w + 2) + thick],
+        [-2, yAt(-2) + thick],
+      ]),
+      fill: bark,
+    });
+    out += el("rect", {
+      x: -2,
+      y: 0,
+      width: w + 4,
+      height: thick * 0.18,
+      fill: "#ffffff",
+      opacity: "0.15",
+      transform: s`translate(0 ${yAt(0) - thick * 0.05}) skewY(${(Math.atan(slope) * 180) / Math.PI})`,
+    });
+    // A twig with leaves, away from the squirrel
+    const tx = cx - dir * bh * scene.f(0.9, 1.2);
+    const leafHue = hue + scene.f(-10, 10);
+    let leaves = "";
+    for (let k = scene.i(3, 5); k > 0; k--)
+      leaves += leafShape(tx, yAt(tx), -90 + scene.f(-70, 70), size * scene.f(0.08, 0.12), 0.3);
+    out += el("path", { d: leaves, fill: hsl(leafHue, 40, 42) });
+  } else {
+    // A woodland floor with a tree trunk behind and fallen leaves
+    const hz = h * scene.f(0.45, 0.55);
+    out += field(scene, w, h, hz, scene.f(185, 210), [scene.f(70, 100), 35, scene.f(48, 56)]);
+    const trunkX = dir > 0 ? w * scene.f(0.04, 0.14) : w * scene.f(0.86, 0.96);
+    out += el("rect", {
+      x: trunkX - size * 0.08,
+      y: 0,
+      width: size * 0.16,
+      height: hz + (h - hz) * 0.25,
+      fill: hsl(scene.f(20, 32), 22, 36),
+    });
+    out += el("ellipse", {
+      cx: trunkX,
+      cy: hz + (h - hz) * 0.25,
+      rx: size * 0.13,
+      ry: size * 0.025,
+      fill: hsl(scene.f(20, 32), 22, 36),
+    });
+    let leaves = "";
+    for (let k = scene.i(6, 10); k > 0; k--)
+      leaves += leafShape(w * scene.f(0, 1), hz + (h - hz) * scene.f(0.35, 1), scene.f(0, 360), size * 0.035, 0.35);
+    out += el("path", { d: leaves, fill: hsl(scene.f(15, 40), 60, 50), opacity: "0.8" });
+  }
+  // Shadow
+  out += el("ellipse", { cx, cy: gy, rx: bh * 0.45, ry: bh * 0.05, fill: "#000", opacity: "0.18" });
+  out += facing(cx, dir);
+  // Bushy tail: up behind the back, then curling forward at the top
+  const base: Point = [cx - bh * 0.2, gy - bh * 0.1];
+  const bend: Point = [cx - bh * g.f(0.7, 0.8), gy - bh * 0.35];
+  const top: Point = [cx - bh * g.f(0.45, 0.55), gy - bh * g.f(0.9, 1)];
+  const curlCtl: Point = [cx - bh * g.f(0.3, 0.4), gy - bh * g.f(1.28, 1.36)];
+  const tip: Point = [cx - bh * g.f(0.02, 0.12), gy - bh * g.f(1.12, 1.22)];
+  const tail = (grow: number) =>
+    tube(base, bend, top, bh * (0.22 + grow), bh * (0.36 + grow)) +
+    tube(top, curlCtl, tip, bh * (0.36 + grow), bh * (0.18 + grow));
+  out += el("path", { d: tail(0.07), fill: coat.fur, opacity: "0.45" });
+  out += el("path", { d: tail(0), fill: coat.fur });
+  // Head position, and the nut held up under the chin
+  const hc: Point = [cx + bh * 0.13, gy - bh * 0.86];
+  const r = bh * 0.19;
+  const nut: Point = [hc[0] + r * 0.9, hc[1] + r * 1.25];
+  const nr = bh * 0.09;
+  // Far arm
+  out += limb(cx + bh * 0.08, gy - bh * 0.58, nut[0] - nr * 0.3, nut[1] + nr * 0.6, bh * 0.065, far);
+  // Body, leaning forward, with a pale belly
+  const bodyShape = el("ellipse", {
+    cx,
+    cy: gy - bh * 0.4,
+    rx: bh * 0.27,
+    ry: bh * 0.4,
+    transform: s`rotate(15 ${cx} ${gy - bh * 0.4})`,
+  });
+  out += el("g", { fill: coat.fur }, bodyShape);
+  const clip = g.id("hide");
+  out += el("defs", {}, el("clipPath", { id: clip }, bodyShape));
+  out += el("ellipse", {
+    cx: cx + bh * 0.2,
+    cy: gy - bh * 0.42,
+    rx: bh * 0.15,
+    ry: bh * 0.34,
+    fill: coat.belly,
+    transform: s`rotate(15 ${cx} ${gy - bh * 0.4})`,
+    "clip-path": `url(#${clip})`,
+  });
+  // Haunch and long hind foot
+  out += el("circle", { cx: cx - bh * 0.07, cy: gy - bh * 0.19, r: bh * 0.2, fill: coat.fur });
+  out += el("ellipse", { cx: cx + bh * 0.1, cy: gy - bh * 0.035, rx: bh * 0.17, ry: bh * 0.045, fill: far });
+  // Far ear, head, cheek and snout
+  const ear = (dx: number, paint: string) =>
+    el("polygon", {
+      points: pts([
+        [hc[0] - r * 0.55 + dx, hc[1] - r * 0.55],
+        [hc[0] - r * 0.35 + dx, hc[1] - r * 1.45],
+        [hc[0] + dx, hc[1] - r * 0.8],
+      ]),
+      fill: paint,
+    });
+  out += ear(r * 0.35, far);
+  out += el("circle", { cx: hc[0], cy: hc[1], r, fill: coat.fur });
+  out += el("ellipse", { cx: hc[0] + r * 0.72, cy: hc[1] + r * 0.22, rx: r * 0.52, ry: r * 0.42, fill: coat.fur });
+  out += el("ellipse", { cx: hc[0] + r * 0.45, cy: hc[1] + r * 0.55, rx: r * 0.4, ry: r * 0.28, fill: coat.belly });
+  // Nose and eye with a pale ring
+  out += el("circle", { cx: hc[0] + r * 1.18, cy: hc[1] + r * 0.12, r: r * 0.1, fill: "#2a1e1a" });
+  out += el("circle", { cx: hc[0] + r * 0.3, cy: hc[1] - r * 0.12, r: r * 0.25, fill: coat.belly });
+  out += el("circle", { cx: hc[0] + r * 0.32, cy: hc[1] - r * 0.12, r: r * 0.18, fill: "#1a1210" });
+  out += el("circle", { cx: hc[0] + r * 0.38, cy: hc[1] - r * 0.18, r: r * 0.06, fill: "#ffffff" });
+  // Near ear, with a tuft on some
+  out += ear(0, coat.fur);
+  if (tufts)
+    out += el("path", {
+      d: leafShape(hc[0] - r * 0.35, hc[1] - r * 1.35, -100 + g.f(-10, 10), r * 0.5, 0.25),
+      fill: coat.fur,
+    });
+  // The nut: an acorn with its cap, or a round hazelnut
+  if (acorn) {
+    out += el("ellipse", { cx: nut[0], cy: nut[1] + nr * 0.25, rx: nr * 0.8, ry: nr, fill: "#c08a4a" });
+    out += el("path", {
+      d: s`M ${nut[0] - nr * 0.95} ${nut[1]} Q ${nut[0]} ${nut[1] - nr * 1.3} ${nut[0] + nr * 0.95} ${nut[1]} Z`,
+      fill: "#7a5434",
+    });
+    out += limb(nut[0], nut[1] - nr * 0.6, nut[0] + nr * 0.15, nut[1] - nr * 0.95, nr * 0.2, "#7a5434");
+  } else {
+    out += el("circle", { cx: nut[0], cy: nut[1], r: nr, fill: "#a8703e" });
+    out += el("ellipse", { cx: nut[0], cy: nut[1] - nr * 0.65, rx: nr * 0.55, ry: nr * 0.3, fill: "#e4c79a" });
+  }
+  // Near arm and paws around the nut
+  out += limb(cx + bh * 0.05, gy - bh * 0.55, nut[0] - nr * 0.9, nut[1] + nr * 0.3, bh * 0.07, coat.fur);
+  out += el("ellipse", { cx: nut[0] - nr * 0.85, cy: nut[1] + nr * 0.1, rx: nr * 0.42, ry: nr * 0.55, fill: coat.fur });
+  out += el("ellipse", { cx: nut[0] + nr * 0.8, cy: nut[1] + nr * 0.2, rx: nr * 0.32, ry: nr * 0.45, fill: far });
+  out += "</g>";
+  note.alt(
+    `A squirrel${tufts ? " with tufted ears" : ""} sitting ${onBranch ? "on a branch" : "on the ground"} holding ${acorn ? "an acorn" : "a nut"}`,
+  );
+  note.focus(flipX(cx, dir, hc[0] + r * 0.3), hc[1]);
+  // Head and ears, out to the snout.
+  flipFrame(note, cx, dir, hc[0] - r * 1.3, hc[1] - r * 1.6, r * 2.7, r * 2.7);
   return out;
 });

@@ -10,9 +10,14 @@ describe("kind options", () => {
       "airplane",
       "beach",
       "bear",
+      "bridge",
       "bus",
       "cat",
+      "cottage",
+      "dolphin",
       "dots",
+      "flamingo",
+      "greenhouse",
       "hills",
       "lamp",
       "lion",
@@ -20,7 +25,9 @@ describe("kind options", () => {
       "pizza",
       "portrait",
       "rocket",
+      "seal",
       "walker",
+      "windmill",
     ]);
     expect(cat.options).toEqual({ tabby: [true, false], muzzle: [true, false], pupils: ["slit", "round"] });
     expect(Object.keys(render(cat).options).sort()).toEqual(["muzzle", "pupils", "tabby"]);

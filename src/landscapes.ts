@@ -1,5 +1,5 @@
 import { defineKind, el, facing, fill, hsl, lin, pts, qpt, s, type Point, type Rand } from "./core";
-import { blob } from "./shapes";
+import { blob, smoothClosed } from "./shapes";
 
 /** Soft hills under a gradient sky and a sun, sometimes with a lone tree. */
 export const hills = defineKind("hills", "Rolling hills", { tree: [true, false] }, (g, w, h, note) => {
@@ -1602,5 +1602,1472 @@ export const farm = defineKind("farm", "Farmland", (g, w, h, note) => {
   out += el("rect", { x: bx - bw * 0.07, y: by - bh - bw * 0.2, width: bw * 0.14, height: bw * 0.12, fill: "#f4f1ea" });
   note.alt(`A barn${silo ? " and silo" : ""} among patchwork fields and hedgerows ${AT[time]}`);
   note.focus(bx, by - bh * 0.7);
+  return out;
+});
+
+/** Path data without the spaces around its commands, which cost three bytes each in a data URI. */
+const tight = (d: string) => d.replace(/\s*([A-Za-z])\s*/g, "$1");
+
+/** A soft cloud: a row of puffs on a flat base centered at (x, y), `cw` wide. */
+function cloud(g: Rand, x: number, y: number, cw: number, paint: string): string {
+  let d = s`M${x - cw * 0.42} ${y}H${x + cw * 0.42}V${y - cw * 0.1}H${x - cw * 0.42}Z`;
+  const puffs = g.i(3, 5);
+  for (let k = 0; k < puffs; k++) {
+    const t = (k + 0.5) / puffs;
+    const r = cw * (0.1 + 0.16 * Math.sin(Math.PI * t)) * g.f(0.85, 1.15);
+    const cx = x - cw * 0.4 + cw * 0.8 * t;
+    d += s`M${cx - r} ${y - r}a${r} ${r} 0 1 0 ${2 * r} 0a${r} ${r} 0 1 0 ${-2 * r} 0`;
+  }
+  return el("path", { d, fill: paint });
+}
+
+/** Small round stars scattered above `bottom`, in two sizes: each a round-capped dot of zero length. */
+function starDots(g: Rand, w: number, bottom: number, count: number, unit: number): string {
+  const d = ["", ""];
+  for (let k = 0; k < count; k++) d[g.i(0, 1)] += s`M${w * g.f(0, 1)} ${bottom * g.f(0, 1) ** 1.3}h0`;
+  return d
+    .map((dots, k) =>
+      el("path", {
+        d: dots,
+        stroke: "#fff",
+        "stroke-width": unit * (0.005 + 0.004 * k),
+        "stroke-linecap": "round",
+        opacity: 0.9 - 0.25 * k,
+      }),
+    )
+    .join("");
+}
+
+/** A radial glow fading out from `color`. */
+const glowDef = (id: string, color: string, strength: number) =>
+  el(
+    "radialGradient",
+    { id },
+    el("stop", { offset: 0, "stop-color": color, "stop-opacity": strength }),
+    el("stop", { offset: 1, "stop-color": color, "stop-opacity": 0 }),
+  );
+
+/** A rainbow over fresh hills after rain, the storm moving off to one side. */
+export const rainbow = defineKind("rainbow", "Rainbow", (g, w, h, note) => {
+  const evening = g.chance(0.35);
+  const unit = Math.min(w, h);
+  const hue = g.f(195, 215);
+  const skyId = g.id("sky");
+  const stops = evening
+    ? [hsl(hue + 25, 22, 50), hsl(g.f(15, 30), 45, 72), hsl(g.f(35, 48), 75, 86)]
+    : [hsl(hue + 8, 24, 58), hsl(hue, 42, 75), hsl(hue - 10, 50, 91)];
+  const dim = evening ? -6 : 0;
+  let out = el("defs", {}, lin(skyId, stops));
+  out += fill(w, h, `url(#${skyId})`);
+  const ground = h * g.f(0.6, 0.68);
+  // The storm moving off: rain falling from a dark cloud bank on one side.
+  const side = g.pick([-1, 1]);
+  const stormX = side < 0 ? w * g.f(0.05, 0.22) : w * g.f(0.78, 0.95);
+  const stormY = h * g.f(0.2, 0.28);
+  const stormW = Math.max(unit * g.f(0.55, 0.75), w * 0.3);
+  let rain = "";
+  for (let x = stormX - stormW * 0.42; x < stormX + stormW * 0.42; x += unit * g.f(0.018, 0.03))
+    rain += s`M${x} ${stormY}l${-side * unit * 0.05} ${ground - stormY}`;
+  out += el("path", { d: rain, stroke: hsl(hue, 15, 50), "stroke-width": unit * 0.006, opacity: "0.3" });
+  // The bow: six bands, centered below the hills, with the sky a little brighter inside it.
+  const cx = w * g.f(0.35, 0.65);
+  const cy = ground + h * g.f(0.02, 0.12);
+  const radius = Math.min(cy - h * 0.12, w * g.f(0.4, 0.5));
+  const band = radius * 0.032;
+  const hues = [0, 28, 55, 120, 205, 270];
+  out += el("circle", { cx, cy, r: radius - 6 * band, fill: "#fff", opacity: "0.12" });
+  const bow = (r: number, order: number[], opacity: number) =>
+    el(
+      "g",
+      { fill: "none", "stroke-width": band * 1.08, opacity },
+      ...order.map((hh, k) =>
+        el("path", {
+          d: s`M${cx - r + k * band} ${cy}A${r - k * band} ${r - k * band} 0 0 1 ${cx + r - k * band} ${cy}`,
+          stroke: hsl(hh, 85, 62),
+        }),
+      ),
+    );
+  out += bow(radius, hues, evening ? 0.55 : 0.6);
+  const double = g.chance(0.35);
+  if (double) out += bow(radius * 1.3, [...hues].reverse(), 0.22);
+  // The storm clouds, and a few soft clouds clearing away.
+  // Clouds are kept short enough to clear the top edge: a puff is at most about half as tall as its cloud is wide.
+  const bankW = Math.min(stormW, (stormY + unit * 0.02) / 0.55);
+  out += cloud(g, stormX, stormY + unit * 0.02, bankW, hsl(hue, 10, 56 + dim));
+  out += cloud(g, stormX + side * bankW * 0.15, stormY - unit * 0.04, bankW * 0.6, hsl(hue, 12, 66 + dim));
+  for (let k = g.i(1, 2); k > 0; k--) {
+    const x = side < 0 ? w * g.f(0.5, 0.92) : w * g.f(0.08, 0.5);
+    const cw = unit * g.f(0.18, 0.28);
+    out += cloud(g, x, Math.max(h * g.f(0.12, 0.3), cw * 0.62), cw, evening ? hsl(30, 60, 92) : "#fff");
+  }
+  // Far, middle and near hills, fresh after the rain.
+  const green = g.f(85, 125);
+  const far = curve(w, ground - h * g.f(0.04, 0.1), ground - h * g.f(0, 0.08), -h * g.f(0.02, 0.06));
+  const mid = curve(w, ground + h * g.f(0.02, 0.08), ground + h * g.f(0, 0.06), -h * g.f(0.02, 0.06));
+  const near = curve(w, h * g.f(0.82, 0.9), h * g.f(0.8, 0.9), -h * g.f(0, 0.05));
+  out += el("path", { d: far.d() + s`V${h}H0Z`, fill: hsl(green + 15, 28, 60 + dim) });
+  out += el("path", { d: mid.d() + s`V${h}H0Z`, fill: hsl(green, 42, 47 + dim) });
+  // Round trees on the middle hill.
+  const bark = hsl(25, 30, 28 + dim);
+  const crown = hsl(green + 10, 42, 32 + dim);
+  for (let k = g.i(2, 4); k > 0; k--) {
+    const x = w * g.f(0.05, 0.95);
+    const r = unit * g.f(0.03, 0.05);
+    const y = mid.at(x) + unit * 0.01;
+    out += el("rect", { x: x - r * 0.15, y: y - r * 1.6, width: r * 0.3, height: r * 1.6, fill: bark });
+    out += el("circle", { cx: x, cy: y - r * 1.7, r, fill: crown });
+  }
+  out += el("path", { d: near.d() + s`V${h}H0Z`, fill: hsl(green - 5, 48, 38 + dim) });
+  // A puddle on the near slope, holding the sky.
+  if (g.chance(0.5)) {
+    const px = w * g.f(0.15, 0.85);
+    out += el("ellipse", {
+      cx: px,
+      cy: near.at(px) + (h - near.at(px)) * 0.5,
+      rx: unit * g.f(0.06, 0.1),
+      ry: unit * 0.018,
+      fill: stops[2],
+      opacity: "0.8",
+    });
+  }
+  note.alt(
+    `A ${double ? "double " : ""}rainbow arching over rolling hills after rain${evening ? " in evening light" : ""}`,
+  );
+  note.focus(cx, cy - radius);
+  return out;
+});
+
+/** A desert canyon seen from its floor: stepped walls banded with rock, overlapping as they recede, and a river or a dry wash between. */
+export const canyon = defineKind("canyon", "Desert canyon", (g, w, h, note) => {
+  const time = g.pick(TIMES);
+  const sky = daySky(g, time);
+  const unit = Math.min(w, h);
+  const skyId = g.id("sky");
+  // Where the floor vanishes into the distance.
+  const vx = w * g.f(0.42, 0.58);
+  const fy = h * g.f(0.48, 0.56);
+  const rockHue = g.f(5, 28);
+  const dim = sky.dim;
+  const defs = [lin(skyId, sky.stops)];
+  let out = fill(w, h, `url(#${skyId})`);
+  out += el("circle", {
+    cx: vx + w * g.f(-0.12, 0.12),
+    cy: time === "day" ? h * g.f(0.08, 0.18) : fy - h * g.f(0.1, 0.2),
+    r: unit * g.f(0.04, 0.06),
+    fill: sky.sun,
+  });
+  // Flat-topped buttes on the horizon, a hazy row and a nearer one.
+  for (const [haze, rise] of [
+    [1, 0.16],
+    [0, 0.09],
+  ]) {
+    const far: Point[] = [[0, fy + 1]];
+    for (let x = -w * g.f(0, 0.1); x < w; x += w * g.f(0.05, 0.15)) {
+      const bw = Math.min(w * g.f(0.12, 0.3), unit * 0.7);
+      const top = fy - h * rise * g.f(0.4, 1);
+      const lean = bw * g.f(0.08, 0.16);
+      far.push([x, fy + 1], [x + lean, top], [x + bw - lean, top], [x + bw, fy + 1]);
+      x += bw;
+    }
+    far.push([w, fy + 1]);
+    out += el("polygon", {
+      points: pts(far),
+      fill: hsl(rockHue + 10 + haze * 8, 30 + 8 * (1 - haze), 58 + 10 * haze + dim),
+    });
+  }
+  // The floor, and the river (or a dry wash) winding toward the viewer.
+  out += el("rect", { y: fy, width: w, height: h - fy, fill: hsl(rockHue + 22, 38, 62 + dim) });
+  const wash = g.chance(0.3);
+  const bx = w * g.f(0.38, 0.62);
+  const wide = Math.min(w * g.f(0.2, 0.32), unit * 0.5);
+  const wob = g.f(0.6, 1) * g.pick([-1, 1]);
+  const phase = g.f(0, Math.PI * 2);
+  const left: Point[] = [];
+  const right: Point[] = [];
+  for (let k = 0; k <= 14; k++) {
+    const t = k / 14;
+    const y = fy + (h + 2 - fy) * t;
+    const half = (wide * t ** 1.3 + unit * 0.006) / 2;
+    const x = vx + (bx - vx) * t + Math.sin(phase + t * 6) * unit * 0.08 * t * wob;
+    left.push([x - half, y]);
+    right.push([x + half, y]);
+  }
+  /** Where the river's left (-1) or right (1) bank is at height y. */
+  const bank = (y: number, dir: number) => {
+    const side = dir < 0 ? left : right;
+    const f = ((y - fy) / (h + 2 - fy)) * 14;
+    const k = Math.max(0, Math.min(13, Math.floor(f)));
+    return lerp(side[k], side[k + 1], Math.min(1, f - k))[0];
+  };
+  out += el("polygon", {
+    points: pts([...left, ...[...right].reverse()]),
+    fill: wash ? hsl(rockHue + 28, 30, 74 + dim) : hsl(sky.hue, 45, 56 + dim),
+  });
+  // Ripples on the water, or pebbles in the wash.
+  let marks = "";
+  for (let k = g.i(5, 8); k > 0; k--) {
+    const j = g.i(5, 13);
+    const span = right[j][0] - left[j][0];
+    const x = left[j][0] + span * g.f(0.15, 0.6);
+    marks += wash
+      ? s`M${x} ${left[j][1]}a${span * 0.04} ${span * 0.025} 0 1 0 ${span * 0.08} 0a${span * 0.04} ${span * 0.025} 0 1 0 ${-span * 0.08} 0`
+      : s`M${x} ${left[j][1]}h${span * g.f(0.15, 0.3)}`;
+  }
+  out += wash
+    ? el("path", { d: marks, fill: hsl(rockHue + 10, 15, 55 + dim) })
+    : el("path", { d: marks, stroke: "#fff", "stroke-width": unit * 0.005, opacity: "0.45" });
+  // Scrub along the banks.
+  let scrub = "";
+  for (let k = g.i(4, 8); k > 0; k--) {
+    const j = g.i(4, 14);
+    const r = unit * (0.008 + 0.025 * (j / 14)) * g.f(0.7, 1.2);
+    const x = g.chance(0.5) ? left[j][0] - r * 1.2 : right[j][0] + r * 1.2;
+    scrub += s`M${x - r} ${left[j][1]}a${r} ${r * 0.8} 0 1 1 ${2 * r} 0Z`;
+  }
+  out += el("path", { d: scrub, fill: hsl(g.f(70, 100), 28, 34 + dim) });
+
+  // The strata: the same bands, as fractions of a wall's height, on every wall, so they line up as they recede.
+  const breaks = [0];
+  while (breaks[breaks.length - 1] < 1) breaks.push(Math.min(1, breaks[breaks.length - 1] + g.f(0.1, 0.22)));
+  const tones = breaks.slice(1).map(() => g.i(0, 3));
+  for (let k = 1; k < tones.length; k++) if (tones[k] === tones[k - 1]) tones[k] = (tones[k] + 1) % 4;
+  const TONE = [
+    [0, 52, 48],
+    [8, 46, 57],
+    [16, 42, 66],
+    [-4, 48, 40],
+  ];
+  const sunSide = g.pick([-1, 1]);
+  // The strata drawn once for the sunlit side and once for the shaded side, 100 units tall, gently wavy;
+  // each wall stretches a copy to its own height.
+  const wave = breaks.map(() => g.f(-3, 3));
+  const strata = [g.id("shaded"), g.id("sunlit")];
+  strata.forEach((id, lit) => {
+    const bands = ["", "", "", ""];
+    for (let k = 0; k < tones.length; k++)
+      bands[tones[k]] += s`M-1 ${breaks[k] * 100 - 1}q${w / 2 + 1} ${wave[k]} ${w + 2} 0V${breaks[k + 1] * 100 + 1}
+                            q${-w / 2 - 1} ${wave[k + 1]} ${-w - 2} 0Z`;
+    defs.push(
+      el(
+        "g",
+        { id },
+        ...bands.map((d, k) =>
+          d ? el("path", { d, fill: hsl(rockHue + TONE[k][0], TONE[k][1], TONE[k][2] + dim + (lit ? 4 : -14)) }) : "",
+        ),
+      ),
+    );
+  });
+  const haze = sky.stops[sky.stops.length - 1];
+  // Wall layers on each side, from far to near: each nearer one taller, lower at its foot and further out.
+  const topNear = h * g.f(0.1, 0.22);
+  const count = g.i(3, 4);
+  const layers: { t: number; dir: number }[] = [];
+  for (const dir of [-1, 1]) {
+    const off = dir < 0 ? 0 : g.f(0.35, 0.6);
+    for (let k = 1; k <= count; k++) layers.push({ t: Math.max(0.15, (k - off) / count), dir });
+    if (off) layers.push({ t: 1, dir });
+  }
+  layers.sort((a, b) => a.t - b.t);
+  let ledges = "";
+  layers.forEach(({ t, dir }, n) => {
+    const edge = dir < 0 ? -1 : w + 1;
+    const base = fy + (h + unit * 0.02 - fy) * t ** 1.6;
+    const top = fy - (fy - topNear) * t ** 0.85 * g.f(0.85, 1);
+    const tall = base - top;
+    const inner = bank(Math.min(base, h), dir) + dir * (unit * 0.01 + w * 0.03 * t) * g.f(0.6, 1.4);
+    const spread = (w * 0.3 * t + unit * 0.06) * g.f(0.8, 1.2);
+    const rim = inner + dir * spread;
+    // Down the wall from its rim: a steep cliff, then a talus slope slanting toward the river, and again,
+    // so the wall widens as it goes down. Each stretch is broken into a few jagged pieces.
+    const pairs = g.i(2, 3);
+    const drops = Array.from({ length: pairs * 2 }, (_, k) => (k % 2 ? g.f(0.8, 1.4) : g.f(0.5, 0.9)));
+    const runs = Array.from({ length: pairs * 2 }, (_, k) => (k % 2 ? g.f(0.7, 1.2) : g.f(0.05, 0.12)));
+    const dropSum = drops.reduce((p, q) => p + q);
+    const runSum = runs.reduce((p, q) => p + q);
+    const ring: Point[] = [
+      [edge, top],
+      [rim, top],
+    ];
+    let x = rim;
+    let y = top;
+    for (let k = 0; k < pairs * 2; k++) {
+      const dy = (tall * drops[k]) / dropSum;
+      const dx = (-dir * spread * runs[k]) / runSum;
+      const pieces = k % 2 ? 2 : 1;
+      const slope = k % 2 === 1;
+      for (let j = 1; j <= pieces; j++) {
+        const f = j / pieces;
+        const last = k === pairs * 2 - 1 && j === pieces;
+        const jag = last ? 0 : unit * g.f(-0.008, 0.008);
+        ring.push([x + dx * f + jag, y + dy * f + (slope ? jag : 0)]);
+      }
+      if (slope) ledges += `M${pts(ring.slice(-pieces - 1)).replace(/ /g, "L")}`;
+      x += dx;
+      y += dy;
+    }
+    ring.push([edge, base]);
+    const clip = g.id(`wall${n}`);
+    const shape = g.id(`face${n}`);
+    defs.push(el("clipPath", { id: clip }, el("polygon", { id: shape, points: pts(ring) })));
+    // The strata, and haze over the farther walls.
+    out += el(
+      "g",
+      { "clip-path": `url(#${clip})` },
+      el("use", { href: `#${strata[dir === sunSide ? 1 : 0]}`, transform: s`matrix(1 0 0 ${tall / 100} 0 ${top})` }),
+    );
+    if (t < 1) out += el("use", { href: `#${shape}`, fill: haze, opacity: (1 - t) * 0.45 });
+    // A dark line around the nearer walls, setting each off from the wall behind.
+    if (t > 0.4)
+      out += el("use", {
+        href: `#${shape}`,
+        fill: "none",
+        stroke: "#000",
+        "stroke-width": unit * 0.006,
+        opacity: "0.25",
+      });
+  });
+  // Light catching the talus slopes.
+  out += el("path", { d: ledges, fill: "none", stroke: "#fff", "stroke-width": unit * 0.006, opacity: "0.35" });
+  note.alt(
+    `A desert canyon with banded rock walls, ${wash ? "a dry wash" : "a river"} winding along its floor ${AT[time]}`,
+  );
+  note.focus(vx, fy - h * 0.05);
+  return el("defs", {}, ...defs) + out;
+});
+
+/** A tiny animal silhouette standing at (x, y), `ht` tall, facing right. */
+function beast(kind: "giraffe" | "elephant" | "antelope", x: number, y: number, ht: number, paint: string) {
+  const line = { fill: "none", stroke: paint, "stroke-linecap": "round" };
+  let out = "";
+  if (kind === "giraffe") {
+    const by = y - ht * 0.55;
+    const bw = ht * 0.4;
+    out += el("path", {
+      d: s`M${x - bw * 0.38} ${by}L${x - bw * 0.42} ${y}M${x - bw * 0.2} ${by}L${x - bw * 0.16} ${y}
+           M${x + bw * 0.24} ${by}L${x + bw * 0.22} ${y}M${x + bw * 0.4} ${by}L${x + bw * 0.46} ${y}`,
+      ...line,
+      "stroke-width": ht * 0.045,
+    });
+    out += el("path", {
+      d: s`M${x + bw * 0.3} ${by - ht * 0.04}L${x + bw * 0.62} ${y - ht * 0.93}`,
+      ...line,
+      "stroke-width": ht * 0.08,
+    });
+    out += el("ellipse", {
+      cx: x,
+      cy: by - ht * 0.02,
+      rx: bw * 0.55,
+      ry: ht * 0.1,
+      fill: paint,
+      transform: s`rotate(-12 ${x} ${by})`,
+    });
+    out += el("ellipse", { cx: x + bw * 0.74, cy: y - ht * 0.92, rx: ht * 0.07, ry: ht * 0.035, fill: paint });
+  } else if (kind === "elephant") {
+    const legs = [-0.36, -0.16, 0.14, 0.32]
+      .map(f => s`M${x + ht * f - ht * 0.065} ${y}h${ht * 0.13}v${-ht * 0.45}h${-ht * 0.13}Z`)
+      .join("");
+    out += el("path", { d: legs, fill: paint });
+    out += el("ellipse", { cx: x, cy: y - ht * 0.55, rx: ht * 0.5, ry: ht * 0.3, fill: paint });
+    out += el("circle", { cx: x + ht * 0.5, cy: y - ht * 0.62, r: ht * 0.2, fill: paint });
+    out += el("path", {
+      d: s`M${x + ht * 0.62} ${y - ht * 0.55}Q${x + ht * 0.74} ${y - ht * 0.3} ${x + ht * 0.7} ${y - ht * 0.08}`,
+      ...line,
+      "stroke-width": ht * 0.08,
+    });
+  } else {
+    const by = y - ht * 0.5;
+    out += el("path", {
+      d: s`M${x - ht * 0.22} ${by}L${x - ht * 0.24} ${y}M${x - ht * 0.12} ${by}L${x - ht * 0.08} ${y}
+           M${x + ht * 0.14} ${by}L${x + ht * 0.12} ${y}M${x + ht * 0.24} ${by}L${x + ht * 0.28} ${y}
+           M${x + ht * 0.25} ${by - ht * 0.05}L${x + ht * 0.36} ${by - ht * 0.32}L${x + ht * 0.3} ${by - ht * 0.52}`,
+      ...line,
+      "stroke-width": ht * 0.05,
+    });
+    out += el("ellipse", { cx: x, cy: by - ht * 0.04, rx: ht * 0.3, ry: ht * 0.12, fill: paint });
+    out += el("ellipse", { cx: x + ht * 0.38, cy: by - ht * 0.3, rx: ht * 0.08, ry: ht * 0.05, fill: paint });
+  }
+  return out;
+}
+
+/** A flat-topped crown `cw` wide: a gently curved underside at `cy` with a row of low puffs on top. */
+function crown(g: Rand, cx: number, cy: number, cw: number, ch: number): string {
+  const n = g.i(3, 5);
+  const r = cw / n / 2;
+  let d = s`M${cx - cw / 2} ${cy}Q${cx} ${cy + ch * 0.3} ${cx + cw / 2} ${cy}`;
+  for (let k = 0; k < n; k++) d += s`a${r} ${ch * g.f(0.7, 1)} 0 0 0 ${-2 * r} 0`;
+  return d + "Z";
+}
+
+/** A flat-topped acacia whose trunk base sits at (x, y), `ht` tall; `leaf` colors the crown: its top, middle and underside. */
+function acacia(g: Rand, x: number, y: number, ht: number, bark: string, leaf: readonly string[], far = false): string {
+  const fork: Point = [x + ht * g.f(-0.08, 0.08), y - ht * g.f(0.38, 0.5)];
+  const cy = y - ht * g.f(0.78, 0.86);
+  const cw = ht * g.f(1.3, 1.7);
+  const ch = ht * g.f(0.16, 0.22);
+  const tw = ht * 0.035;
+  let out = el("polygon", {
+    points: pts([
+      [x - tw, y],
+      [fork[0] - tw * 0.6, fork[1]],
+      [fork[0] + tw * 0.6, fork[1]],
+      [x + tw, y],
+    ]),
+    fill: bark,
+  });
+  // Branches spreading up from the fork to the crown.
+  let d = "";
+  for (const f of [-0.32, 0, 0.3]) {
+    const end: Point = [x + cw * f * g.f(0.8, 1.1), cy];
+    d += s`M${fork[0]} ${fork[1]}Q${(fork[0] + end[0]) / 2 + f * ht * 0.1} ${(fork[1] + cy) / 2} ${end[0]} ${end[1]}`;
+  }
+  out += el("path", { d, fill: "none", stroke: bark, "stroke-width": tw * 1.1, "stroke-linecap": "round" });
+  // The crown: a darker underside, the canopy, and light on its top. A far tree is too small to show them.
+  const ccx = x + cw * g.f(-0.08, 0.08);
+  if (far) return out + el("path", { d: crown(g, ccx, cy, cw, ch), fill: leaf[1] });
+  out += el("path", { d: crown(g, ccx, cy + ch * 0.2, cw * 0.96, ch * 0.8), fill: leaf[2] });
+  out += el("path", { d: crown(g, ccx, cy, cw, ch), fill: leaf[1] });
+  out += el("path", { d: crown(g, ccx - cw * 0.04, cy - ch * 0.4, cw * 0.7, ch * 0.6), fill: leaf[0] });
+  return out;
+}
+
+/** Open grassland with flat-topped acacias under a big sky, animals small on the horizon. */
+export const savanna = defineKind("savanna", "Savanna", (g, w, h, note) => {
+  const time = g.pick(["day", "golden", "sunset"] as const);
+  const unit = Math.min(w, h);
+  const hue = g.f(195, 215);
+  const skyId = g.id("sky");
+  const grassId = g.id("grass");
+  const horizon = h * g.f(0.6, 0.68);
+  const stops =
+    time === "day"
+      ? [hsl(hue, 55, 62), hsl(hue - 5, 50, 88)]
+      : time === "golden"
+        ? [hsl(hue + 10, 40, 64), hsl(g.f(36, 46), 80, 84)]
+        : [hsl(g.f(260, 285), 30, 36), hsl(g.f(8, 22), 75, 62), hsl(g.f(36, 46), 95, 76)];
+  const sunset = time === "sunset";
+  const grassHue = g.f(36, 52);
+  const grass = sunset
+    ? [hsl(grassHue - 15, 40, 34), hsl(grassHue - 20, 35, 24)]
+    : [hsl(grassHue, 50, time === "day" ? 66 : 60), hsl(grassHue - 6, 55, time === "day" ? 52 : 46)];
+  let out = el("defs", {}, lin(skyId, stops), lin(grassId, grass));
+  out += fill(w, h, `url(#${skyId})`);
+  const sunR = unit * (sunset ? g.f(0.1, 0.14) : g.f(0.05, 0.07));
+  const sunX = w * g.f(0.2, 0.8);
+  out += el("circle", {
+    cx: sunX,
+    cy: time === "day" ? horizon * g.f(0.2, 0.4) : horizon - sunR * (sunset ? g.f(0.2, 0.8) : g.f(1.5, 3)),
+    r: sunR,
+    fill: sunset ? hsl(g.f(25, 40), 95, 80) : hsl(48, 100, 92),
+  });
+  // Low hills far off, and the plain.
+  const hills = curve(w, horizon - h * g.f(0, 0.04), horizon - h * g.f(0, 0.04), -h * g.f(0.01, 0.04));
+  out += el("path", {
+    d: hills.d() + s`V${h}H0Z`,
+    fill: sunset ? hsl(g.f(270, 300), 20, 38) : hsl(hue + 10, 18, 66),
+  });
+  out += el("rect", { y: horizon, width: w, height: h - horizon, fill: `url(#${grassId})` });
+  // Lighter streaks of grass across the plain.
+  for (let k = g.i(2, 4); k > 0; k--) {
+    const y = horizon + (h - horizon) * g.f(0.1, 0.7);
+    out += el("ellipse", {
+      cx: w * g.f(0, 1),
+      cy: y,
+      rx: w * g.f(0.2, 0.45),
+      ry: unit * 0.012,
+      fill: "#fff",
+      opacity: "0.08",
+    });
+  }
+  const dark = hsl(20, 25, 12);
+  const bark = sunset ? dark : hsl(25, 25, 28);
+  const leafHue = g.f(75, 110);
+  const leaf = sunset
+    ? [dark, dark, hsl(20, 25, 8)]
+    : [hsl(leafHue, 35, 42), hsl(leafHue, 32, 33), hsl(leafHue, 30, 24)];
+  // Small acacias on the horizon.
+  for (let k = g.i(1, 3); k > 0; k--) {
+    const ht = unit * g.f(0.06, 0.1);
+    out += acacia(g, w * g.f(0.05, 0.95), horizon + unit * 0.01, ht, bark, leaf, true);
+  }
+  // The animals, small in the distance.
+  const herd = g.pick(["giraffe", "elephant", "antelope"] as const);
+  const herdX = w * g.f(0.2, 0.8);
+  const dir = g.pick([-1, 1]);
+  const count = herd === "antelope" ? g.i(3, 4) : g.i(2, 3);
+  const size = unit * (herd === "giraffe" ? 0.09 : herd === "elephant" ? 0.06 : 0.035);
+  const paint = sunset ? dark : hsl(25, 25, 22);
+  // The whole herd faces one way.
+  out += facing(herdX, dir);
+  for (let k = 0; k < count; k++) {
+    const scale = herd === "elephant" && k === count - 1 ? 0.6 : g.f(0.85, 1.05);
+    const x = herdX + (k - count / 2) * size * g.f(0.8, 1.4);
+    out += beast(herd, x, horizon + (h - horizon) * g.f(0.08, 0.14), size * scale, paint);
+  }
+  out += "</g>";
+  // The main acacia in the foreground, sometimes with a second further back.
+  const side = g.pick([-1, 1]);
+  const tx = w / 2 + side * w * g.f(0.15, 0.3);
+  const ty = h * g.f(0.84, 0.92);
+  const tht = Math.min(unit * g.f(0.42, 0.55), ty * 0.82);
+  const second = g.chance(0.5);
+  if (second) {
+    const sx = w / 2 - side * w * g.f(0.18, 0.35);
+    const sy = horizon + (h - horizon) * g.f(0.35, 0.5);
+    out += el("ellipse", { cx: sx, cy: sy, rx: tht * 0.4, ry: tht * 0.04, fill: "#000", opacity: "0.12" });
+    out += acacia(g, sx, sy, tht * g.f(0.45, 0.6), bark, leaf);
+  }
+  out += el("ellipse", { cx: tx, cy: ty, rx: tht * 0.7, ry: tht * 0.06, fill: "#000", opacity: "0.15" });
+  out += acacia(g, tx, ty, tht, bark, leaf);
+  // Tufts of tall grass in the foreground.
+  let tufts = "";
+  for (let k = g.i(3, 6); k > 0; k--) {
+    const x = w * g.f(0, 1);
+    const y = horizon + (h - horizon) * g.f(0.55, 1);
+    const th = unit * g.f(0.03, 0.05);
+    tufts += s`M${x - th * 0.3} ${y - th * 0.8}L${x} ${y}L${x + th * 0.05} ${y - th}M${x} ${y}L${x + th * 0.35} ${y - th * 0.75}`;
+  }
+  out += el("path", {
+    d: tufts,
+    fill: "none",
+    stroke: sunset ? hsl(grassHue - 20, 35, 16) : hsl(grassHue - 4, 50, 38),
+    "stroke-width": unit * 0.005,
+    "stroke-linecap": "round",
+  });
+  const animals = { giraffe: "giraffes", elephant: "elephants", antelope: "antelope" }[herd];
+  const when = time === "day" ? "under a big sky" : time === "golden" ? "in low evening light" : "at sunset";
+  note.alt(`Flat-topped acacia trees on open grassland ${when}, ${animals} in the distance`);
+  note.focus(tx, ty - tht * 0.8);
+  return out;
+});
+
+/** The northern lights rippling over a still lake or snowy hills on a starry night. */
+export const aurora = defineKind("aurora", "Northern lights", (g, w, h, note) => {
+  const unit = Math.min(w, h);
+  const hue = g.f(215, 240);
+  const glow = g.f(120, 165);
+  const tip = g.chance(0.5) ? g.f(275, 320) : glow + g.f(25, 45);
+  const lake = g.chance(0.5);
+  const shore = h * g.f(0.62, 0.72);
+  // Repeated details are spaced wider on wide pictures, to keep the markup small.
+  const spread = Math.sqrt(Math.max(1, w / h / 1.4));
+  const skyId = g.id("sky");
+  const veil = g.id("veil");
+  const defs = [
+    lin(skyId, [hsl(hue, 55, 6), hsl(hue + 10, 45, 14), hsl(hue + 15, 40, 24)]),
+    el(
+      "linearGradient",
+      { id: veil, x1: 0, y1: 0, x2: 0, y2: 1 },
+      el("stop", { offset: 0, "stop-color": hsl(tip, 70, 60), "stop-opacity": 0 }),
+      el("stop", { offset: 0.45, "stop-color": hsl(tip, 70, 62), "stop-opacity": 0.3 }),
+      el("stop", { offset: 0.78, "stop-color": hsl(glow, 85, 60), "stop-opacity": 0.7 }),
+      el("stop", { offset: 1, "stop-color": hsl(glow, 90, 70), "stop-opacity": 0.9 }),
+    ),
+  ];
+  // The sky: stars, then curtains of light with rays rising from their lower edges.
+  let sky = el("rect", { width: w, height: shore, fill: `url(#${skyId})` });
+  sky += starDots(g, w, shore * 0.9, g.i(24, 38), unit);
+  const ribbons = g.i(1, 3);
+  let focusY = shore * 0.4;
+  for (let r = 0; r < ribbons; r++) {
+    const base = shore * g.f(0.45, 0.72) - r * shore * 0.12;
+    const amp = shore * g.f(0.04, 0.09);
+    const freq = g.f(0.8, 1.8);
+    const tilt = shore * g.f(-0.25, 0.25);
+    const tall = shore * g.f(0.25, 0.42);
+    const p1 = g.f(0, 6);
+    const p2 = g.f(0, 6);
+    const bottom = (x: number) => base + amp * Math.sin(p1 + (freq * 2 * Math.PI * x) / w) + tilt * (x / w - 0.5);
+    const topAt = (x: number) => bottom(x) - tall * (0.65 + 0.35 * Math.sin(p2 + (2.3 * Math.PI * x) / w));
+    const lower: Point[] = [];
+    const upper: Point[] = [];
+    for (let k = 0; k <= 9; k++) {
+      const x = -0.1 * w + (1.2 * w * k) / 9;
+      lower.push([x, bottom(x)]);
+      upper.unshift([x, topAt(x)]);
+    }
+    const d = tight(smoothClosed([...lower, ...upper]));
+    sky += el("path", { d, fill: `url(#${veil})`, opacity: r ? g.f(0.5, 0.75) : 0.95 });
+    let rays = "";
+    for (let k = g.i(6, 10); k > 0; k--) {
+      const x = w * g.f(0, 1);
+      rays += s`M${x} ${bottom(x) - unit * 0.01}V${topAt(x) + tall * 0.2}`;
+    }
+    sky += el("path", { d: rays, stroke: hsl(glow, 80, 78), "stroke-width": unit * g.f(0.005, 0.01), opacity: "0.18" });
+    if (!r) focusY = base - tall * 0.35;
+  }
+  let out = "";
+  let alt: string;
+  if (lake) {
+    // A far shore of dark hills and pines, then everything above it mirrored in the water.
+    const hill = curve(w, shore - h * g.f(0.02, 0.07), shore - h * g.f(0.02, 0.07), -h * g.f(0, 0.05));
+    sky += el("path", { d: hill.d() + s`V${shore}H0Z`, fill: hsl(hue, 30, 10) });
+    let trees = "";
+    for (let x = g.f(0, 0.02) * w; x < w; x += unit * g.f(0.03, 0.06) * spread * 1.3) {
+      const th = unit * g.f(0.03, 0.07);
+      const by = hill.at(x) + unit * 0.01;
+      trees += s`M${x - th * 0.25} ${by}l${th * 0.25} ${-th}l${th * 0.25} ${th}Z`;
+    }
+    sky += el("path", { d: trees, fill: hsl(hue, 30, 6) });
+    const view = g.id("view");
+    defs.push(el("g", { id: view }, sky));
+    out += fill(w, h, hsl(hue, 40, 8));
+    out += el("use", { href: `#${view}` });
+    out += el("use", { href: `#${view}`, transform: s`matrix(1 0 0 -1 0 ${2 * shore})`, opacity: "0.75" });
+    out += el("rect", { y: shore, width: w, height: h - shore, fill: hsl(hue, 40, 10), opacity: "0.3" });
+    for (let k = g.i(3, 5); k > 0; k--)
+      out += el("rect", {
+        x: w * g.f(-0.1, 0.9),
+        y: shore + (h - shore) * g.f(0.1, 0.9),
+        width: w * g.f(0.1, 0.3),
+        height: Math.max(1, unit * 0.004),
+        fill: "#fff",
+        opacity: "0.12",
+      });
+    // A snowy bank in one corner with a pine or two.
+    const side = g.pick([-1, 1]);
+    const bank = curve(w, h * (side < 0 ? 0.86 : 1.05), h * (side < 0 ? 1.05 : 0.86), -h * 0.03);
+    out += el("path", { d: bank.d() + s`V${h + 1}H0Z`, fill: hsl(hue, 22, 34) });
+    for (let k = g.i(1, 2); k > 0; k--) {
+      const x = side < 0 ? w * g.f(0.02, 0.18) : w * g.f(0.82, 0.98);
+      const ht = unit * g.f(0.28, 0.38);
+      out += pine(x, bank.at(x) + ht * 0.04, ht, ht * 0.5, hsl(hue, 30, 7));
+    }
+    alt = "The northern lights rippling over a still lake on a starry night, mirrored in the water";
+  } else {
+    out += sky;
+    // Snowy hills under the glow, with snow-laden pines and sometimes a cabin.
+    const tree = g.id("pine");
+    const snow = (light: number) => hsl(hue, 22, light);
+    defs.push(
+      el(
+        "g",
+        { id: tree },
+        el("path", { d: `M${pts(PINE.map(([x, y]): Point => [x * 100, y * 100]))}Z` }),
+        el("path", { d: PINE_SNOW, fill: snow(62) }),
+      ),
+    );
+    const far = curve(w, shore - h * g.f(0, 0.05), shore - h * g.f(0, 0.05), -h * g.f(0.02, 0.06));
+    const near = curve(w, h * g.f(0.8, 0.86), h * g.f(0.8, 0.86), -h * g.f(0, 0.05));
+    out += el("path", { d: far.d() + s`V${h}H0Z`, fill: hsl(glow, 14, 38) });
+    for (let x = g.f(0, 0.05) * w; x < w; x += unit * g.f(0.05, 0.12) * spread) {
+      const ht = unit * g.f(0.06, 0.11);
+      out += snowyPine(tree, x, far.at(x) + ht * 0.1, ht, ht * 0.55, hsl(hue, 25, 12));
+    }
+    out += el("path", { d: near.d() + s`V${h}H0Z`, fill: snow(52) });
+    const cabinX = w * g.f(0.25, 0.75);
+    const cw = unit * g.f(0.18, 0.24);
+    const lit = g.chance(0.5);
+    for (const dir of [-1, 1]) {
+      const x = cabinX + dir * cw * g.f(1, 1.6);
+      const ht = unit * g.f(0.24, 0.32);
+      out += snowyPine(tree, x, near.at(x) + ht * 0.04, ht, ht * 0.55, hsl(hue, 25, 10));
+    }
+    if (lit) out += cabin(g, cabinX, near.at(cabinX) + cw * 0.05, cw, snow(66), true);
+    // A soft glow of the lights on the snow.
+    out += el("rect", { y: shore, width: w, height: h - shore, fill: hsl(glow, 70, 60), opacity: "0.06" });
+    alt = `The northern lights rippling over snowy hills and pines on a starry night${lit ? ", a cabin window lit below" : ""}`;
+  }
+  note.alt(alt);
+  note.focus(w / 2, focusY);
+  return el("defs", {}, ...defs) + out;
+});
+
+/** A city street in the rain: lit windows over a wet road that mirrors them, street lamps glowing. */
+export const rainyStreet = defineKind("rainy-street", "Rainy street", (g, w, h, note) => {
+  const night = g.chance(0.55);
+  const unit = Math.min(w, h);
+  const hue = g.f(205, 240);
+  const skyId = g.id("sky");
+  const streak = g.id("streak");
+  const lamp = g.id("lamp");
+  const view = g.id("view");
+  const base = h * g.f(0.58, 0.66);
+  const curb = base + unit * g.f(0.07, 0.1);
+  const warm = hsl(g.f(36, 46), 95, 70);
+  // Wide pictures get bigger windows and fewer towers, so the markup stays small.
+  const wide = Math.sqrt(Math.max(1, w / h / 1.4));
+  const defs = [
+    lin(skyId, night ? [hsl(hue, 35, 9), hsl(hue + 5, 28, 22)] : [hsl(hue, 28, 30), hsl(hue + 20, 24, 52)]),
+    el(
+      "linearGradient",
+      { id: streak, x1: 0, y1: 0, x2: 0, y2: 1 },
+      el("stop", { offset: 0, "stop-color": warm, "stop-opacity": 0.55 }),
+      el("stop", { offset: 1, "stop-color": warm, "stop-opacity": 0 }),
+    ),
+    glowDef(lamp, warm, 0.5),
+  ];
+  let out = fill(w, h, `url(#${skyId})`);
+  // Towers far off in the haze.
+  let haze = "";
+  for (let x = -w * g.f(0, 0.1); x < w; x += unit * g.f(0.1, 0.2) * wide) {
+    const tw = unit * g.f(0.08, 0.16) * wide;
+    haze += s`M${x} ${base}V${base - base * g.f(0.55, 0.95)}h${tw}V${base}Z`;
+  }
+  let scene = el("path", { d: haze, fill: hsl(hue, 14, night ? 20 : 40), opacity: "0.7" });
+  // The street's buildings, built on a grid of windows so a pattern can draw them.
+  const tw = unit * g.f(0.055, 0.07) * wide;
+  // Tall pictures get taller floors, for the same reason.
+  const th = unit * g.f(0.07, 0.085) * Math.min(wide, 1.2) * Math.sqrt(Math.max(1, h / w / 1.4));
+  const x0 = -tw * g.f(0, 1);
+  const glass = hsl(hue, 25, night ? 12 : 22);
+  const shapes = [
+    [0.28, 0.18, 0.44, 0.58],
+    [0.15, 0.25, 0.7, 0.45],
+  ];
+  const grids = shapes.map((_, k) => g.id(`windows${k}`));
+  shapes.forEach(([x, y, ww, wh], k) =>
+    defs.push(
+      el(
+        "pattern",
+        { id: grids[k], patternUnits: "userSpaceOnUse", x: x0, y: base, width: tw, height: th },
+        el("rect", { x: tw * x, y: th * y, width: tw * ww, height: th * wh, fill: glass }),
+      ),
+    ),
+  );
+  const maxRows = Math.max(3, Math.floor((base - unit * 0.06) / th) - 1);
+  let lit = "";
+  let shops = "";
+  const panes = ["", ""];
+  // Three facade colors and two awning colors, each drawn as one path.
+  const walls = [0, 1, 2].map(() => hsl(hue + g.f(-30, 30), g.f(8, 22), g.f(18, 30) + (night ? 0 : 8)));
+  const facades = ["", "", ""];
+  const awningColors = [hsl(g.f(0, 360), 50, 40), hsl(g.f(0, 360), 50, 40)];
+  const awnings = ["", ""];
+  let last = -1;
+  const glows: number[] = [];
+  for (let x = x0; x < w;) {
+    const cols = g.i(2, 5);
+    const bw = cols * tw;
+    const rows = g.i(3, maxRows);
+    const top = base - rows * th - th * 0.3;
+    const style = g.i(0, 1);
+    // No two neighbors share a color.
+    const color = (last + g.i(1, 2)) % 3;
+    last = color;
+    facades[color] += s`M${x} ${top}h${bw}V${base}h${-bw}Z`;
+    panes[style] += s`M${x} ${top + th * 0.3}h${bw}V${base - th}h${-bw}Z`;
+    const [wx, wy, ww, wh] = shapes[style];
+    for (let row = 1; row < rows; row++)
+      for (let c = 0; c < cols; c++)
+        if (g.chance((night ? 0.25 : 0.18) / wide))
+          lit += s`M${x + (c + wx) * tw} ${base - (row + 1) * th + wy * th}h${ww * tw}v${wh * th}h${-ww * tw}Z`;
+    // A shop front, lit most of the time, under an awning.
+    if (g.chance(0.55)) {
+      const sx = x + tw * 0.3;
+      const sw = bw - tw * 0.6;
+      shops += s`M${sx} ${base - th * 0.85}h${sw}v${th * 0.85}h${-sw}Z`;
+      awnings[g.i(0, 1)] +=
+        s`M${sx - tw * 0.1} ${base - th * 0.9}h${sw + tw * 0.2}l${tw * 0.1} ${th * 0.2}h${-sw - tw * 0.4}Z`;
+      glows.push(sx + sw / 2, sw);
+    }
+    x += bw;
+  }
+  facades.forEach((d, k) => (scene += d ? el("path", { d, fill: walls[k] }) : ""));
+  panes.forEach((d, k) => (scene += d ? el("path", { d, fill: `url(#${grids[k]})` }) : ""));
+  scene += el("path", { d: lit, fill: warm });
+  if (shops) scene += el("path", { d: shops, fill: warm, opacity: "0.85" });
+  awnings.forEach((d, k) => (scene += d ? el("path", { d, fill: awningColors[k] }) : ""));
+  defs.push(el("g", { id: view }, scene));
+  out += el("use", { href: `#${view}` });
+  // The wet road mirrors the street, and the sidewalk catches a little of it too.
+  out += el("rect", { y: base, width: w, height: h - base, fill: hsl(hue, 15, night ? 12 : 22) });
+  out += el("use", { href: `#${view}`, transform: s`matrix(1 0 0 -1 0 ${2 * base})`, opacity: "0.4" });
+  out += el("rect", { y: base, width: w, height: curb - base, fill: hsl(hue, 10, night ? 24 : 34), opacity: "0.85" });
+  out += el("rect", { y: curb - unit * 0.006, width: w, height: unit * 0.006, fill: "#fff", opacity: "0.2" });
+  // Streak reflections of the shops and lamps on the wet road, all sharing one gradient down the road;
+  // street lamps along the curb, each with a glow and a pool of light.
+  const fall = (h - curb) * 0.85;
+  let streaks = "";
+  for (let k = 0; k < glows.length; k += 2)
+    streaks += s`M${glows[k] - glows[k + 1] * 0.3} ${curb}h${glows[k + 1] * 0.6}v${fall}h${-glows[k + 1] * 0.6}Z`;
+  const lamps = Math.max(1, Math.round(w / (unit * g.f(0.7, 1) * wide)));
+  const lampXs: number[] = [];
+  const pole = hsl(hue, 15, 10);
+  let poles = "";
+  let pools = "";
+  let bulbs = "";
+  let halos = "";
+  for (let k = 0; k < lamps; k++) {
+    const lx = (w * (k + g.f(0.3, 0.7))) / lamps;
+    lampXs.push(lx);
+    const ly = curb - unit * 0.015;
+    const lh = Math.min(unit * g.f(0.32, 0.4), ly * 0.75);
+    const u = unit;
+    streaks += s`M${lx - u * 0.04} ${curb}h${u * 0.08}v${fall}h${-u * 0.08}Z`;
+    pools += s`M${lx - u * 0.1} ${ly}a${u * 0.1} ${u * 0.02} 0 1 0 ${u * 0.2} 0a${u * 0.1} ${u * 0.02} 0 1 0 ${-u * 0.2} 0`;
+    poles += s`M${lx - u * 0.005} ${ly}v${-lh}h${u * 0.01}v${lh}Z
+               M${lx - u * 0.025} ${ly - lh + u * 0.012}L${lx - u * 0.012} ${ly - lh - u * 0.025}H${lx + u * 0.012}L${lx + u * 0.025} ${ly - lh + u * 0.012}Z`;
+    bulbs += s`M${lx - u * 0.016} ${ly - lh}h${u * 0.032}v${u * 0.012}h${-u * 0.032}Z`;
+    halos += el("circle", { cx: lx, cy: ly - lh, r: u * 0.12, fill: `url(#${lamp})` });
+  }
+  out += el("path", { d: streaks, fill: `url(#${streak})`, opacity: "0.7" });
+  out += el("path", { d: pools, fill: warm, opacity: "0.2" });
+  out += el("path", { d: poles, fill: pole }) + halos + el("path", { d: bulbs, fill: hsl(48, 100, 85) });
+  // Someone walking under an umbrella, kept clear of the lamps.
+  const person = g.chance(0.7);
+  let px = w * g.f(0.2, 0.8);
+  const ph = unit * g.f(0.14, 0.17);
+  for (const lx of lampXs) if (Math.abs(px - lx) < ph * 0.6) px = lx + (px < lx ? -1 : 1) * ph * 0.6;
+  const py = base + (curb - base) * 0.65;
+  if (person) {
+    const dark = hsl(hue, 20, 8);
+    const dir = g.pick([-1, 1]);
+    let fig = facing(px, dir);
+    fig += el("ellipse", { cx: px, cy: py, rx: ph * 0.18, ry: ph * 0.025, fill: "#000", opacity: "0.3" });
+    fig += el("path", {
+      d: s`M${px - ph * 0.04} ${py - ph * 0.35}L${px - ph * 0.07} ${py}M${px + ph * 0.04} ${py - ph * 0.35}L${px + ph * 0.09} ${py}`,
+      stroke: dark,
+      "stroke-width": ph * 0.05,
+      "stroke-linecap": "round",
+    });
+    fig += el("polygon", {
+      points: pts([
+        [px - ph * 0.07, py - ph * 0.76],
+        [px + ph * 0.07, py - ph * 0.76],
+        [px + ph * 0.1, py - ph * 0.3],
+        [px - ph * 0.1, py - ph * 0.3],
+      ]),
+      fill: dark,
+    });
+    fig += el("circle", { cx: px + ph * 0.01, cy: py - ph * 0.84, r: ph * 0.065, fill: dark });
+    // The arm up to the handle, and the umbrella over the head.
+    const ux = px + ph * 0.06;
+    const uy = py - ph * 1.04;
+    const ur = ph * 0.34;
+    fig += el("path", {
+      d: s`M${px + ph * 0.04} ${py - ph * 0.72}L${ux} ${py - ph * 0.6}M${ux} ${py - ph * 0.6}V${uy}`,
+      stroke: dark,
+      "stroke-width": ph * 0.03,
+      "stroke-linecap": "round",
+    });
+    let rim = "";
+    for (let k = 0; k < 4; k++) {
+      const a = ux - ur + (k * ur) / 2;
+      rim += s`Q${a + ur / 4} ${uy - ur * 0.08} ${a + ur / 2} ${uy}`;
+    }
+    fig += el("path", {
+      d:
+        s`M${ux - ur} ${uy}A${ur} ${ur * 0.75} 0 0 1 ${ux + ur} ${uy}` +
+        rim.replace(/^Q/, "L" + s`${ux + ur} ${uy}Q`) +
+        "Z",
+      fill: hsl(g.f(0, 360), 60, night ? 42 : 48),
+    });
+    out += fig + "</g>";
+  }
+  // Rain, and rings where it lands on the road.
+  let rain = "";
+  const slant = g.f(-0.3, 0.3);
+  for (let k = Math.round(g.i(20, 28) / Math.min(wide, 1.3)); k > 0; k--) {
+    const len = unit * g.f(0.04, 0.07);
+    rain += s`M${w * g.f(0, 1)} ${h * g.f(-0.05, 1)}l${len * slant} ${len}`;
+  }
+  out += el("path", { d: rain, stroke: "#fff", "stroke-width": unit * 0.003, opacity: "0.35" });
+  let rings = "";
+  for (let k = g.i(2, 4); k > 0; k--) {
+    const r = unit * g.f(0.015, 0.03);
+    const x = w * g.f(0, 1);
+    const y = curb + (h - curb) * g.f(0.15, 0.95);
+    rings += s`M${x - r} ${y}a${r} ${r * 0.3} 0 1 0 ${2 * r} 0a${r} ${r * 0.3} 0 1 0 ${-2 * r} 0`;
+  }
+  out += el("path", { d: rings, fill: "none", stroke: "#fff", "stroke-width": unit * 0.003, opacity: "0.25" });
+  note.alt(
+    `A city street in the rain ${night ? "at night" : "at dusk"}, lit windows mirrored in the wet road${person ? ", someone walking under an umbrella" : ""}`,
+  );
+  if (person) note.focus(px, py - ph * 0.6);
+  else note.focus(lampXs[0], curb - unit * 0.3);
+  return el("defs", {}, ...defs) + out;
+});
+
+/** A tent beside a campfire under mountains or tall pines, at dusk or on a starry night. */
+export const campsite = defineKind("campsite", "Campsite", (g, w, h, note) => {
+  const night = g.chance(0.55);
+  const backdrop = g.pick(["mountains", "pines"] as const);
+  const unit = Math.min(w, h);
+  const hue = g.f(220, 250);
+  const skyId = g.id("sky");
+  const fireGlow = g.id("glow");
+  const lantern = g.id("lantern");
+  const stops = night
+    ? [hsl(hue, 50, 8), hsl(hue + 10, 40, 20)]
+    : [hsl(g.f(235, 260), 35, 28), hsl(g.f(300, 330), 30, 46), hsl(g.f(18, 32), 75, 66)];
+  let out = el(
+    "defs",
+    {},
+    lin(skyId, stops),
+    glowDef(fireGlow, hsl(30, 100, 60), 0.45),
+    glowDef(lantern, hsl(42, 100, 70), 0.5),
+  );
+  out += fill(w, h, `url(#${skyId})`);
+  const groundY = h * g.f(0.62, 0.7);
+  out += starDots(g, w, groundY * (night ? 0.8 : 0.4), night ? g.i(30, 45) : g.i(4, 8), unit);
+  if (night && g.chance(0.6)) {
+    // A crescent moon.
+    const mx = w * g.f(0.1, 0.9);
+    const my = groundY * g.f(0.15, 0.3);
+    const mr = unit * g.f(0.035, 0.05);
+    out += el("path", {
+      d: s`M${mx} ${my - mr}A${mr} ${mr} 0 1 0 ${mx} ${my + mr}A${mr * 0.75} ${mr} 0 1 1 ${mx} ${my - mr}Z`,
+      fill: hsl(50, 60, 90),
+    });
+  }
+  const shade = (k: number) => (night ? hsl(hue, 25, 18 - 5 * k) : hsl(hue + 20, 20, 34 - 7 * k));
+  if (backdrop === "mountains") {
+    // Two dark ranges behind the camp.
+    for (let range = 0; range < 2; range++) {
+      const amp = groundY * (0.5 - 0.15 * range);
+      const steps = g.i(3, 5);
+      const ridge: Point[] = [[0, groundY - amp * g.f(0.2, 0.5)]];
+      for (let step = 1; step < steps * 2; step++) {
+        const x = (w * step) / (steps * 2) + g.f(-0.25, 0.25) * (w / (steps * 2));
+        ridge.push([x, groundY - amp * (step % 2 ? g.f(0.6, 1) : g.f(0.15, 0.4))]);
+      }
+      ridge.push([w, groundY - amp * g.f(0.2, 0.5)], [w, groundY + 1], [0, groundY + 1]);
+      out += el("polygon", { points: pts(ridge), fill: shade(range) });
+    }
+  } else {
+    // Two rows of pines along the edge of the clearing.
+    for (let row = 0; row < 2; row++) {
+      let trees = "";
+      for (
+        let x = g.f(-0.02, 0.02) * w;
+        x < w * 1.02;
+        x += unit * g.f(0.05, 0.09) * Math.sqrt(Math.max(1, w / h / 1.4))
+      ) {
+        const ht = groundY * (row ? g.f(0.3, 0.45) : g.f(0.45, 0.6));
+        // Two tiers, drawn relative to keep the path short.
+        const a = ht * 0.22;
+        trees += s`M${x - a} ${groundY + 1}l${a * 0.62} ${-ht * 0.5}h${-a * 0.24}l${a * 0.62} ${-ht * 0.5}
+                   l${a * 0.62} ${ht * 0.5}h${-a * 0.24}l${a * 0.62} ${ht * 0.5}Z`;
+      }
+      out += el("path", { d: trees, fill: shade(row) });
+    }
+  }
+  out += el("rect", { y: groundY, width: w, height: h - groundY, fill: hsl(g.f(90, 140), 25, night ? 15 : 24) });
+  // Where the tent and fire stand.
+  const tw = unit * g.f(0.3, 0.38);
+  const th = tw * g.f(0.6, 0.72);
+  const side = g.pick([-1, 1]);
+  const pc = w * g.f(0.42, 0.58);
+  // The tent's far side runs back away from the fire, so keep it and the fire inside the picture.
+  const margin = unit * 0.04;
+  const reach = tw / 2 + tw * 0.45;
+  const tx = Math.max(
+    side > 0 ? reach + margin : tw / 2 + margin,
+    Math.min(side > 0 ? w - tw * 1.2 - margin : w - reach - margin, pc - side * tw * 0.4),
+  );
+  const ty = groundY + (h - groundY) * g.f(0.3, 0.45);
+  const fx = tx + side * tw * 1.05;
+  const fy = Math.min(ty + unit * g.f(0.03, 0.06), h - unit * 0.06);
+  out += el("circle", { cx: fx, cy: fy - unit * 0.05, r: unit * 0.5, fill: `url(#${fireGlow})` });
+  // The tent: its side running back away from the fire, then the front with its door.
+  const away = -side;
+  const ex = tx + (away * tw) / 2;
+  const dd = tw * 0.45;
+  const dz = tw * 0.12;
+  const canvas = hsl(g.f(0, 360), g.f(45, 65), night ? 36 : 42);
+  out += el("ellipse", {
+    cx: tx + away * dd * 0.5,
+    cy: ty,
+    rx: tw * 0.8,
+    ry: tw * 0.07,
+    fill: "#000",
+    opacity: "0.25",
+  });
+  out += el("polygon", {
+    points: pts([
+      [ex, ty],
+      [tx, ty - th],
+      [tx + away * dd, ty - th - dz],
+      [ex + away * dd, ty - dz],
+    ]),
+    fill: canvas,
+  });
+  out += el("polygon", {
+    points: pts([
+      [ex, ty],
+      [tx, ty - th],
+      [tx + away * dd, ty - th - dz],
+      [ex + away * dd, ty - dz],
+    ]),
+    fill: "#000",
+    opacity: "0.3",
+  });
+  const front = pts([
+    [tx - tw / 2, ty],
+    [tx, ty - th],
+    [tx + tw / 2, ty],
+  ]);
+  out += el("polygon", { points: front, fill: canvas });
+  out += el("polygon", { points: front, fill: hsl(35, 100, 60), opacity: "0.15" });
+  const lit = g.chance(0.5);
+  if (lit) out += el("circle", { cx: tx, cy: ty - th * 0.3, r: tw * 0.5, fill: `url(#${lantern})` });
+  out += el("polygon", {
+    points: pts([
+      [tx - tw * 0.17, ty],
+      [tx, ty - th * 0.72],
+      [tx + tw * 0.17, ty],
+    ]),
+    fill: lit ? hsl(42, 90, 66) : hsl(hue, 30, 10),
+  });
+  // Guy lines out to pegs.
+  out += el("path", {
+    d: s`M${tx} ${ty - th}L${tx - tw * 0.75} ${ty + unit * 0.005}M${tx} ${ty - th}L${tx + tw * 0.75} ${ty + unit * 0.005}`,
+    stroke: "#fff",
+    "stroke-width": unit * 0.003,
+    opacity: "0.35",
+  });
+  // A log to sit on, beyond the fire.
+  const seat = g.chance(0.5) && fx + side * unit * 0.2 > unit * 0.05 && fx + side * unit * 0.2 < w - unit * 0.05;
+  if (seat) {
+    const sx = fx + side * unit * 0.14;
+    out += el("rect", {
+      x: sx - unit * 0.06,
+      y: fy - unit * 0.035,
+      width: unit * 0.12,
+      height: unit * 0.03,
+      rx: unit * 0.015,
+      fill: hsl(25, 35, 24),
+    });
+  }
+  // The fire: a ring of stones, crossed logs, flames and sparks.
+  const fr = unit * g.f(0.05, 0.065);
+  out += el("ellipse", { cx: fx, cy: fy, rx: fr * 1.3, ry: fr * 0.3, fill: "#000", opacity: "0.3" });
+  out += el("path", {
+    d: s`M${fx - fr} ${fy - fr * 0.05}L${fx + fr * 0.8} ${fy - fr * 0.4}M${fx + fr} ${fy - fr * 0.05}L${fx - fr * 0.8} ${fy - fr * 0.4}`,
+    stroke: hsl(25, 40, 22),
+    "stroke-width": fr * 0.25,
+    "stroke-linecap": "round",
+  });
+  const flame = (lean: number, ht: number, r: number) =>
+    s`M${fx - r} ${fy - fr * 0.2}Q${fx - r} ${fy - ht * 0.5} ${fx + lean} ${fy - ht}Q${fx + r} ${fy - ht * 0.5} ${fx + r} ${fy - fr * 0.2}Z`;
+  const fh = fr * g.f(2, 2.6);
+  out += el("path", { d: flame(g.f(-0.2, 0.2) * fr, fh, fr * 0.7), fill: hsl(18, 100, 55) });
+  out += el("path", { d: flame(g.f(-0.2, 0.2) * fr, fh * 0.7, fr * 0.48), fill: hsl(35, 100, 60) });
+  out += el("path", { d: flame(0, fh * 0.4, fr * 0.26), fill: hsl(50, 100, 78) });
+  let stones = "";
+  for (let k = 0; k < 7; k++) {
+    const a = Math.PI * (k / 6);
+    const x = fx - Math.cos(a) * fr * 1.1;
+    const y = fy - fr * 0.05 + Math.sin(a) * fr * 0.25;
+    const r = fr * 0.22;
+    stones += s`M${x - r} ${y}a${r} ${r * 0.7} 0 1 0 ${2 * r} 0a${r} ${r * 0.7} 0 1 0 ${-2 * r} 0`;
+  }
+  out += el("path", { d: stones, fill: hsl(hue, 8, night ? 32 : 40) });
+  let sparks = "";
+  for (let k = g.i(3, 6); k > 0; k--) {
+    const r = unit * 0.004;
+    const x = fx + fr * g.f(-0.8, 0.8);
+    const y = fy - fh * g.f(1.1, 2);
+    sparks += s`M${x - r} ${y}a${r} ${r} 0 1 0 ${2 * r} 0a${r} ${r} 0 1 0 ${-2 * r} 0`;
+  }
+  out += el("path", { d: sparks, fill: hsl(45, 100, 75) });
+  // Tall pines framing the camp at the edges, left out where one would hide the tent or the fire.
+  const campLeft = Math.min(tx - tw / 2 - (away < 0 ? dd : 0), fx - fr * 1.5);
+  const campRight = Math.max(tx + tw / 2 + (away > 0 ? dd : 0), fx + fr * 1.5);
+  for (const edge of [-1, 1]) {
+    if (g.chance(0.45)) continue;
+    const x = edge < 0 ? w * g.f(0, 0.08) : w * g.f(0.92, 1);
+    const ht = Math.min(h * 0.85, unit * g.f(0.55, 0.75));
+    if (x + ht * 0.21 > campLeft && x - ht * 0.21 < campRight) continue;
+    out += pine(x, groundY + (h - groundY) * g.f(0.2, 0.4), ht, ht * 0.42, hsl(hue, 25, night ? 6 : 12));
+  }
+  note.alt(
+    `A tent beside a campfire ${backdrop === "mountains" ? "below mountains" : "among tall pines"} ${night ? "on a starry night" : "at dusk"}`,
+  );
+  note.focus(fx, fy - fh * 0.5);
+  return out;
+});
+
+/** Rice terraces stepping down a hillside, their paddies flooded with sky or planted with young rice. */
+export const terraces = defineKind("terraces", "Rice terraces", (g, w, h, note) => {
+  const time = g.pick(TIMES);
+  const sky = daySky(g, time);
+  const unit = Math.min(w, h);
+  const skyId = g.id("sky");
+  const dim = sky.dim;
+  const crest = h * g.f(0.24, 0.34);
+  let defs = lin(skyId, sky.stops);
+  let out = fill(w, h, `url(#${skyId})`);
+  out += el("circle", {
+    cx: w * g.f(0.15, 0.85),
+    cy: time === "day" ? crest * g.f(0.25, 0.5) : crest * g.f(0.6, 0.8),
+    r: unit * g.f(0.04, 0.06),
+    fill: sky.sun,
+  });
+  // Misty ranges behind the hill.
+  for (let range = 0; range < 2; range++) {
+    const foot = crest + h * 0.05;
+    const amp = crest * (0.75 - 0.25 * range);
+    const steps = g.i(3, 5);
+    const ridge: Point[] = [[0, foot - amp * g.f(0.2, 0.5)]];
+    for (let step = 1; step < steps * 2; step++) {
+      const x = (w * step) / (steps * 2) + g.f(-0.25, 0.25) * (w / (steps * 2));
+      ridge.push([x, foot - amp * (step % 2 ? g.f(0.6, 1) : g.f(0.2, 0.45))]);
+    }
+    ridge.push([w, foot - amp * g.f(0.2, 0.5)], [w, foot], [0, foot]);
+    out += el("polygon", { points: pts(ridge), fill: hsl(sky.hue + 10, 16, 74 - 10 * range + dim) });
+  }
+  // The wooded top of the hill.
+  const green = g.f(85, 115);
+  const top = curve(w, crest + h * g.f(0, 0.06), crest + h * g.f(0, 0.06), -h * g.f(0.02, 0.06));
+  let woods = tight(top.d()) + s`V${h}H0Z`;
+  // Wider apart on wide pictures, to keep the markup small.
+  const apart = Math.sqrt(Math.max(1, w / h / 1.4));
+  for (let x = g.f(0, 0.03) * w; x < w; x += unit * g.f(0.05, 0.08) * apart) {
+    const r = unit * g.f(0.03, 0.045) * Math.min(apart, 1.4);
+    woods += s`M${x - r} ${top.at(x) + r * 0.5}a${r} ${r} 0 1 1 ${2 * r} 0Z`;
+  }
+  out += el("path", { d: woods, fill: hsl(green + 20, 35, 28 + dim) });
+  // The terraces follow the hill's contours: they bulge toward the viewer around a spur, and back
+  // into a gully if there is one, with both drifting sideways down the slope. Closer steps are taller.
+  const count = g.i(6, 8);
+  const ratio = g.f(1.08, 1.2);
+  const y0 = top.at(w / 2) + unit * 0.05;
+  let sum = 0;
+  for (let k = 0; k < count; k++) sum += ratio ** k;
+  const spur = w * g.f(0.25, 0.75);
+  const spread = w * g.f(0.18, 0.32);
+  const features = [{ c: spur, spread, sign: 1, size: g.f(0.35, 0.55), drift: w * g.f(-0.25, 0.25) }];
+  if (g.chance(0.6))
+    features.push({
+      c: spur + (spur < w / 2 ? 1 : -1) * w * g.f(0.32, 0.45),
+      spread: w * g.f(0.15, 0.28),
+      sign: -1,
+      size: g.f(0.25, 0.45),
+      drift: w * g.f(-0.25, 0.25),
+    });
+  const tilt = h * g.f(-0.08, 0.08);
+  const season = g.pick(["water", "planted", "mixed", "mixed"] as const);
+  // Flooded paddies hold the sky: its warm colors at dawn and dusk, blue and silver by day.
+  const water =
+    time === "day"
+      ? [hsl(sky.hue, 42, 76), hsl(sky.hue - 8, 16, 84)]
+      : [hsl(g.f(18, 34), time === "dawn" ? 45 : 55, time === "dawn" ? 82 : 66), hsl(sky.hue, 14, 72 + dim)];
+  const earth = hsl(g.f(22, 36), 30, 30 + dim);
+  const lip = hsl(green - 5, 40, 40 + dim);
+  const dots = g.id("seedlings");
+  const dw = unit * 0.028;
+  defs += el(
+    "pattern",
+    { id: dots, patternUnits: "userSpaceOnUse", width: dw, height: dw * 0.7 },
+    el("path", {
+      d: s`M${dw * 0.25} ${dw * 0.17}h0M${dw * 0.75} ${dw * 0.52}h0`,
+      stroke: hsl(green + 15, 50, 30 + dim),
+      "stroke-width": unit * 0.009,
+      "stroke-linecap": "round",
+    }),
+  );
+  const hutAt = g.chance(0.5) ? g.i(1, 3) : -1;
+  let hut: Point = [spur, y0];
+  let y = y0;
+  let prev: Point[] = [];
+  for (let k = 0; k < count; k++) {
+    const step = ((h * 1.03 - y0) / sum) * ratio ** k;
+    const depth = (y - y0) / (h - y0);
+    const lift = (y - top.at(w / 2)) / h;
+    const line: Point[] = [];
+    for (let j = 0; j <= 10; j++) {
+      const x = -0.05 * w + (1.1 * w * j) / 10;
+      let yy = y + tilt * (x / w - 0.5) * lift;
+      for (const f of features)
+        yy += f.sign * f.size * (y - y0) * Math.exp(-(((x - f.c - f.drift * depth) / f.spread) ** 2));
+      // Never closer than a third of a step to the terrace above.
+      if (prev.length) yy = Math.max(yy, prev[j][1] + step * 0.35);
+      line.push([x, yy]);
+    }
+    prev = line;
+    let d = s`M${line[0][0]} ${line[0][1]}`;
+    for (let j = 1; j < line.length - 1; j++) {
+      const next = lerp(line[j], line[j + 1], 0.5);
+      d += s`Q${line[j][0]} ${line[j][1]} ${next[0]} ${next[1]}`;
+    }
+    d += s`L${line[10][0]} ${line[10][1]}V${h + unit}H${line[0][0]}Z`;
+    const at = (x: number) => along(line, x);
+    const id = g.id(`step${k}`);
+    defs += el("path", { id, d });
+    const riser = step * g.f(0.18, 0.26);
+    const flooded = season === "water" || (season === "mixed" && g.chance(0.55));
+    out += el("use", {
+      href: `#${id}`,
+      fill: flooded ? water[g.i(0, 1)] : hsl(green + g.f(-10, 10), 52, 46 + g.f(-4, 4) + dim),
+    });
+    out += flooded
+      ? // A glint off the water.
+        el("use", {
+          href: `#${id}`,
+          fill: "none",
+          stroke: "#fff",
+          "stroke-width": unit * 0.004,
+          opacity: "0.5",
+          transform: s`translate(0 ${riser * 2.2 + step * 0.15})`,
+        })
+      : // Rows of seedlings.
+        el("use", { href: `#${id}`, fill: `url(#${dots})` });
+    // The earthen bank down from this terrace's edge, and the grassy lip along the edge.
+    out += el("use", {
+      href: `#${id}`,
+      fill: "none",
+      stroke: earth,
+      "stroke-width": riser,
+      transform: s`translate(0 ${riser / 2})`,
+    });
+    out += el("use", { href: `#${id}`, fill: "none", stroke: lip, "stroke-width": unit * 0.008 });
+    if (k === hutAt) {
+      // A small thatched hut on the edge of the terrace above.
+      const hx = spur + spread * g.f(0.4, 0.8) * g.pick([-1, 1]);
+      const hy = at(hx) + unit * 0.004;
+      const hw = unit * g.f(0.06, 0.08);
+      hut = [hx, hy];
+      out += el("rect", {
+        x: hx - hw / 2,
+        y: hy - hw * 0.55,
+        width: hw,
+        height: hw * 0.55,
+        fill: hsl(30, 30, 42 + dim),
+      });
+      out += el("rect", {
+        x: hx - hw * 0.1,
+        y: hy - hw * 0.4,
+        width: hw * 0.2,
+        height: hw * 0.4,
+        fill: hsl(25, 30, 18),
+      });
+      out += el("polygon", {
+        points: pts([
+          [hx - hw * 0.72, hy - hw * 0.45],
+          [hx, hy - hw * 1.15],
+          [hx + hw * 0.72, hy - hw * 0.45],
+        ]),
+        fill: hsl(40, 40, 52 + dim),
+      });
+    }
+    y += step;
+  }
+  const look =
+    season === "water"
+      ? "their flooded paddies mirroring the sky"
+      : season === "planted"
+        ? "planted with young rice"
+        : "some paddies flooded, some planted";
+  note.alt(`Rice terraces stepping down a hillside${hutAt >= 0 ? " past a small hut" : ""}, ${look}, ${AT[time]}`);
+  if (hutAt >= 0) note.focus(hut[0], hut[1] - unit * 0.04);
+  else note.focus(spur, y0 + (h - y0) * 0.3);
+  return el("defs", {}, defs) + out;
+});
+
+/** A small boat on the water with its waterline at (x, y), `len` long and facing `dir`. */
+function boat(g: Rand, x: number, y: number, len: number, dir: number, hull: string): string {
+  const ht = len * 0.13;
+  let body = el("path", {
+    d: s`M${x - len * 0.5} ${y - ht * 1.35}Q${x - len * 0.42} ${y} ${x - len * 0.2} ${y}L${x + len * 0.38} ${y}
+         Q${x + len * 0.48} ${y - ht * 0.3} ${x + len * 0.5} ${y - ht}Z`,
+    fill: hull,
+  });
+  body += el("path", {
+    d: s`M${x - len * 0.5} ${y - ht * 1.35}L${x + len * 0.5} ${y - ht}`,
+    stroke: "#fff",
+    "stroke-width": ht * 0.25,
+    opacity: "0.5",
+  });
+  const kind = g.i(0, 2);
+  if (kind === 0) {
+    // A canopy over the middle.
+    const cy = y - ht * 1.15;
+    body += el("path", {
+      d: s`M${x - len * 0.2} ${cy}V${cy - ht * 1.5}M${x + len * 0.2} ${cy}V${cy - ht * 1.5}`,
+      stroke: hsl(0, 0, 20),
+      "stroke-width": ht * 0.15,
+    });
+    body += el("rect", {
+      x: x - len * 0.26,
+      y: cy - ht * 1.8,
+      width: len * 0.52,
+      height: ht * 0.4,
+      rx: ht * 0.15,
+      fill: hsl(g.f(0, 360), 40, 85),
+    });
+  } else if (kind === 1) {
+    // Someone sitting at the stern.
+    const px = x + len * 0.22;
+    const py = y - ht * 1.1;
+    body += el("rect", {
+      x: px - ht * 0.4,
+      y: py - ht * 1.3,
+      width: ht * 0.8,
+      height: ht * 1.4,
+      rx: ht * 0.3,
+      fill: hsl(g.f(0, 360), 35, 35),
+    });
+    body += el("circle", { cx: px, cy: py - ht * 1.7, r: ht * 0.4, fill: hsl(25, 35, 55) });
+  }
+  const out = el("g", { transform: s`matrix(1 0 0 -1 0 ${2 * y})`, opacity: "0.25" }, body) + body;
+  return facing(x, dir) + out + "</g>";
+}
+
+/** Narrow gabled houses along a city canal, a little arched bridge, boats and reflections. */
+export const canal = defineKind("canal", "Canal houses", (g, w, h, note) => {
+  const time = g.chance(0.6) ? "day" : g.pick(TIMES);
+  const sky = daySky(g, time);
+  const unit = Math.min(w, h);
+  const dim = sky.dim;
+  const skyId = g.id("sky");
+  const view = g.id("view");
+  const stretch = Math.max(1, w / (unit * 0.15 * 11));
+  const base = h * g.f(0.5, 0.56);
+  const waterY = base + unit * g.f(0.045, 0.06);
+  let scene = el("rect", { width: w, height: waterY, fill: `url(#${skyId})` });
+  if (time !== "day" || g.chance(0.6))
+    scene += el("circle", {
+      cx: w * g.f(0.1, 0.9),
+      cy: base * (time === "day" ? g.f(0.15, 0.3) : g.f(0.35, 0.5)),
+      r: unit * g.f(0.04, 0.06),
+      fill: sky.sun,
+    });
+  // The gap for the side canal and its bridge.
+  const gw = unit * g.f(0.24, 0.32) * Math.sqrt(stretch);
+  const gx = w * g.f(0.3, 0.7);
+  // Houses far down the side canal, pale with distance.
+  let far = "";
+  for (let x = gx - gw / 2; x < gx + gw / 2;) {
+    const fw = gw * g.f(0.18, 0.3);
+    const fh = base * g.f(0.18, 0.3);
+    far += s`M${x} ${base}V${base - fh}l${fw / 2} ${-fw * 0.5}l${fw / 2} ${fw * 0.5}V${base}Z`;
+    x += fw;
+  }
+  scene += el("path", { d: far, fill: hsl(sky.hue + 10, 14, 66 + dim) });
+  // The houses.
+  const lit = time !== "day";
+  const glass = hsl(210, 22, 26 + dim / 2);
+  const glow = hsl(45, 95, 70);
+  const frame = "#f4f1ea";
+  let panes = "";
+  let shine = "";
+  let doors = "";
+  let cornices = "";
+  for (let x = -unit * g.f(0, 0.08); x < w;) {
+    const hw = unit * g.f(0.12, 0.16) * stretch;
+    if (x + hw > gx - gw / 2 && x < gx + gw / 2) {
+      x = gx + gw / 2;
+      continue;
+    }
+    const hh = Math.min(unit * g.f(0.28, 0.42) * Math.min(stretch, 1.4), base - hw * 0.6 - unit * 0.03);
+    const yt = base - hh;
+    const gable = g.pick(["point", "step", "neck", "flat"] as const);
+    const outline: Point[] =
+      gable === "point"
+        ? [
+            [x + hw / 2, yt - hw * 0.5],
+            [x + hw, yt],
+          ]
+        : gable === "step"
+          ? [0.15, 0.3, 0.42, 0.58, 0.7, 0.85].flatMap((f, j): Point[] => {
+              const up = (j < 3 ? j + 1 : 6 - j) * hw * 0.13;
+              const was = (j < 3 ? j : 7 - j) * hw * 0.13;
+              return [
+                [x + hw * f, yt - was],
+                [x + hw * f, yt - up],
+              ];
+            })
+          : gable === "neck"
+            ? [
+                [x + hw * 0.22, yt - hw * 0.08],
+                [x + hw * 0.22, yt - hw * 0.38],
+                [x + hw * 0.5, yt - hw * 0.55],
+                [x + hw * 0.78, yt - hw * 0.38],
+                [x + hw * 0.78, yt - hw * 0.08],
+                [x + hw, yt],
+              ]
+            : [[x + hw, yt]];
+    const color = g.pick([
+      hsl(g.f(0, 22), 45, 42 + dim / 2),
+      hsl(g.f(30, 50), 45, 72 + dim / 2),
+      hsl(g.f(180, 220), 28, 55 + dim / 2),
+      hsl(g.f(90, 140), 22, 52 + dim / 2),
+      hsl(g.f(340, 360), 35, 60 + dim / 2),
+      hsl(g.f(15, 30), 30, 30 + dim / 2),
+    ]);
+    scene += el("path", { d: s`M${x} ${base}V${yt}L` + pts(outline).replace(/,/g, " ") + s`V${base}Z`, fill: color });
+    if (gable === "flat")
+      cornices += s`M${x - unit * 0.004} ${yt - unit * 0.012}h${hw + unit * 0.008}v${unit * 0.016}h${-hw - unit * 0.008}Z`;
+    // Windows floor by floor, a door at the bottom, and one in the gable.
+    const cols = hw > unit * 0.15 ? 3 : 2;
+    const floors = Math.max(2, Math.min(4, Math.round((hh * 0.78) / (unit * 0.08))));
+    const fl = (hh * 0.8) / floors;
+    const ww = hw / (cols * 2);
+    for (let f = 0; f < floors; f++)
+      for (let c = 0; c < cols; c++) {
+        const r = s`M${x + ww * (0.5 + 2 * c)} ${yt + hh * 0.05 + fl * (f + 0.2)}h${ww}v${fl * 0.6}h${-ww}Z`;
+        if (lit && g.chance(0.4)) shine += r;
+        else panes += r;
+      }
+    if (gable !== "flat")
+      panes += s`M${x + hw / 2 - ww * 0.4} ${yt - hw * 0.25}h${ww * 0.8}v${hw * 0.16}h${-ww * 0.8}Z`;
+    const dx = x + hw * g.f(0.15, 0.6);
+    doors += s`M${dx} ${base}v${-hh * 0.15}h${hw * 0.22}v${hh * 0.15}Z`;
+    x += hw;
+  }
+  if (cornices) scene += el("path", { d: cornices, fill: frame });
+  scene += el("path", { d: panes, fill: glass, stroke: frame, "stroke-width": unit * 0.004 });
+  if (shine) scene += el("path", { d: shine, fill: glow, stroke: frame, "stroke-width": unit * 0.004 });
+  scene += el("path", { d: doors, fill: hsl(g.f(0, 360), 35, 24) });
+  // The quay wall, and the bridge humped over the side canal with water showing under its arch.
+  const stone = hsl(g.f(15, 35), 18, 44 + dim);
+  scene += el("rect", { y: base, width: w, height: waterY - base, fill: stone });
+  scene += el("rect", { y: base, width: w, height: unit * 0.008, fill: "#fff", opacity: "0.25" });
+  const hump = unit * g.f(0.03, 0.05);
+  const bl = gx - gw / 2 - unit * 0.01;
+  const br = gx + gw / 2 + unit * 0.01;
+  scene += el("path", {
+    d: s`M${bl} ${waterY}V${base}Q${gx} ${base - hump * 2} ${br} ${base}V${waterY}Z`,
+    fill: hsl(g.f(0, 20), 35, 38 + dim),
+  });
+  const ow = gw * g.f(0.5, 0.65);
+  scene += el("path", {
+    d: s`M${gx - ow / 2} ${waterY}A${ow / 2} ${waterY - base + hump * 0.4} 0 0 1 ${gx + ow / 2} ${waterY}Z`,
+    fill: hsl(sky.hue, 30, 22 + dim / 2),
+  });
+  // A railing along the deck.
+  const rail = (t: number) => qpt([bl, base], [gx, base - hump * 2], [br, base], t);
+  let posts = "";
+  for (let k = 0; k <= 8; k++) {
+    const [px, py] = rail(k / 8);
+    posts += s`M${px} ${py}v${-unit * 0.03}`;
+  }
+  const [r0, r1] = [rail(0), rail(1)];
+  posts += s`M${r0[0]} ${r0[1] - unit * 0.03}Q${gx} ${base - hump * 2 - unit * 0.03} ${r1[0]} ${r1[1] - unit * 0.03}`;
+  scene += el("path", { d: posts, fill: "none", stroke: hsl(0, 0, 20), "stroke-width": unit * 0.005 });
+  let out = el("defs", {}, lin(skyId, sky.stops), el("g", { id: view }, scene));
+  out += fill(w, h, hsl(sky.hue - 10, 35, 32 + dim));
+  out += el("use", { href: `#${view}` });
+  out += el("use", { href: `#${view}`, transform: s`matrix(1 0 0 -1 0 ${2 * waterY})`, opacity: "0.6" });
+  out += el("rect", {
+    y: waterY,
+    width: w,
+    height: h - waterY,
+    fill: hsl(sky.hue - 10, 40, 30 + dim),
+    opacity: "0.35",
+  });
+  let ripples = "";
+  for (let k = g.i(5, 9); k > 0; k--) {
+    const y = waterY + (h - waterY) * g.f(0.05, 0.95);
+    ripples += s`M${w * g.f(-0.1, 0.95)} ${y}h${w * g.f(0.05, 0.2)}`;
+  }
+  out += el("path", { d: ripples, stroke: "#fff", "stroke-width": Math.max(1, unit * 0.005), opacity: "0.3" });
+  // Boats: one moored at the quay, sometimes another out on the water.
+  const len = unit * g.f(0.22, 0.3);
+  const hull = () => g.pick([hsl(g.f(200, 230), 40, 30), hsl(g.f(0, 15), 50, 38), hsl(130, 25, 28), hsl(30, 35, 30)]);
+  const mx = gx + g.pick([-1, 1]) * (gw / 2 + len * g.f(0.7, 1.2));
+  const moored = Math.max(len * 0.6, Math.min(w - len * 0.6, mx));
+  out += boat(g, moored, waterY + unit * 0.05, len, g.pick([-1, 1]), hull());
+  const second = g.chance(0.55);
+  if (second) {
+    const bx = moored < w / 2 ? w * g.f(0.6, 0.85) : w * g.f(0.15, 0.4);
+    out += boat(g, bx, waterY + (h - waterY) * g.f(0.55, 0.75), len * 1.15, g.pick([-1, 1]), hull());
+  }
+  const when = time === "day" ? "on a sunny day" : time === "dawn" ? "at dawn" : "at dusk, windows lit";
+  note.alt(
+    `Tall narrow houses along a canal with a little arched bridge and ${second ? "boats" : "a moored boat"}, ${when}`,
+  );
+  note.focus(gx, base - hump);
   return out;
 });

@@ -78,3 +78,10 @@ export function table(g: Rand, w: number, h: number, top: number, wall: string, 
   out += el("rect", { y: top, width: w, height: Math.max(1.5, h * 0.008), fill: "#000", opacity: "0.08" });
   return out;
 }
+
+/** A frame box grown about its center so neither side is under `min`. */
+export function atLeast([x, y, fw, fh]: readonly number[], min: number): [number, number, number, number] {
+  const gw = Math.max(fw, min);
+  const gh = Math.max(fh, min);
+  return [x - (gw - fw) / 2, y - (gh - fh) / 2, gw, gh];
+}

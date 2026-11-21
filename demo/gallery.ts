@@ -25,6 +25,7 @@ const NOTES: Record<keyof typeof categories, string> = {
   plants: "Potted plants, and close-ups of real flowers.",
   products: "Studio product shots, one item on a seamless backdrop, as in a shop.",
   patterns: "Calm, even textures to sit behind text on cards and banners.",
+  buildings: "Cottages, castles, bridges and townhouses, by day, dusk or night.",
   vehicles: "Side views on roads, rails, water and sky, by day, dusk or night.",
 };
 const SECTIONS = (Object.keys(categories) as (keyof typeof categories)[]).map(name => ({
