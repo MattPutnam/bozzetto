@@ -1,6 +1,6 @@
 /** Turning a kind into a finished picture: size, seed, label, and the colors and texture to style it with. */
 import { parseColor, toHex } from "./color";
-import { el, hash, makeRand, seedToInt, type Kind } from "./core";
+import { el, hash, makeRand, seedToInt, type Kind, type OptionValue } from "./core";
 import { stylize, type StyleOptions } from "./style";
 
 /** A finished picture, with what a gallery needs to lay it out and describe it. */
@@ -19,6 +19,8 @@ export interface Picture {
   readonly focus: { readonly x: number; readonly y: number };
   /** The picture's main background color as `#rrggbb`, to show while it loads. */
   readonly color: string;
+  /** The value each of the kind's options took, whether fixed with `kind.with` or chosen by the seed. */
+  readonly options: Readonly<Record<string, OptionValue>>;
 }
 
 /**
@@ -52,11 +54,14 @@ export function resolveSize(size: Size = "400x300"): { width: number; height: nu
 export function render(kind: Kind, options: RenderOptions = {}): Picture {
   const { width, height } = resolveSize(options.size);
   const seed = seedToInt(options.seed);
-  const prefix = `bz${hash(`${kind.id}:${seed}:${width}x${height}`).toString(36)}-`;
+  // Fixed options are part of the id prefix, so two variants of a kind with one seed can share a page.
+  const fixed = Object.keys(kind.fixed ?? {}).length ? `:${JSON.stringify(kind.fixed)}` : "";
+  const prefix = `bz${hash(`${kind.id}${fixed}:${seed}:${width}x${height}`).toString(36)}-`;
   let alt = kind.name;
   let focus = { x: 0.5, y: 0.5 };
   const clamp = (v: number) => Math.round(Math.max(0, Math.min(1, v)) * 1000) / 1000;
-  let body = kind.draw(makeRand(seed, prefix), width, height, {
+  const chosen: Record<string, OptionValue> = {};
+  let body = kind.draw(makeRand(seed, prefix, kind.fixed ?? {}, chosen), width, height, {
     alt: text => (alt = text),
     focus: (x, y) => (focus = { x: clamp(x / width), y: clamp(y / height) }),
   });
@@ -100,6 +105,7 @@ export function render(kind: Kind, options: RenderOptions = {}): Picture {
     alt,
     focus,
     color: backgroundColor(svg, width, height),
+    options: chosen,
   };
 }
 

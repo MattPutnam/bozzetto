@@ -16,6 +16,18 @@ export interface Rand {
   chance(p: number): boolean;
   /** An element id unique to this picture, so several inline SVGs can share a page. */
   id(name: string): string;
+  /**
+   * An option's value: the one the user fixed with `kind.with(...)`, or else `value`, the kind's
+   * own random choice. Always make the random choice first, as in `r.option("tabby", r.chance(0.35))`,
+   * so fixing one option doesn't change any of the picture's other choices.
+   */
+  option<T>(name: string, value: T): T;
+  /**
+   * A separate random source, seeded from this picture's seed and `name`. Use it for draws made
+   * only in some branches (such as the curls of curly hair), so taking a branch or not doesn't
+   * shift the choices that come after it.
+   */
+  fork(name: string): Rand;
 }
 
 /**
@@ -35,15 +47,80 @@ export interface Notes {
 /** Draws one picture's contents (everything inside `<svg>`) at the given size. */
 export type Draw = (r: Rand, width: number, height: number, note: Notes) => string;
 
+/** A value an option can take. */
+export type OptionValue = string | number | boolean;
+
+/** A kind's options, each with the values it allows: `{ pupils: ["slit", "round"], tabby: [true, false] }`. */
+export type OptionSpec = Readonly<Record<string, readonly OptionValue[]>>;
+
+/** Fixed values for some of a kind's options. Options left out are still chosen by the seed. */
+export type OptionValues<O extends OptionSpec> = { readonly [K in keyof O]?: O[K][number] };
+
 /** One kind of picture: hills, an owl, a color field. */
-export interface Kind<I extends string = string> {
+export interface Kind<I extends string = string, O extends OptionSpec = OptionSpec> {
   readonly id: I;
   readonly name: string;
   readonly draw: Draw;
+  /** The options this kind offers, and the values each allows. Empty for kinds without options. */
+  readonly options: O;
+  /** The options fixed so far with `with`. */
+  readonly fixed: OptionValues<O>;
+  /**
+   * This kind with some options fixed, such as `cat.with({ pupils: "round" })`. It goes anywhere
+   * a kind does. Options left out still vary with the seed, and calls can be chained.
+   */
+  with(values: OptionValues<O>): Kind<I, O>;
 }
 
-export function defineKind<const I extends string>(id: I, name: string, draw: Draw): Kind<I> {
-  return { id, name, draw };
+function makeKind<I extends string, O extends OptionSpec>(
+  id: I,
+  name: string,
+  options: O,
+  draw: Draw,
+  fixed: OptionValues<O>,
+): Kind<I, O> {
+  return {
+    id,
+    name,
+    draw,
+    options,
+    fixed,
+    with(values) {
+      for (const [option, value] of Object.entries(values)) {
+        if (value === undefined) continue;
+        const allowed = options[option];
+        if (!allowed) {
+          const known = Object.keys(options);
+          throw new Error(
+            `bozzetto: ${id} has no option "${option}". ${known.length ? `Its options are ${known.join(", ")}.` : "It has no options."}`,
+          );
+        }
+        if (!allowed.includes(value as OptionValue)) {
+          throw new Error(
+            `bozzetto: ${id}'s ${option} can be ${allowed.map(v => JSON.stringify(v)).join(", ")}, not ${JSON.stringify(value)}.`,
+          );
+        }
+      }
+      return makeKind(id, name, options, draw, { ...fixed, ...values });
+    },
+  };
+}
+
+/**
+ * A kind: an id, a display name, and a function that draws it. Kinds with options list them before
+ * the draw function: `defineKind("cat", "Cat", { pupils: ["slit", "round"] }, draw)`.
+ */
+export function defineKind<const I extends string>(id: I, name: string, draw: Draw): Kind<I, Record<never, never>>;
+export function defineKind<const I extends string, const O extends OptionSpec>(
+  id: I,
+  name: string,
+  options: O,
+  draw: Draw,
+): Kind<I, O>;
+export function defineKind(id: string, name: string, optionsOrDraw: OptionSpec | Draw, draw?: Draw): Kind {
+  return typeof optionsOrDraw === "function"
+    ? makeKind(id, name, {}, optionsOrDraw, {})
+    : makeKind(id, name, optionsOrDraw, draw!, {});
 }
 
 /** FNV-1a, for turning string seeds and id prefixes into integers. */
@@ -72,7 +149,12 @@ export function mulberry32(seed: number): () => number {
   };
 }
 
-export function makeRand(seed: number, idPrefix = ""): Rand {
+export function makeRand(
+  seed: number,
+  idPrefix = "",
+  fixed: Readonly<Record<string, unknown>> = {},
+  chosen: Record<string, unknown> = {},
+): Rand {
   const next = mulberry32(seed);
   return {
     next,
@@ -81,6 +163,12 @@ export function makeRand(seed: number, idPrefix = ""): Rand {
     pick: items => items[Math.floor(next() * items.length)],
     chance: p => next() < p,
     id: name => idPrefix + name,
+    option: <T>(name: string, value: T): T => {
+      const result = fixed[name] === undefined ? value : (fixed[name] as T);
+      chosen[name] = result;
+      return result;
+    },
+    fork: name => makeRand((seed ^ hash(`fork:${name}`)) >>> 0, idPrefix, fixed, chosen),
   };
 }
 

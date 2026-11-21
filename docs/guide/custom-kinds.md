@@ -38,6 +38,32 @@ plain ids such as `"sky"` would clash.
 colors, since palettes change them. `note.focus(x, y)` marks the point of interest, in px. Both
 are optional: a kind without them gets its name as alt text and the center as its focus.
 
+## Options
+
+A kind can offer options, listed before the draw function. Make every choice with `r.option`,
+passing the kind's own random choice, so a fixed option replaces it and everything else stays the
+same:
+
+```ts
+const flag = defineKind(
+  "flag",
+  "Flag",
+  { stripes: [2, 3], star: [true, false] },
+  (r, w, h, note) => {
+    const stripes = r.option("stripes", r.pick([2, 3]));
+    const star = r.option("star", r.chance(0.5));
+    // …
+  },
+);
+
+flag.with({ stripes: 3 }); // typed: stripes can only be 2 or 3
+```
+
+When some branches draw things others don't (curls for curly hair, toppings that differ by
+pizza), draw them from `r.fork(name)`: a separate random source, seeded from the picture's seed and
+the name. Then taking a branch or not doesn't shift the choices that come after it, and fixing an
+option really does change only that option.
+
 ## Colors that palettes can change
 
 Palettes recolor `#rgb`, `#rrggbb` and `hsl(…)` colors in the markup, so write colors in those

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 import { ADJUSTMENTS, MAPPINGS, PALETTES, kinds, render, type Mapping, type Size, type Texture } from "../../../src";
 
 /** A single picture with every option to play with, and the code that makes it. */
@@ -12,23 +12,37 @@ const palette = ref("");
 const mapping = ref<Mapping>("balanced");
 const texture = ref<Texture | "">("");
 const SIZES: Size[] = ["400x300", "300x400", "320x320", "640x240"];
+const chosenKind = computed(() => kinds.find(k => k.id === kind.value)!);
+/** The options fixed in the playground, by name; "" means the seed chooses. */
+const fixed = ref<Record<string, string>>({});
+watch(kind, () => (fixed.value = {}));
+const fixedValues = computed(() => {
+  const values: Record<string, string | number | boolean> = {};
+  for (const [option, text] of Object.entries(fixed.value)) {
+    const value = chosenKind.value.options[option]?.find(v => String(v) === text);
+    if (value !== undefined) values[option] = value;
+  }
+  return values;
+});
+const exportName = (id: string) => id.replace(/-(\w)/g, (_, c: string) => c.toUpperCase());
 const isPalette = computed(() => palette.value !== "" && !(ADJUSTMENTS as readonly string[]).includes(palette.value));
 
 const picture = computed(() =>
-  render(
-    kinds.find(k => k.id === kind.value)!,
-    {
-      seed: seed.value,
-      size: size.value,
-      palette: palette.value || undefined,
-      mapping: isPalette.value ? mapping.value : undefined,
-      texture: texture.value || undefined,
-    },
-  ),
+  render(chosenKind.value.with(fixedValues.value), {
+    seed: seed.value,
+    size: size.value,
+    palette: palette.value || undefined,
+    mapping: isPalette.value ? mapping.value : undefined,
+    texture: texture.value || undefined,
+  }),
 );
 
 const code = computed(() => {
-  const lines = [`  kind: "${kind.value}",`, `  seed: ${seed.value},`];
+  const values = Object.entries(fixedValues.value);
+  const kindCode = values.length
+    ? `${exportName(kind.value)}.with({ ${values.map(([k, v]) => `${k}: ${JSON.stringify(v)}`).join(", ")} })`
+    : `"${kind.value}"`;
+  const lines = [`  kind: ${kindCode},`, `  seed: ${seed.value},`];
   if (size.value !== "400x300") lines.push(`  size: "${size.value}",`);
   if (palette.value) lines.push(`  palette: "${palette.value}",`);
   if (isPalette.value && mapping.value !== "balanced") lines.push(`  mapping: "${mapping.value}",`);
@@ -44,6 +58,13 @@ const code = computed(() => {
         >Kind
         <select v-model="kind">
           <option v-for="k in kinds" :key="k.id" :value="k.id">{{ k.id }}</option>
+        </select>
+      </label>
+      <label v-for="(values, option) in chosenKind.options" :key="option"
+        >{{ option }}
+        <select v-model="fixed[option]">
+          <option value="">by seed</option>
+          <option v-for="v in values" :key="String(v)" :value="String(v)">{{ v }}</option>
         </select>
       </label>
       <label>Seed <input v-model.number="seed" type="number" min="0" /></label>

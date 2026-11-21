@@ -14,6 +14,7 @@ import {
   placeholders,
   seedToInt,
   type Kind,
+  type OptionValue,
   type Mapping,
   type Order,
   type Picture,
@@ -53,7 +54,8 @@ Usage
 
 Kinds
   Kind ids or names (owl, ice-cream, iceCream) and categories (animals, food),
-  in any mix. Default: every kind. See them all with --list.
+  in any mix. Default: every kind. Some kinds take options after a colon, such as
+  cat:tabby,pupils=round. See them all with --list.
 
 Options
   -n, --count <n>        How many pictures. Default 1.
@@ -75,6 +77,7 @@ Options
 
 Examples
   bozzetto owl > owl.svg
+  bozzetto portrait:hair=curly,glasses -n 4 -o portraits/
   bozzetto owl --seed 3 --size 320x240 --palette riso -o owl.svg
   bozzetto animals donut -n 24 -s 400x300 -s 300x400 -o fixtures/
   bozzetto landscapes -n 5 --format json
@@ -94,6 +97,11 @@ function listing(): string {
   for (const [name, list] of Object.entries(categories)) {
     lines.push(`  ${name.padEnd(11)} ${list.map(k => k.id).join(", ")}`);
   }
+  lines.push("", "Kind options (as in cat:tabby,pupils=round):");
+  for (const kind of kinds.filter(k => Object.keys(k.options).length)) {
+    const options = Object.entries(kind.options).map(([option, values]) => `${option}=${values.join("|")}`);
+    lines.push(`  ${kind.id.padEnd(11)} ${options.join("  ")}`);
+  }
   lines.push("", `Adjustments: ${ADJUSTMENTS.join(", ")}`, `Palettes:    ${Object.keys(PALETTES).join(", ")}`);
   return lines.join("\n") + "\n";
 }
@@ -108,7 +116,32 @@ const describe = (picture: Picture, seed: number, file?: string) => ({
   alt: picture.alt,
   focus: picture.focus,
   color: picture.color,
+  ...(Object.keys(picture.options).length ? { options: picture.options } : {}),
 });
+
+/**
+ * A kind with options from the command line: "cat:tabby,pupils=round". A bare name means true,
+ * and values are read as the kind expects them (true and false, numbers, or words).
+ */
+function withOptions(kind: Kind, text: string, token: string): Kind {
+  const values: Record<string, OptionValue> = {};
+  for (const part of text.split(",").filter(Boolean)) {
+    const [option, raw = "true"] = part.split("=");
+    const allowed = kind.options[option];
+    if (!allowed) {
+      const known = Object.keys(kind.options);
+      throw new UsageError(
+        `${kind.id} has no option "${option}" in "${token}". ${known.length ? `Its options are ${known.join(", ")}.` : "It has no options."}`,
+      );
+    }
+    const value = allowed.find(v => String(v) === raw);
+    if (value === undefined) {
+      throw new UsageError(`${kind.id}'s ${option} can be ${allowed.join(", ")}, not "${raw}".`);
+    }
+    values[option] = value;
+  }
+  return kind.with(values);
+}
 
 /** Runs the command with `args` (without the node and script paths). Returns the exit code. */
 export function run(args: readonly string[], io: Io): number {
@@ -153,10 +186,13 @@ function main(args: readonly string[], io: Io): number {
   if (o.list) return (io.stdout(listing()), 0);
 
   const known = names();
-  const pool = positionals.flatMap(name => {
+  const pool = positionals.flatMap(token => {
+    const [name, options] = token.split(/:(.*)/s);
     const found = known.get(name.toLowerCase());
     if (!found) throw new UsageError(`unknown kind "${name}". See bozzetto --list.`);
-    return found;
+    if (options === undefined) return found;
+    if (found.length !== 1) throw new UsageError(`options go on a single kind, not a category: "${token}".`);
+    return [withOptions(found[0], options, token)];
   });
 
   const count = o.count === undefined ? 1 : Number(o.count);

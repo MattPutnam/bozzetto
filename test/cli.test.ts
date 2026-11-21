@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { animals, owl, placeholders, render } from "../src";
+import { animals, cat, owl, placeholders, render } from "../src";
 import { run } from "../src/cli";
 
 /** Runs the command against an in-memory terminal and file system. */
@@ -84,6 +84,15 @@ describe("bozzetto", () => {
     expect(picture.svg).toBe(render(owl).svg);
   });
 
+  it("takes kind options after a colon", () => {
+    const [picture] = JSON.parse(cli("cat:tabby,pupils=round", "-f", "json").stdout);
+    expect(picture.options).toMatchObject({ tabby: true, pupils: "round" });
+    expect(picture.svg).toBe(render(cat.with({ tabby: true, pupils: "round" })).svg);
+    const [pizza] = JSON.parse(cli("pizza:slices=8,topping=margherita", "-f", "json").stdout);
+    expect(pizza.options).toMatchObject({ slices: 8, topping: "margherita" });
+    expect(cli("--list").stdout).toContain("pupils=slit|round");
+  });
+
   it("lists kinds and palettes, and shows help and the version", () => {
     expect(cli("--list").stdout).toContain("animals     cat, bird");
     expect(cli("--help").stdout).toContain("Usage");
@@ -100,6 +109,9 @@ describe("bozzetto", () => {
       [["--size", "big"], "isn't a size"],
       [["--palette", "plaid"], "neither a palette name"],
       [["--frobnicate"], "Unknown option"],
+      [["cat:wings"], 'cat has no option "wings"'],
+      [["cat:pupils=plaid"], "cat's pupils can be slit, round"],
+      [["animals:tabby"], "options go on a single kind"],
     ] as const) {
       const { code, stderr } = cli(...args);
       expect(code, args.join(" ")).toBe(1);

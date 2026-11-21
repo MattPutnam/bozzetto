@@ -12,6 +12,7 @@ them out and describe them:
 | `alt`             | A short description for screen readers                                                        |
 | `focus`           | The point of interest, as fractions of the width and height                                   |
 | `color`           | The main background color as `#rrggbb`                                                        |
+| `options`         | The value each of the kind's [options](./kinds#options) took                                  |
 
 ```ts
 for (const photo of placeholders(12, { kind: animals, size: ["400x300", "300x400"] })) {

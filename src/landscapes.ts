@@ -1,7 +1,7 @@
 import { defineKind, el, fill, hsl, lin, pts, qpt, s, type Point } from "./core";
 
 /** Soft hills under a gradient sky and a sun, sometimes with a lone tree. */
-export const hills = defineKind("hills", "Rolling hills", (g, w, h, note) => {
+export const hills = defineKind("hills", "Rolling hills", { tree: [true, false] }, (g, w, h, note) => {
   const hue = g.f(0, 360);
   const sky = g.id("sky");
   // The far hill: one curve and its smooth continuation.
@@ -28,7 +28,7 @@ export const hills = defineKind("hills", "Rolling hills", (g, w, h, note) => {
          V ${h} H 0Z`,
     fill: hsl(hue + 15, 35, 62),
   });
-  if (g.chance(0.45)) {
+  if (g.option("tree", g.chance(0.45))) {
     // A lone tree standing on the near hill.
     const [tx, ty] = qpt([0, y0], [qx, y1], [w, y2], g.f(0.2, 0.8));
     const th = h * g.f(0.1, 0.16);
@@ -227,12 +227,12 @@ export const forest = defineKind("forest", "Pine forest", (g, w, h, note) => {
 });
 
 /** Stars, a full or crescent moon, and dark hills. */
-export const night = defineKind("night", "Night sky", (g, w, h, note) => {
+export const night = defineKind("night", "Night sky", { moon: ["crescent", "full"] }, (g, w, h, note) => {
   const hue = g.f(210, 285);
   const moonX = w * g.f(0.2, 0.8);
   const moonY = h * g.f(0.18, 0.35);
   const moonR = h * g.f(0.07, 0.11);
-  const crescent = g.chance(0.6);
+  const crescent = g.option("moon", g.chance(0.6) ? "crescent" : "full") === "crescent";
   const dir = g.pick([-1, 1]);
   const sky = g.id("sky");
   const bite = g.id("bite");

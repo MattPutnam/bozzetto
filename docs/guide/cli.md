@@ -16,6 +16,16 @@ npx bozzetto --list
 Name kinds by id (`ice-cream`), export name (`iceCream`, in any capitalization) or category
 (`animals`), in any mix, or `all`. With none, any kind can appear.
 
+Kinds with [options](./kinds#options) take them after a colon, separated by commas. A bare option
+name means `true`:
+
+```bash
+npx bozzetto cat:tabby,pupils=round
+npx bozzetto portrait:hair=curly,glasses -n 4 -o portraits/
+```
+
+`bozzetto --list` shows every kind's options, and the manifest records each picture's options.
+
 ## Options
 
 | Option                |                                                               |

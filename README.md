@@ -72,6 +72,7 @@ for (const photo of placeholders(12, { kind: animals, size: ["400x300", "300x400
 | `alt`             | A short description for screen readers. It never names colors, since palettes change them |
 | `focus`           | The point of interest (a face, the sun) as fractions of the width and height              |
 | `color`           | The main background color as `#rrggbb`                                                    |
+| `options`         | The value each of the kind's options took                                                 |
 
 `toSvg` and `toDataUri` return just the markup or the data URI, for when that's all you need.
 
@@ -87,7 +88,7 @@ npx bozzetto landscapes -n 5 --format json
 npx bozzetto --list
 ```
 
-Name kinds by id (`ice-cream`), export name (`iceCream`) or category (`animals`), in any mix. The options match `placeholders`, and repeating `--size`, `--palette`, `--mapping` or `--texture` gives a list to go through. With several pictures, `-o <folder>` writes one SVG per picture plus `manifest.json` with each picture's kind, seed, size, alt text, focus and color. `--format uri` prints data URIs, one per line, and `--format json` prints everything, markup included. See `bozzetto --help` for the full list.
+Name kinds by id (`ice-cream`), export name (`iceCream`) or category (`animals`), in any mix, and give a kind options after a colon: `cat:tabby,pupils=round`. The options match `placeholders`, and repeating `--size`, `--palette`, `--mapping` or `--texture` gives a list to go through. With several pictures, `-o <folder>` writes one SVG per picture plus `manifest.json` with each picture's kind, seed, size, alt text, focus and color. `--format uri` prints data URIs, one per line, and `--format json` prints everything, markup included. See `bozzetto --help` for the full list.
 
 Categories are plain arrays of kinds. Use them anywhere a list of kinds is accepted, alone or mixed with single kinds, as in `[animals, donut]`.
 
@@ -101,6 +102,21 @@ Categories are plain arrays of kinds. Use them anywhere a list of kinds is accep
 | `objects`    | `fruitBowl`, `flowers`, `cactus`, `coffee`, `books`, `bottles`                            |
 
 `kinds` lists every kind, and `categories` maps each category's name to its kinds. Kinds can also be named by id in strings, such as `"owl"` or `"ice-cream"`.
+
+Some kinds have options, fixed with `kind.with(...)`. Whatever you leave out still varies with the seed, and fixing one option never changes the picture's other choices:
+
+```ts
+render(cat.with({ tabby: true, pupils: "round" }), { seed: 3 });
+placeholders(8, { kind: [portrait.with({ glasses: true }), hills.with({ tree: true })] });
+```
+
+| Kind       | Options                                                                                                                        |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| `hills`    | `tree`: `true`, `false`                                                                                                        |
+| `night`    | `moon`: `"crescent"`, `"full"`                                                                                                 |
+| `portrait` | `hair`: `"short"`, `"long"`, `"bun"`, `"curly"`, `"bald"`, `"bob"`; `glasses`: `true`, `false`; `smile`: `"gentle"`, `"broad"` |
+| `cat`      | `tabby`, `muzzle`: `true`, `false`; `pupils`: `"slit"`, `"round"`                                                              |
+| `pizza`    | `topping`: `"pepperoni"`, `"vegetable"`, `"margherita"`; `slices`: `6`, `8`                                                    |
 
 ## Colors
 

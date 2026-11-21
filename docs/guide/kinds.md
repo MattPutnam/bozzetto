@@ -27,6 +27,30 @@ text.
 
 <KindGallery />
 
+## Options
+
+Some kinds let you fix parts of the picture with `kind.with(...)`. Whatever you leave out still
+varies with the seed:
+
+```ts
+import { animals, cat, hills, placeholders, portrait, render } from "bozzetto";
+
+render(cat.with({ tabby: true, pupils: "round" }), { seed: 3 });
+
+placeholders(12, {
+  kind: [hills.with({ tree: true }), portrait.with({ glasses: true }), animals],
+});
+```
+
+A kind with options goes anywhere a kind does. Fixing one option never changes the picture's
+other choices: `cat` and `cat.with({ tabby: true })` with the same seed differ only in the stripes.
+Each picture's `options` field says what every option ended up as, and the alt text follows.
+
+<KindOptions />
+
+Options are about what's in the picture, not its colors: [palettes](./colors) handle color.
+Try them in the [live example](./getting-started#try-it).
+
 ## Kinds by name
 
 | Category     | Kinds                                                                                     |
