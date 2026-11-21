@@ -46,3 +46,20 @@ export const textures = () =>
     224,
     168,
   );
+
+export const dark = () => {
+  const ids = [hills, cat, fruitBowl];
+  // The dark-mode colors, forced on so the page shows both whatever the reader's setting.
+  const forced = (svg: string) => svg.replace("@media (prefers-color-scheme: dark){", "@media all{");
+  return grid(
+    [
+      // Without dark mode built in, so this row stays light even for readers in dark mode.
+      ...ids.map(kind => ({ picture: render(kind, { seed: 4 }), label: "light" })),
+      ...ids.map(kind => {
+        const picture = render(kind, { seed: 4, dark: true });
+        return { picture: { ...picture, svg: forced(picture.svg) }, label: "dark" };
+      }),
+    ],
+    3,
+  );
+};

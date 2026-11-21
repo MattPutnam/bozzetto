@@ -5,7 +5,7 @@
  */
 
 import { el } from "./core";
-import { rgbToOklab } from "./color";
+import { lchToHex, oklabToLch, rgbToOklab } from "./color";
 import { ADJUSTMENTS, resolvePalette, type Adjustment, type PaletteSpec } from "./palettes";
 
 export { ADJUSTMENTS, PALETTES } from "./palettes";
@@ -17,7 +17,7 @@ export const MAPPINGS: readonly Mapping[] = ["balanced", "ramp", "nearest"];
 
 export interface StyleOptions {
   /**
-   * The colors to use: an adjustment's name (`vivid`, `pastel`, `muted`, `dusk`, `grayscale`),
+   * The colors to use: an adjustment's name (`vivid`, `pastel`, `muted`, `dusk`, `dim`, `grayscale`),
    * a built-in palette's name, a palette code, or a list of colors.
    */
   palette?: PaletteSpec;
@@ -31,6 +31,17 @@ export interface StyleOptions {
    */
   mapping?: Mapping;
   texture?: Texture;
+  /**
+   * A dark-mode version, built into the picture: in dark mode it switches to these colors by
+   * itself. `true` uses the `dim` adjustment, which darkens the picture's own colors and keeps their hues; or
+   * give any palette, as for `palette`. Follows the viewer's system setting, in images and inline.
+   */
+  dark?: boolean | PaletteSpec;
+  /**
+   * Also use the dark colors under this selector, such as ".dark" or "[data-theme=dark]", for pages
+   * with their own theme switch. Works for inline SVG only: an `<img>` can't see the page's classes.
+   */
+  darkSelector?: string;
 }
 
 type RGB = [number, number, number];
@@ -90,8 +101,10 @@ const hex = (c: RGB) =>
         .padStart(2, "0"),
     )
     .join("");
+// The hue is wrapped into 0–359: adjustments can push it below 0 (dusk shifts warm hues down), and
+// although CSS accepts any angle, recoloring again (for dark mode, say) only reads 0–359.
 const hslText = (h: number, sat: number, l: number) =>
-  `hsl(${Math.round(h)} ${Math.round(Math.max(0, Math.min(100, sat)))}% ${Math.round(Math.max(0, Math.min(100, l)))}%)`;
+  `hsl(${((Math.round(h) % 360) + 360) % 360} ${Math.round(Math.max(0, Math.min(100, sat)))}% ${Math.round(Math.max(0, Math.min(100, l)))}%)`;
 
 /** Sorted by lightness, then sampled at t in 0–1 with linear interpolation. */
 function ramp(colors: readonly string[]): (t: number) => string {
@@ -185,6 +198,13 @@ function recolorer(svg: string, o: StyleOptions): ((c: RGB) => string) | undefin
 function adjust(adjustment: Adjustment): (c: RGB) => string {
   return c => {
     if (adjustment === "grayscale") return hslText(0, 0, lightness(c));
+    if (adjustment === "dim") {
+      // For dark pages, in OKLCH so a pale color stays soft instead of turning vivid: lightness
+      // squeezed into 0.16–0.61 so the brightest parts don't glare, chroma eased a little, every
+      // hue kept as it was.
+      const [L, C, hue] = oklabToLch(rgbToOklab(c));
+      return lchToHex([0.16 + L * 0.45, C * 0.85, hue]);
+    }
     const [h, sat, l] = rgbToHsl(c);
     switch (adjustment) {
       case "vivid":

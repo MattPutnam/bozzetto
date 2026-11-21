@@ -1,6 +1,7 @@
 /** Turning a kind into a finished picture: size, seed, label, and the colors and texture to style it with. */
 import { parseColor, toHex } from "./color";
 import { el, hash, makeRand, seedToInt, type Kind, type OptionValue } from "./core";
+import { withDarkMode } from "./dark";
 import { stylize, type StyleOptions } from "./style";
 
 /** A finished picture, with what a gallery needs to lay it out and describe it. */
@@ -19,6 +20,8 @@ export interface Picture {
   readonly focus: { readonly x: number; readonly y: number };
   /** The picture's main background color as `#rrggbb`, to show while it loads. */
   readonly color: string;
+  /** With the `dark` option: the main background color in dark mode. */
+  readonly darkColor?: string;
   /** The value each of the kind's options took, whether fixed with `kind.with` or chosen by the seed. */
   readonly options: Readonly<Record<string, OptionValue>>;
   /**
@@ -108,6 +111,13 @@ export function render(kind: Kind, options: RenderOptions = {}): Picture {
     body,
   );
   if (options.palette !== undefined || options.texture !== undefined) svg = stylize(svg, options);
+  let darkColor: string | undefined;
+  if (options.dark !== undefined && options.dark !== false) {
+    const darkPalette = options.dark === true ? "dim" : options.dark;
+    const dark = stylize(svg, { palette: darkPalette, mapping: options.mapping });
+    darkColor = backgroundColor(dark, width, height);
+    svg = withDarkMode(svg, dark, options.darkSelector);
+  }
   return {
     src: `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`,
     svg,
@@ -119,6 +129,7 @@ export function render(kind: Kind, options: RenderOptions = {}): Picture {
     color: backgroundColor(svg, width, height),
     options: chosen,
     ...(frame ? { frame } : {}),
+    ...(darkColor ? { darkColor } : {}),
   };
 }
 

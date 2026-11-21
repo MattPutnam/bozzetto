@@ -167,11 +167,13 @@ placeholders(8, { kind: [portrait.with({ glasses: true }), hills.with({ tree: tr
 
 `palette` accepts:
 
-- **An adjustment** of each picture's own colors: `"vivid"`, `"pastel"`, `"muted"`, `"dusk"` or `"grayscale"`.
+- **An adjustment** of each picture's own colors: `"vivid"`, `"pastel"`, `"muted"`, `"dusk"`, `"dim"` or `"grayscale"`.
 - **A built-in palette:** `"sunset"`, `"sea glass"`, `"riso"`, `"orchard"`, `"candy"`, `"sepia"` or `"mono"`.
 - **Your own colors:** `["#264653", "#2a9d8f", "#e9c46a"]` (hex, `rgb()` or `hsl()`), or the same palette as a code, `"264653-2a9d8f-e9c46a"`.
 
 Color palettes are applied with `mapping: "balanced"` by default, which uses only your exact colors while keeping each picture's light and dark. `"ramp"` blends between your colors for softer shading, and `"nearest"` snaps every color to its closest match. `texture: "grain"` or `"paper"` adds a subtle surface.
+
+`dark: true` builds a dark-mode version into the picture: in dark mode it switches to it by itself, in an `<img>` or inline, using the `dim` adjustment (everything darker, every hue kept), or any palette you give, as in `dark: "sea glass"`. For inline SVG on pages with their own theme switch, `darkSelector: "html.dark"` applies it under your selector too.
 
 To build a palette without picking colors by hand, `makePalette` works from a starting color or hue and a color-wheel scheme:
 

@@ -47,6 +47,8 @@ export function makeAvatar(
       palette: options.palette,
       mapping: options.mapping,
       texture: options.texture,
+      dark: options.dark,
+      darkSelector: options.darkSelector,
     });
     if (!picture.frame) {
       throw new Error(
@@ -96,6 +98,7 @@ export function makeAvatar(
         y: within((picture.focus.y * CANVAS - top) / side),
       },
       color: picture.color,
+      ...(picture.darkColor ? { darkColor: picture.darkColor } : {}),
       options: picture.options,
     };
   };

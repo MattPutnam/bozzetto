@@ -65,6 +65,9 @@ export const Placeholder = defineComponent({
     mapping: String as PropType<Mapping>,
     texture: String as PropType<Texture>,
     label: [String, Number] as PropType<string | number>,
+    /** A dark-mode version: true for the `dim` adjustment, or a palette. */
+    dark: { type: [Boolean, String, Array] as PropType<boolean | PaletteSpec>, default: undefined },
+    darkSelector: String,
     alt: String,
     /** Draw the SVG markup into the page instead of an `<img>`. */
     inline: Boolean,
@@ -79,6 +82,8 @@ export const Placeholder = defineComponent({
         mapping: props.mapping,
         texture: props.texture,
         label: props.label,
+        dark: props.dark,
+        darkSelector: props.darkSelector,
       }),
     );
     return () => pictureVNode(picture.value, props.inline, props.alt);
@@ -113,6 +118,9 @@ export const Avatar = defineComponent({
     palette: [String, Array] as PropType<PaletteSpec>,
     mapping: String as PropType<Mapping>,
     texture: String as PropType<Texture>,
+    /** A dark-mode version: true for the `dim` adjustment, or a palette. */
+    dark: { type: [Boolean, String, Array] as PropType<boolean | PaletteSpec>, default: undefined },
+    darkSelector: String,
     alt: String,
     /** Draw the SVG markup into the page instead of an `<img>`. */
     inline: Boolean,
@@ -128,6 +136,8 @@ export const Avatar = defineComponent({
         palette: props.palette,
         mapping: props.mapping,
         texture: props.texture,
+        dark: props.dark,
+        darkSelector: props.darkSelector,
       }),
     );
     return () => pictureVNode(picture.value, props.inline, props.alt, props.shape ?? "circle");

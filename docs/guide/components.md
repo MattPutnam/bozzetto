@@ -12,7 +12,7 @@ import { cat } from "../../src";
 Each of these renders a picture as an `<img>` with its alt text, width and height. Styled with
 `object-fit: cover`, the image crops around the picture's focus, and it shows the picture's color
 while it loads. They take the same options as `placeholder`: `kind`, `seed`, `size`, `palette`,
-`mapping`, `texture` and `label`, plus `alt` to replace the picture's alt text and `inline` to
+`mapping`, `texture`, `label`, `dark` and `darkSelector`, plus `alt` to replace the picture's alt text and `inline` to
 draw the SVG into the page instead of an image.
 
 React and Vue are optional peer dependencies: install whichever you use. The web component

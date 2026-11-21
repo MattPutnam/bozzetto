@@ -124,6 +124,16 @@ describe("bozzetto", () => {
     expect(manifest.map((p: { kind: string }) => p.kind).sort()).toEqual(["cat", "dog"]);
   });
 
+  it("builds in dark mode", async () => {
+    const [plain] = JSON.parse((await cli("owl", "-f", "json")).stdout);
+    const [dark] = JSON.parse((await cli("owl", "--dark", "-f", "json")).stdout);
+    const [riso] = JSON.parse((await cli("owl", "--dark-palette", "riso", "-f", "json")).stdout);
+    expect(plain.svg).not.toContain("prefers-color-scheme");
+    expect(dark.svg).toContain("prefers-color-scheme: dark");
+    expect(riso.svg).toContain("prefers-color-scheme: dark");
+    expect(riso.svg).not.toBe(dark.svg);
+  });
+
   it("lists kinds and palettes, and shows help and the version", async () => {
     expect((await cli("--list")).stdout).toContain("animals     cat, bird");
     expect((await cli("--help")).stdout).toContain("Usage");

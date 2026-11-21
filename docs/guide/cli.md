@@ -43,6 +43,8 @@ npx bozzetto portrait:hair=curly,glasses -n 4 -o portraits/
 | `-o`, `--out <path>`  | A file for one picture, or a folder for several                               |
 | `--avatar`            | [Avatars](./avatars): `--size` is one number; any face unless kinds are given |
 | `--shape <s>`         | For avatars: `circle` (default), `rounded` or `square`                        |
+| `--dark`              | Build in a dark-mode version (the `dim` adjustment)                           |
+| `--dark-palette <p>`  | The dark version's palette instead                                            |
 | `--list`              | List the kinds, categories and palettes                                       |
 
 ## Folders and the manifest

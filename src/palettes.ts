@@ -15,9 +15,10 @@ export type PaletteSpec = readonly string[] | string;
 /**
  * Named palettes that adjust a picture's own colors instead of replacing them, so each picture
  * keeps its variety: brighter (`vivid`), lighter and softer (`pastel`), greyer (`muted`),
- * darker and cooler (`dusk`), or without color (`grayscale`).
+ * darker and cooler (`dusk`), dimmer for dark pages with every hue kept (`dim`), or without color
+ * (`grayscale`).
  */
-export const ADJUSTMENTS = ["vivid", "pastel", "muted", "dusk", "grayscale"] as const;
+export const ADJUSTMENTS = ["vivid", "pastel", "muted", "dusk", "dim", "grayscale"] as const;
 export type Adjustment = (typeof ADJUSTMENTS)[number];
 
 export const PALETTES: Record<string, readonly string[]> = {

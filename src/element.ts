@@ -11,6 +11,7 @@
  * - `seed`, `size` ("WxH"), `palette` (a name or palette code), `mapping`, `texture`, `label`.
  * - `alt`: replaces the picture's own alt text.
  * - `inline`: draw the SVG markup instead of an image.
+ * - `dark`: build in a dark-mode version: empty for the `dim` adjustment, or a palette name or code.
  * - `avatar`: draw an avatar, a face framed around its head (any face kind unless `kind` says),
  *   with `shape` ("circle", "rounded" or "square") and `size` as one number, such as "48".
  *
@@ -33,6 +34,7 @@ const ATTRIBUTES = [
   "inline",
   "avatar",
   "shape",
+  "dark",
 ] as const;
 
 // Lets the module load where there's no DOM (server rendering), though the element only works in a browser.
@@ -66,6 +68,7 @@ export class BozzettoImg extends Base {
         palette: attr("palette"),
         mapping: attr("mapping") as Mapping | undefined,
         texture: attr("texture") as Texture | undefined,
+        dark: this.hasAttribute("dark") ? attr("dark") || true : undefined,
       };
       this.#picture = this.hasAttribute("avatar")
         ? avatar({

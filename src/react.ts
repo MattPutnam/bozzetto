@@ -74,8 +74,9 @@ function pictureElement(
  * loading. Any other `<img>` attributes pass through; `alt` replaces the picture's own alt text.
  */
 export function Placeholder(props: PlaceholderProps): ReactElement {
-  const { kind, seed, size, palette, mapping, texture, label, inline, ...rest } = props;
-  return pictureElement(usePlaceholder({ kind, seed, size, palette, mapping, texture, label }), inline, rest);
+  const { kind, seed, size, palette, mapping, texture, label, dark, darkSelector, inline, ...rest } = props;
+  const picture = usePlaceholder({ kind, seed, size, palette, mapping, texture, label, dark, darkSelector });
+  return pictureElement(picture, inline, rest);
 }
 
 /** One avatar, drawn again only when its options change. */
@@ -100,7 +101,7 @@ export interface AvatarProps extends AvatarOptions, ImgProps {
  * Pass a user id as `seed` to give each user their own. Other `<img>` attributes pass through.
  */
 export function Avatar(props: AvatarProps): ReactElement {
-  const { kind, seed, size, shape, margin, palette, mapping, texture, inline, ...rest } = props;
-  const picture = useAvatar({ kind, seed, size, shape, margin, palette, mapping, texture });
+  const { kind, seed, size, shape, margin, palette, mapping, texture, dark, darkSelector, inline, ...rest } = props;
+  const picture = useAvatar({ kind, seed, size, shape, margin, palette, mapping, texture, dark, darkSelector });
   return pictureElement(picture, inline, rest, shape ?? "circle");
 }

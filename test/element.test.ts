@@ -72,6 +72,12 @@ describe("<bozzetto-img>", () => {
     expect(element.shadowRoot!.querySelector("style")!.textContent).toContain("border-radius: 22%");
   });
 
+  it("builds in dark mode with the dark attribute", () => {
+    expect(make({ kind: "owl", dark: "" }).picture?.svg).toContain("prefers-color-scheme: dark");
+    expect(make({ kind: "owl", dark: "riso" }).picture?.darkColor).toBeDefined();
+    expect(make({ kind: "owl" }).picture?.svg).not.toContain("prefers-color-scheme");
+  });
+
   it("logs a clear error for an unknown kind", () => {
     const error = vi.spyOn(console, "error").mockImplementation(() => {});
     const element = make({ kind: "dragon" });

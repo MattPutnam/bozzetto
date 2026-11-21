@@ -65,6 +65,8 @@ Options
       --avatar           Avatars: faces framed around the head, round by default. Any face
                          kind unless kinds are given; --size is one number, such as 48.
       --shape <name>     For avatars: circle (default), rounded or square.
+      --dark             Build in a dark-mode version that switches with the viewer's setting.
+      --dark-palette <p> The dark version's palette, instead of the dim adjustment.
       --list             List the kinds, categories and palettes.
   -h, --help             Show this help.
   -v, --version          Show the version.
@@ -123,6 +125,7 @@ function avatarsFor(
   pool: Kind[],
   o: { size?: string[]; palette?: string[]; mapping?: string[]; texture?: string[]; shape?: string; order?: string },
   seed: number | string,
+  dark: boolean | string | undefined,
 ): Picture[] {
   const one = (values: string[] | undefined, flag: string) => {
     if (values && values.length > 1) throw new UsageError(`avatars take one ${flag}.`);
@@ -142,6 +145,7 @@ function avatarsFor(
     mapping: mapping === undefined ? undefined : (oneOf(mapping, MAPPINGS, "--mapping") as Mapping),
     texture: texture === undefined ? undefined : oneOf(texture, TEXTURES, "--texture"),
     order: o.order === undefined ? undefined : oneOf(o.order, ORDERS, "--order"),
+    dark,
   });
 }
 
@@ -174,6 +178,8 @@ async function main(args: readonly string[], io: Io): Promise<number> {
         format: { type: "string", short: "f" },
         scale: { type: "string" },
         avatar: { type: "boolean" },
+        dark: { type: "boolean" },
+        "dark-palette": { type: "string" },
         shape: { type: "string" },
         out: { type: "string", short: "o" },
         list: { type: "boolean" },
@@ -211,8 +217,9 @@ async function main(args: readonly string[], io: Io): Promise<number> {
   const fileOf = async (picture: Picture) => (format === "png" ? toPng(picture, { scale }) : picture.svg + "\n");
 
   if (o.shape !== undefined && !o.avatar) throw new UsageError(`--shape is for --avatar.`);
+  const dark = o["dark-palette"] ?? (o.dark ? true : undefined);
   const pictures = o.avatar
-    ? avatarsFor(count, pool, o, seed)
+    ? avatarsFor(count, pool, o, seed, dark)
     : placeholders(count, {
         kind: pool.length ? pool : undefined,
         size: o.size?.map(s => s as Size),
@@ -222,6 +229,7 @@ async function main(args: readonly string[], io: Io): Promise<number> {
         order: o.order === undefined ? undefined : oneOf(o.order, ORDERS, "--order"),
         seed,
         numbered: o.numbered,
+        dark,
       });
   // placeholders numbers seeds from the base seed: picture k uses base + k, with text seeds hashed first.
   const seedOf = (k: number) => (seedToInt(seed) + k) >>> 0;

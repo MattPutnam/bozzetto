@@ -6,7 +6,8 @@ one of three ways.
 ## Adjustments
 
 An **adjustment** changes each picture's own colors, so every picture keeps its variety:
-`vivid`, `pastel`, `muted`, `dusk` and `grayscale`.
+`vivid`, `pastel`, `muted`, `dusk`, `dim` and `grayscale`. `dim` darkens a picture for dark pages
+while keeping every hue: see [dark mode](#dark-mode).
 
 ```ts
 placeholders(12, { palette: "pastel" });
@@ -51,6 +52,34 @@ To come up with colors, see [Making a palette](./making-palettes), or try the
 Both are a single filtered layer on top, and work with any palette.
 
 <Figure name="colors-textures" alt="Hills with no texture, grain, and paper" />
+
+## Dark mode
+
+`dark` builds a dark version into the picture, which it switches to by itself when the viewer's
+system is in dark mode: in an `<img>`, a CSS background or inline SVG, with no code on your page.
+
+```ts
+render(hills, { seed: 4, dark: true }); // dark mode uses the dim adjustment
+render(hills, { seed: 4, palette: "pastel", dark: "sea glass" }); // or any palette
+```
+
+<Figure name="colors-dark" alt="The same pictures in their light colors, and in their dark-mode colors" />
+
+`dark: true` uses the `dim` adjustment: everything darker and a little softer, with every hue kept
+and pale colors staying pale, so a bright sun doesn't glare on a dark page. Any palette works
+instead, as for `palette`. The picture's `darkColor` is its background color in dark mode.
+
+How it works: each color in the picture gets a class, and a `<style>` inside the SVG gives each
+class its dark color under `@media (prefers-color-scheme: dark)`. The light picture is unchanged.
+
+### Pages with their own theme switch
+
+An `<img>` follows the viewer's system setting, because it can't see your page's classes. For
+inline SVG, `darkSelector` also applies the dark colors under a selector of your own:
+
+```ts
+container.innerHTML = render(hills, { dark: true, darkSelector: "html.dark" }).svg;
+```
 
 ## Mixing palettes
 
