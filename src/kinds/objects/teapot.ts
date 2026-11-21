@@ -28,7 +28,12 @@ export const teapot = /* @__PURE__ */ defineKind("teapot", "Teapot", (g, w, h, n
   ]);
   const dark = mix(pot, "#000000", 0.15);
   const clip = g.id("pot");
-  let out = table(g, w, h, top, hsl(g.f(0, 360), g.f(20, 40), g.f(82, 90)), hsl(g.f(15, 40), g.f(20, 35), g.f(48, 62)));
+  const pale = pot === "#f4f1ea" || pot === "#e9e3d5";
+  const wallHue = g.f(0, 360);
+  const wallSat = g.f(20, 40) * (pale ? 0.75 : 1);
+  // A pale pot goes against a deep wall, so it never fades into it
+  const wallLight = g.f(82, 90) - (pale ? 48 : 0);
+  let out = table(g, w, h, top, hsl(wallHue, wallSat, wallLight), hsl(g.f(15, 40), g.f(20, 35), g.f(48, 62)));
   // Shadow
   out += el("ellipse", { cx: potX, cy: bottom, rx: bw * 1.2, ry: unit * 0.025, fill: "#000", opacity: "0.12" });
   const cane = g.chance(0.25);
@@ -73,7 +78,7 @@ export const teapot = /* @__PURE__ */ defineKind("teapot", "Teapot", (g, w, h, n
   out += el("ellipse", { cx: potX, cy, rx: bw, ry: bh * 0.5, fill: pot });
   // Pattern, kept inside the body
   const pattern = g.pick(["plain", "plain", "band", "dots"]);
-  const paint = pot === "#f4f1ea" || pot === "#e9e3d5" ? g.pick(["#3e6d8e", "#c4572f", "#2f6b58"]) : "#ffffff";
+  const paint = pale ? g.pick(["#3e6d8e", "#c4572f", "#2f6b58"]) : "#ffffff";
   if (pattern !== "plain") {
     let marks = "";
     if (pattern === "band")

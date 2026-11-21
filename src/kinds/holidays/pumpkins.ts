@@ -1,10 +1,28 @@
-import { defineKind, el, fill, hsl, lin, type Point, type Rand, s } from "../../draw/core";
+import { defineKind, el, fill, hex, hsl, lin, n, type Point, type Rand, s } from "../../draw/core";
 import { capitalize, numberWord } from "../../draw/words";
 import { compact, curve, dots, glow, oval } from "./shared";
 
 type Face = "none" | "lit" | "dark";
 
-/** A ribbed pumpkin resting on `base`, `r` wide each side, sometimes carved with a friendly face. */
+/** One ribbed pumpkin body with its stem, 100 wide each side, its base at the origin, colored by `color`. */
+function pumpkinBody(id: string, stem: string): string {
+  const ribs = (dx: number, ry: number) => oval(-dx, -78, 50, ry) + oval(dx, -78, 50, ry);
+  return el(
+    "g",
+    { id },
+    // Outer ribs first, then the middle ones over them, each shaded a little.
+    el("path", { d: ribs(50, 78), fill: "currentColor" }),
+    el("path", { d: ribs(50, 78), fill: "#000", opacity: "0.16" }),
+    el("path", { d: ribs(24, 78.8), fill: "currentColor" }),
+    el("path", { d: ribs(24, 78.8), fill: "#000", opacity: "0.07" }),
+    el("ellipse", { cy: -78, rx: 40, ry: 79.6, fill: "currentColor" }),
+    el("ellipse", { cx: -30, cy: -113, rx: 12, ry: 15.6, fill: "#fff", opacity: "0.2" }),
+    // A curved stem.
+    el("path", { d: "M-8 -148 Q-8 -172 4.8 -178 L14.4 -172 Q8 -163 8 -148Z", fill: stem }),
+  );
+}
+
+/** A pumpkin resting on `base`, `r` wide each side, sometimes carved with a friendly face. */
 function pumpkin(
   g: Rand,
   cx: number,
@@ -14,39 +32,18 @@ function pumpkin(
   pale: boolean,
   face: Face,
   dim: number,
+  body: string,
 ): string {
   const ry = r * 0.78;
   const cy = base - ry;
-  const tone = (light: number) => (pale ? hsl(hue + 15, 30, 84 + light + dim) : hsl(hue, 85, 52 + light + dim));
-  // Outer ribs first, then the middle one over them.
-  let out = el("path", {
-    d: oval(cx - r * 0.5, cy, r * 0.5, ry) + oval(cx + r * 0.5, cy, r * 0.5, ry),
-    fill: tone(-9),
-  });
-  out += el("path", {
-    d: oval(cx - r * 0.24, cy, r * 0.5, ry * 1.01) + oval(cx + r * 0.24, cy, r * 0.5, ry * 1.01),
-    fill: tone(-4),
-  });
-  out += el("ellipse", { cx, cy, rx: r * 0.4, ry: ry * 1.02, fill: tone(0) });
-  out += el("ellipse", {
-    cx: cx - r * 0.3,
-    cy: cy - ry * 0.45,
-    rx: r * 0.12,
-    ry: ry * 0.2,
-    fill: "#fff",
-    opacity: "0.2",
-  });
-  // A curved stem.
-  const sw = r * 0.08;
-  const sh = r * g.f(0.25, 0.35);
-  const top = cy - ry * 0.9;
-  out += el("path", {
-    d: s`M${cx - sw} ${top} Q ${cx - sw} ${top - sh * 0.8} ${cx + sw * 0.6} ${top - sh}
-         L ${cx + sw * 1.8} ${top - sh * 0.8} Q ${cx + sw} ${top - sh * 0.5} ${cx + sw} ${top}Z`,
-    fill: hsl(g.f(60, 95), 30, 32),
+  const color = pale ? hex(hue + 15, 30, 84 + dim) : hex(hue, 85, 52 + dim);
+  let out = el("use", {
+    href: `#${body}`,
+    transform: `translate(${n(cx)} ${n(base)}) scale(${(r / 100).toFixed(3)})`,
+    color,
   });
   if (face === "none") return out;
-  const paint = face === "lit" ? "#ffd66b" : hsl(hue + 5, 45, 18);
+  const paint = face === "lit" ? "#ffd66b" : hex(hue + 5, 45, 18);
   const ey = cy - ry * 0.2;
   const ew = r * 0.13;
   const eh = r * 0.22;
@@ -71,7 +68,7 @@ function pumpkin(
       y: my + ry * 0.09,
       width: r * 0.11,
       height: ry * 0.11,
-      fill: tone(0),
+      fill: color,
     });
   return out;
 }
@@ -88,7 +85,14 @@ export const pumpkins = /* @__PURE__ */ defineKind("pumpkins", "Pumpkins", (g, w
   const stops = dusk
     ? [hsl(g.f(240, 265), 35, 30), hsl(g.f(320, 345), 38, 56), hsl(g.f(24, 36), 85, 72)]
     : [hsl(hue, 55, 66), hsl(hue - 5, 50, 90)];
-  let out = el("defs", {}, lin(skyId, stops), glow(glowId, "#ffc65a", 0.6));
+  const bodyId = g.id("pumpkin");
+  let out = el(
+    "defs",
+    {},
+    lin(skyId, stops),
+    glow(glowId, "#ffc65a", 0.6),
+    pumpkinBody(bodyId, hex(g.f(60, 95), 30, 32)),
+  );
   out += fill(w, h, `url(#${skyId})`);
   const groundY = h * g.f(0.5, 0.58);
   out += el("circle", {
@@ -125,8 +129,9 @@ export const pumpkins = /* @__PURE__ */ defineKind("pumpkins", "Pumpkins", (g, w
     });
   }
   type P = { x: number; base: number; r: number; hue: number; pale: boolean; face: Face };
+  // Every pumpkin stays whole inside the picture.
   const make = (x: number, base: number, r: number): P => ({
-    x,
+    x: Math.max(r * 1.05, Math.min(w - r * 1.05, x)),
     base,
     r,
     hue: g.f(20, 32),
@@ -136,21 +141,23 @@ export const pumpkins = /* @__PURE__ */ defineKind("pumpkins", "Pumpkins", (g, w
   const items: P[] = [];
   let what: string;
   if (patch) {
-    // Pumpkins scattered over the field, bigger nearer the front.
-    const count = Math.min(6, Math.max(3, Math.round((w / unit) * g.f(2.4, 3.2)) + 1));
-    const top = groundY + (h - groundY) * 0.3;
-    const bottom = h - unit * 0.04;
-    for (let k = 0; k < count; k++)
-      for (let tries = 0; tries < 30; tries++) {
-        const base = g.f(top, bottom);
-        const r = unit * (0.055 + 0.06 * ((base - top) / (bottom - top)));
-        const x = g.f(r * 1.3, w - r * 1.3);
-        // Neighbors may overlap a little at the sides, but never stand one behind another.
-        const clear = items.every(o => Math.abs(x - o.x) > (r + o.r) * 0.75);
-        if (!clear) continue;
-        items.push(make(x, base, r));
-        break;
+    // Pumpkins in staggered rows across the field: big ones in front, smaller ones peeking between them.
+    const across = Math.min(4, Math.max(2, Math.round(w / (unit * 0.45))));
+    const slot = w / across;
+    const rows = h > w * 1.2 ? 3 : 2;
+    let r = Math.min(unit * g.f(0.16, 0.19), slot * 0.42);
+    let base = h - unit * g.f(0.04, 0.07);
+    for (let row = 0; row < rows; row++) {
+      const shift = row % 2 ? 0.5 : 0;
+      const n = row % 2 ? across - 1 : across;
+      for (let k = 0; k < n; k++) {
+        if (row === 2 && g.chance(0.3)) continue;
+        const x = (k + 0.5 + shift) * slot + slot * g.f(-0.12, 0.12);
+        items.push(make(Math.max(r * 1.1, Math.min(w - r * 1.1, x)), base + r * g.f(-0.08, 0.08), r * g.f(0.9, 1.05)));
       }
+      base -= r * g.f(0.85, 1.05);
+      r *= 0.72;
+    }
     items.sort((a, b) => a.base - b.base);
     // Vines winding over the ground between them, with a few leaves.
     let vines = "";
@@ -171,7 +178,7 @@ export const pumpkins = /* @__PURE__ */ defineKind("pumpkins", "Pumpkins", (g, w
     what = "in a pumpkin patch";
   } else {
     // A hay bale with pumpkins on top and beside it.
-    const bw = Math.min(unit * g.f(0.42, 0.5), w * 0.55);
+    const bw = Math.min(unit * g.f(0.55, 0.62), w * 0.6);
     const bh = bw * g.f(0.42, 0.5);
     const bx = w / 2 + w * g.f(-0.08, 0.08);
     const base = h * g.f(0.8, 0.86);
@@ -201,10 +208,17 @@ export const pumpkins = /* @__PURE__ */ defineKind("pumpkins", "Pumpkins", (g, w
     else for (const side of [-1, 1]) items.push(make(bx + side * bw * 0.23, btop + bh * 0.08, bw * g.f(0.17, 0.21)));
     const sides = g.pick([[-1], [1], [-1, 1], [-1, 1]]);
     for (const side of sides) {
-      const r = unit * g.f(0.08, 0.11);
+      const r = bw * g.f(0.17, 0.22);
       items.push(make(bx + side * (bw / 2 + r * g.f(0.2, 0.6)), base + unit * g.f(0.01, 0.03), r));
     }
-    if (g.chance(0.4)) items.push(make(bx + bw * g.f(-0.15, 0.15), base + unit * 0.06, unit * g.f(0.06, 0.08)));
+    // On wide pictures more pumpkins line up on the ground to either side.
+    const extra = Math.min(2, Math.floor(w / h - 1.5));
+    for (const side of [-1, 1])
+      for (let j = 1; j <= extra; j++) {
+        const r = bw * g.f(0.15, 0.2);
+        items.push(make(bx + side * (bw / 2 + bw * 0.22 * (2.6 * j - 0.4)), base + unit * g.f(0, 0.04), r));
+      }
+    if (g.chance(0.4)) items.push(make(bx + bw * g.f(-0.15, 0.15), base + unit * 0.06, bw * g.f(0.12, 0.15)));
     what = "on and beside a hay bale";
   }
   // At dusk, the frontmost pumpkin is always carved and lit.
@@ -218,7 +232,7 @@ export const pumpkins = /* @__PURE__ */ defineKind("pumpkins", "Pumpkins", (g, w
     if (p.pale && p.face === "lit") p.face = "dark";
     if (p.face === "lit")
       out += el("circle", { cx: p.x, cy: p.base - p.r * 0.7, r: p.r * 2.2, fill: `url(#${glowId})` });
-    out += pumpkin(g, p.x, p.base, p.r, p.hue, p.pale, p.face, dim / 2);
+    out += pumpkin(g, p.x, p.base, p.r, p.hue, p.pale, p.face, dim / 2, bodyId);
   }
   const carved = items.filter(p => p.face !== "none").length;
   const faces =

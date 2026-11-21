@@ -1,4 +1,4 @@
-import { defineKind, el, fill, hsl, s } from "../../draw/core";
+import { defineKind, el, fill, hsl, mix, s } from "../../draw/core";
 import { blob } from "../../draw/shapes";
 
 /** A fried egg in a pan or on a plate, sometimes with bacon. */
@@ -23,9 +23,11 @@ export const egg = /* @__PURE__ */ defineKind("egg", "Fried egg", (g, w, h, note
     out += el("circle", { cx, cy, r: radius, fill: "#3a3a3a" });
     out += el("circle", { cx, cy, r: radius * 0.88, fill: "#2b2b2b" });
   } else {
-    // Plate
-    out += el("circle", { cx, cy, r: radius, fill: "#fff" });
-    out += el("circle", { cx, cy, r: radius * 0.78, fill: "#000", opacity: "0.04" });
+    // A glazed plate, deep enough in color that the egg white stands out on it: rim, a pale lip and the well
+    const plate = g.pick(["#5b8fb9", "#3f5e7a", "#7a9e7e", "#4f7a6a", "#c9a94e", "#8a6fa8", "#4a4f5c"]);
+    out += el("circle", { cx, cy, r: radius, fill: plate });
+    out += el("circle", { cx, cy, r: radius * 0.8, fill: mix(plate, "#ffffff", 0.18) });
+    out += el("circle", { cx, cy, r: radius * 0.76, fill: mix(plate, "#000000", 0.08) });
   }
   const bacon = g.chance(0.45);
   if (bacon)
@@ -56,7 +58,15 @@ export const egg = /* @__PURE__ */ defineKind("egg", "Fried egg", (g, w, h, note
   // White
   const ex = cx + radius * g.f(-0.12, 0.12);
   const ey = cy - radius * g.f(0.05, 0.2);
-  out += el("path", { d: blob(g, ex, ey, radius * 0.55, radius * 0.5, g.i(4, 6), 0.12, 0.08), fill: "#fbfbf6" });
+  const white = blob(g, ex, ey, radius * 0.55, radius * 0.5, g.i(4, 6), 0.12, 0.08);
+  // A soft shadow under its edge, then the white with a faint crisp rim
+  out += el("path", {
+    d: white,
+    fill: "#000",
+    opacity: "0.18",
+    transform: s`translate(${radius * 0.025} ${radius * 0.045})`,
+  });
+  out += el("path", { d: white, fill: "#fbfbf6", stroke: "#e6dfcc", "stroke-width": radius * 0.02 });
   // Yolk and its shine
   const yolkX = ex + radius * g.f(-0.12, 0.12);
   const yolkY = ey + radius * g.f(-0.1, 0.05);

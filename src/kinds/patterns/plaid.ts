@@ -1,5 +1,4 @@
 import { defineKind, el, fill, mix } from "../../draw/core";
-import { tile } from "./shared";
 
 /** A tartan plaid: a mirrored run of stripes in several widths and colors, crossing itself. */
 export const plaid = /* @__PURE__ */ defineKind("plaid", "Plaid", (g, w, h, note) => {
@@ -15,8 +14,8 @@ export const plaid = /* @__PURE__ */ defineKind("plaid", "Plaid", (g, w, h, note
   // Calmer plaids lift every color toward the lightest one.
   const lift = g.f(0.25, 0.45);
   const colors = palette.map(c => mix(c, palette[4], lift));
-  // Half a sett: stripes of a few widths; the other half mirrors it.
-  const module = unit * g.f(0.012, 0.018);
+  // Half a sett: stripes of a few widths; the other half mirrors it. Widths are whole pixels.
+  const module = Math.max(1, Math.round(unit * g.f(0.012, 0.018)));
   const half: { color: string; width: number }[] = [];
   let last = -1;
   for (let k = g.i(5, 7); k > 0; k--) {
@@ -27,22 +26,35 @@ export const plaid = /* @__PURE__ */ defineKind("plaid", "Plaid", (g, w, h, note
   }
   const sett = [...half, ...[...half].reverse()];
   const size = sett.reduce((sum, stripe) => sum + stripe.width, 0);
-  // Horizontal stripes are solid; vertical ones are half see-through, so crossings blend.
-  let across = "";
-  let down = "";
-  let at = 0;
-  for (const { color, width } of sett) {
-    across += el("rect", { y: at, width: size, height: width + 0.2, fill: color });
-    down += el("rect", { x: at, width: width + 0.2, height: size, fill: color });
-    at += width;
-  }
-  const id = g.id("sett");
+  // The stripes run the full length of the picture rather than repeating in tiles, so no seams show
+  // where tiles would meet, and their edges fall on whole pixels, so neighbors meet cleanly. Stripes
+  // of one color and width share a path of thick lines. The sett starts somewhere different each seed.
+  const stripes = (across: number, along: number, start: number, vertical: boolean) => {
+    const paths = new Map<string, string>();
+    for (let at = start - size; at < across;) {
+      for (const { color, width } of sett) {
+        if (at + width > 0 && at < across) {
+          const key = `${color} ${width}`;
+          const mid = at + width / 2;
+          paths.set(key, (paths.get(key) ?? "") + (vertical ? `M${mid} 0v${along}` : `M0 ${mid}h${along}`));
+        }
+        at += width;
+      }
+    }
+    let out = "";
+    for (const [key, d] of paths) {
+      const [color, width] = key.split(" ");
+      out += el("path", { d, stroke: color, "stroke-width": width });
+    }
+    return out;
+  };
+  const shiftY = Math.round(g.f(0, size));
+  const shiftX = Math.round(g.f(0, size));
   const weave = g.id("twill");
   const fine = module * 1.2;
   let out = el(
     "defs",
     {},
-    tile(g, id, size, across, el("g", { opacity: "0.5" }, down)),
     el(
       "pattern",
       { id: weave, width: fine, height: fine, patternUnits: "userSpaceOnUse", patternTransform: "rotate(45)" },
@@ -50,7 +62,9 @@ export const plaid = /* @__PURE__ */ defineKind("plaid", "Plaid", (g, w, h, note
     ),
   );
   out += fill(w, h, sett[0].color);
-  out += el("rect", { width: w, height: h, fill: `url(#${id})` });
+  // Horizontal stripes are solid; vertical ones are half see-through, so crossings blend.
+  out += stripes(h, w, shiftY, false);
+  out += el("g", { opacity: "0.5" }, stripes(w, h, shiftX, true));
   out += el("rect", { width: w, height: h, fill: `url(#${weave})` });
   note.focus(w / 2, h / 2);
   note.alt(

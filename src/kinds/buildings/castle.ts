@@ -16,15 +16,18 @@ export const castle = /* @__PURE__ */ defineKind("castle", "Storybook castle", (
   const unit = Math.min(w, h);
   const time = timeOfDay(g);
   const dark = shade(time);
-  const top = h * g.f(0.56, 0.62);
-  const size = Math.min((top - h * 0.04) / 1.5, (w * 0.84) / 1.75, unit * 0.75);
+  // Wide pictures put the horizon lower, leaving more height for the castle.
+  const top = h * (g.f(0.56, 0.62) + Math.min(0.12, Math.max(0, (w / h - 2) * 0.06)));
+  // On wide pictures the curtain wall stretches out, so the castle fills more of the frame.
+  const span = Math.max(0.62, Math.min(1.5, 0.62 + (w / h - 1.6) * 0.4));
+  const size = Math.min((top - h * 0.04) / 1.5, (w * 0.84) / (1.75 + (span - 0.62) * 2), unit * 0.75);
   const cx = w * g.f(0.42, 0.58);
   const grass = g.f(85, 125);
   let out = skyAt(g, w, h, time, top + (h - top) * 0.4);
   out += hill(g, w, h, top + (h - top) * 0.3, h * g.f(0.04, 0.1), tone(grass + 15, 24, 62, dark));
   out += el("rect", { y: top + (h - top) * 0.6, width: w, height: h, fill: tone(grass + 5, 34, 50, dark) });
   // The castle hill: flat on top, falling away to either side.
-  const flat = size * 0.9;
+  const flat = size * (span + 0.28);
   const fall = size * 1.4;
   const hillY = (x: number) => {
     const d = Math.max(0, Math.abs(x - cx) - flat);
@@ -111,39 +114,47 @@ export const castle = /* @__PURE__ */ defineKind("castle", "Storybook castle", (
       `M ${x - 0.04} ${keepTop + 0.28} V ${keepTop + 0.18} A 0.04 0.04 0 0 1 ${x + 0.04} ${keepTop + 0.18} V ${keepTop + 0.28} Z`,
       {},
     );
-  // A slim turret on one corner of the keep.
+  // A slim turret rising from the ground at one corner of the keep, taller than the keep.
   const turret = g.chance(0.6);
   if (turret) {
-    const tx = g.pick([-1, 1]) * 0.22;
-    const tt = keepTop - g.f(0.12, 0.2);
-    out += u.rect(tx - 0.07, tt, 0.14, keepTop - tt + 0.2, { fill: back });
-    out += shadow(tx + 0.02, tt, 0.05, keepTop - tt + 0.2);
+    const tx = g.pick([-1, 1]) * 0.27;
+    const tt = Math.max(-1, keepTop - g.f(0.16, 0.26));
+    out += u.rect(tx - 0.07, tt, 0.14, 0.12 - tt, { fill: back });
+    out += shadow(tx + 0.02, tt, 0.05, 0.12 - tt);
     out += cone(tx, tt, 0.1, 0.24);
     glass += u.rect(tx - 0.015, tt + 0.08, 0.03, 0.08, {});
   } else if (roofs) out += flag(0, keepTop - 0.18);
   else out += flag(0, keepTop - 0.06);
   // The curtain wall and its battlements.
   const wallTop = -0.38;
-  out += u.rect(-0.62, wallTop, 1.24, 0.5, { fill: wall });
-  out += u.path(merlons(-0.62, 0.62, wallTop, 0.06), { fill: wall });
-  out += u.rect(-0.62, wallTop, 1.24, 0.03, { fill: "#000", opacity: 0.08 });
+  out += u.rect(-span, wallTop, span * 2, 0.5, { fill: wall });
+  out += u.path(merlons(-span, span, wallTop, 0.06), { fill: wall });
+  out += u.rect(-span, wallTop, span * 2, 0.03, { fill: "#000", opacity: 0.08 });
   // Towers at either end, and sometimes a pair flanking the gate.
-  const tower = (x: number, half: number, tt: number, coned: boolean) => {
+  const tower = (x: number, half: number, tt: number, coned: boolean, flagged = true) => {
     let t = u.rect(x - half, tt, half * 2, 0.12 - tt, { fill: wall });
     t += shadow(x + half * 0.3, tt, half * 0.7, 0.12 - tt);
     if (coned) t += cone(x, tt, half * 1.25, half * 2.6);
     else {
       t += u.rect(x - half * 1.15, tt - 0.03, half * 2.3, 0.05, { fill: wall });
       t += u.path(merlons(x - half * 1.15, x + half * 1.15, tt - 0.03, 0.05), { fill: wall });
-      t += flag(x, tt - 0.08);
+      if (flagged) t += flag(x, tt - 0.08);
     }
     glass += u.rect(x - 0.012, tt + 0.1, 0.024, 0.08, {});
     return t;
   };
   const sideTop = -g.f(0.62, 0.74);
-  out += tower(-0.62, 0.13, sideTop, roofs) + tower(0.62, 0.13, sideTop, roofs);
+  out += tower(-span, 0.13, sideTop, roofs) + tower(span, 0.13, sideTop, roofs);
+  // A long wall gets a second pair of towers partway along.
+  const midTowers = span > 1;
+  if (midTowers) {
+    const mx = (span + 0.27) / 2 + 0.05;
+    const mt = sideTop + g.f(0.02, 0.08);
+    out += tower(-mx, 0.11, mt, roofs) + tower(mx, 0.11, mt, roofs);
+  }
+  // Squat gate towers stand in front of the keep, so they carry no flags.
   const gateTowers = g.chance(0.45);
-  if (gateTowers) out += tower(-0.17, 0.08, -0.5, false) + tower(0.17, 0.08, -0.5, false);
+  if (gateTowers) out += tower(-0.17, 0.08, -0.5, false, false) + tower(0.17, 0.08, -0.5, false, false);
   // The gate, with its portcullis.
   out += u.path("M -0.085 0.12 V -0.12 A 0.085 0.085 0 0 1 0.085 -0.12 V 0.12 Z", { fill: tone(25, 25, 18, dark) });
   if (g.chance(0.6)) {
@@ -166,7 +177,7 @@ export const castle = /* @__PURE__ */ defineKind("castle", "Storybook castle", (
   });
   out += veil(w, h, time);
   if (lit) out += windows;
-  const towers = gateTowers ? "four towers" : "two towers";
+  const towers = `${["two", "four", "six"][+gateTowers + +midTowers]} towers`;
   const tops = roofs ? "pointed roofs" : "battlements";
   note.alt(`A storybook castle with ${towers}, ${tops} and flags on a hill${when(time)}`);
   note.focus(cx, top - size * 0.4);

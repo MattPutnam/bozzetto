@@ -71,10 +71,11 @@ export const cafe = /* @__PURE__ */ defineKind("cafe", "Café", (g, w, h, note) 
     });
     out += el("ellipse", { cx, cy: cupTop, rx: size * 0.5, ry: size * 0.1, fill: "#6b4430" });
   }
-  // Steam.
+  // Steam, squashed so that it fades out below the chin rather than rising over the face.
+  const rise = Math.max(0.3, Math.min(1, (cupTop - size * 0.22 - (cy + ry * 1.3)) / (size * 0.6))) * size;
   out += el("path", {
-    d: s`M ${cx - size * 0.12} ${cupTop - size * 0.22} q ${size * 0.12} ${-size * 0.15} 0 ${-size * 0.3} t 0 ${-size * 0.3}
-       M ${cx + size * 0.18} ${cupTop - size * 0.25} q ${size * 0.12} ${-size * 0.14} 0 ${-size * 0.28}`,
+    d: s`M ${cx - size * 0.12} ${cupTop - size * 0.22} q ${size * 0.12} ${-rise * 0.15} 0 ${-rise * 0.3} t 0 ${-rise * 0.3}
+       M ${cx + size * 0.18} ${cupTop - size * 0.25} q ${size * 0.12} ${-rise * 0.14} 0 ${-rise * 0.28}`,
     fill: "none",
     stroke: "#fff",
     "stroke-width": size * 0.06,

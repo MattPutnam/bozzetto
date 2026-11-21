@@ -70,6 +70,51 @@ function palettesOf(
   return isOnePalette ? [value as PaletteSpec] : (value as readonly (PaletteSpec | undefined)[]);
 }
 
+/** Murmur3's finalizer: mixes a 32-bit number so every bit of it moves every bit of the result. */
+function mix32(h: number): number {
+  h = Math.imul(h ^ (h >>> 16), 0x85ebca6b);
+  h = Math.imul(h ^ (h >>> 13), 0xc2b2ae35);
+  return (h ^ (h >>> 16)) >>> 0;
+}
+
+/**
+ * Picks kinds by rendezvous hashing: under a seed, every kind gets a score from its own key, and
+ * the highest score wins. A kind's score never depends on the rest of the list, so adding kinds (to
+ * the package, a category, or your own list) only changes the seeds a new kind wins, and every
+ * other seed keeps its kind. Shuffles sort by score, so a new kind slots in without reordering the rest.
+ */
+function kindPicker(kinds: readonly Kind[], order: Order, seed: number): (k: number) => Kind {
+  if (kinds.length === 1) return () => kinds[0];
+  if (order === "cycle") return k => kinds[k % kinds.length];
+  // A kind's key is its id plus any options fixed with `with`, so `cat` and `cat.with(…)` differ.
+  const keys = kinds.map(kind => hash(Object.keys(kind.fixed).length ? kind.id + JSON.stringify(kind.fixed) : kind.id));
+  const best = (salt: number): number => {
+    let top = 0;
+    let topScore = -1;
+    for (let i = 0; i < kinds.length; i++) {
+      const score = mix32(keys[i] ^ salt);
+      if (score > topScore) [top, topScore] = [i, score];
+    }
+    return top;
+  };
+  if (order === "random") return k => kinds[best(mix32((seed + Math.imul(k + 1, 0x9e3779b1)) >>> 0))];
+  const rounds = new Map<number, Kind[]>();
+  return k => {
+    const round = Math.floor(k / kinds.length);
+    let sorted = rounds.get(round);
+    if (!sorted) {
+      const salt = mix32((seed + Math.imul(round + 1, 0x85ebca6b)) >>> 0);
+      const scores = keys.map(key => mix32(key ^ salt));
+      sorted = kinds
+        .map((kind, i) => ({ kind, i }))
+        .sort((a, b) => scores[b.i] - scores[a.i] || a.i - b.i)
+        .map(({ kind }) => kind);
+      rounds.set(round, sorted);
+    }
+    return sorted[k % kinds.length];
+  };
+}
+
 export interface PlaceholderOptions extends RenderOptions {
   /** Default: any kind, chosen by the seed. */
   kind?: KindChoice;
@@ -115,8 +160,7 @@ export function makePlaceholders(all: readonly Kind[]) {
 
   /** The kind a seed picks from a choice. The same seed always picks the same kind. */
   const resolveKind = (choice: KindChoice | undefined, seed: number | string = 1): Kind => {
-    const list = pool(choice);
-    return list.length === 1 ? list[0] : list[Math.floor(makeRand(seedToInt(seed) ^ 0x9e3779b9).next() * list.length)];
+    return kindPicker(pool(choice), "random", mix32(seedToInt(seed) ^ 0x9e3779b9))(0);
   };
 
   /** One picture, its kind chosen by the seed when given a list. */
@@ -127,7 +171,7 @@ export function makePlaceholders(all: readonly Kind[]) {
   const placeholders = (count: number, options: PlaceholdersOptions = {}): Picture[] => {
     const base = seedToInt(options.seed);
     const order = options.order ?? "shuffle";
-    const kindAt = picker(pool(options.kind), order, base, "kind");
+    const kindAt = kindPicker(pool(options.kind), order, base);
     const sizeAt = picker(many(options.size), order, base, "size");
     const paletteAt = picker(palettesOf(options.palette), order, base, "palette");
     const mappingAt = picker(many(options.mapping), order, base, "mapping");
@@ -148,7 +192,7 @@ export function makePlaceholders(all: readonly Kind[]) {
 
   /** The kinds `placeholders` would use for `count` pictures: the same order, for lists of other things. */
   const kindsFor = (count: number, options: { kind?: KindChoice; order?: Order; seed?: number | string } = {}) => {
-    const kindAt = picker(pool(options.kind), options.order ?? "shuffle", seedToInt(options.seed), "kind");
+    const kindAt = kindPicker(pool(options.kind), options.order ?? "shuffle", seedToInt(options.seed));
     return Array.from({ length: count }, (_, k) => kindAt(k));
   };
 

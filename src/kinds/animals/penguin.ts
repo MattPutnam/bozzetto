@@ -7,13 +7,24 @@ export const penguin = /* @__PURE__ */ defineKind("penguin", "Penguin", (g, w, h
   const skyHue = g.f(190, 215);
   const gy = h * g.f(0.72, 0.8);
   const cx = w * g.f(0.4, 0.6);
-  const bw = size * g.f(0.16, 0.2);
-  const bh = bw * g.f(1.55, 1.8);
+  const tall = g.f(1.55, 1.8);
+  // Shrink a penguin that would leave too little headroom (its head top is at gy - 1.92 * bh).
+  const bw = Math.min(size * g.f(0.16, 0.2), (gy - h * 0.08) / (1.92 * tall));
+  const bh = bw * tall;
   const by = gy - bh * 0.92;
   const dir = g.pick([-1, 1]);
   const black = g.pick(["#1d2330", "#232a35", "#2b2d3a"]);
   const emperor = g.chance(0.45);
-  let out = el("defs", {}, lin(sky, [hsl(skyHue, 45, 74), hsl(skyHue - 10, 50, 93)])) + fill(w, h, `url(#${sky})`);
+  const chest = g.id("chest");
+  let out =
+    el(
+      "defs",
+      {},
+      lin(sky, [hsl(skyHue, 45, 74), hsl(skyHue - 10, 50, 93)]),
+      emperor
+        ? lin(chest, ["#f5be55", "#f8d48a", "#fae7bf", "#fbf4e4", "#fbfaf6", "#fbfaf6", "#fbfaf6", "#fbfaf6"])
+        : "",
+    ) + fill(w, h, `url(#${sky})`);
   // Icebergs on the horizon
   for (let k = g.i(1, 3); k > 0; k--) {
     const bergX = w * g.f(-0.1, 0.9);
@@ -47,17 +58,32 @@ export const penguin = /* @__PURE__ */ defineKind("penguin", "Penguin", (g, w, h
   });
   // Body and white front
   out += el("ellipse", { cx, cy: by, rx: bw, ry: bh, fill: black });
-  out += el("ellipse", { cx: cx + bw * 0.12, cy: by + bh * 0.22, rx: bw * 0.72, ry: bh * 0.72, fill: "#fbfaf6" });
-  // Emperor's golden neck patch
-  if (emperor)
-    out += el("ellipse", {
-      cx: cx + bw * 0.45,
-      cy: by - bh * 0.42,
-      rx: bw * 0.22,
-      ry: bh * 0.16,
-      fill: "#f2b632",
-      opacity: "0.9",
+  out += el("ellipse", {
+    cx: cx + bw * 0.12,
+    cy: by + bh * 0.22,
+    rx: bw * 0.72,
+    ry: bh * 0.72,
+    fill: emperor ? `url(#${chest})` : "#fbfaf6",
+  });
+  // Emperor's ear patch: a teardrop on the side of the head behind the eye, its tail running down
+  // and forward into the golden wash at the top of the chest.
+  if (emperor) {
+    const hx = cx - bw * 0.04;
+    const hy = by - bh * 0.68;
+    const r = bw * 0.17;
+    const tx = cx + bw * 0.32;
+    const ty = by - bh * 0.34;
+    const len = Math.hypot(tx - hx, ty - hy);
+    const ux = (tx - hx) / len;
+    const uy = (ty - hy) / len;
+    out += el("path", {
+      d: s`M ${tx} ${ty}
+           Q ${hx - uy * r * 1.35 + ux * len * 0.5} ${hy + ux * r * 1.35 + uy * len * 0.5} ${hx - uy * r} ${hy + ux * r}
+           A ${r} ${r} 0 1 1 ${hx + uy * r} ${hy - ux * r}
+           Q ${hx + uy * r * 1.35 + ux * len * 0.5} ${hy - ux * r * 1.35 + uy * len * 0.5} ${tx} ${ty} Z`,
+      fill: "#f3a33a",
     });
+  }
   // Front flipper
   out += el("ellipse", {
     cx: cx + bw * 0.95,

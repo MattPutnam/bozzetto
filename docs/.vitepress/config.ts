@@ -13,7 +13,7 @@ const site = "https://mattputnam.github.io/bozzetto";
 export default defineConfig({
   title: "Bozzetto",
   description:
-    "Seeded placeholder pictures as tiny SVGs: landscapes, art, people, animals, food and still lifes, in any palette.",
+    "Seeded placeholder pictures as tiny SVGs: landscapes, art, people, animals, food, plants, buildings, vehicles, products, music, sports, holidays, space and patterns, in any palette.",
   base: "/bozzetto/",
   cleanUrls: true,
   lastUpdated: false,
@@ -64,6 +64,7 @@ export default defineConfig({
             { text: "Your own kinds", link: "/guide/custom-kinds" },
             { text: "React, Vue and web components", link: "/guide/components" },
             { text: "Using it with…", link: "/guide/recipes" },
+            { text: "Stability", link: "/guide/stability" },
             { text: "API reference", link: "/reference/" },
             { text: "Gallery", link: `${site}/demo/`, target: "_self" },
             { text: "Palette picker", link: `${site}/demo/picker.html`, target: "_self" },

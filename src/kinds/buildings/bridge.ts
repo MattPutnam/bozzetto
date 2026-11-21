@@ -30,10 +30,14 @@ export const bridge = /* @__PURE__ */ defineKind(
       const span = arches * 2 * rx + (arches - 1) * pier;
       const start = (w - span) / 2;
       const horizon = deckTop - h * g.f(0.04, 0.1);
-      const shore = apex + ry * g.f(0.35, 0.55);
+      // Through the arches: the far trees, a strip of meadow, then the far waterline low in each arch.
+      const shore = spring + (waterY - spring) * g.f(0, 0.4);
+      const treeLine = apex + ry * g.f(0.25, 0.42);
+      // The river is kept bluer and deeper than the stone, even at dusk.
+      const river = time === "night" ? waterPaint : time === "dusk" ? hsl(238, 26, 42) : hsl(205, 50, 54);
       out += skyAt(g, w, h, time, horizon);
       out += hill(g, w, h, horizon, h * g.f(0.03, 0.08), tone(grass + 15, 24, 60, dark));
-      out += el("rect", { y: shore, width: w, height: h - shore, fill: waterPaint });
+      out += el("rect", { y: shore, width: w, height: h - shore, fill: river });
       // Trees along the far bank, their tops showing over the bridge.
       const leaf = tone(grass + 10, 36, 32, dark);
       let crowns = "";
@@ -42,8 +46,15 @@ export const bridge = /* @__PURE__ */ defineKind(
         crowns += dot(x, shore - (shore - deckTop) - r * g.f(-0.6, 0.6), r);
       }
       out += el("path", { d: crowns, fill: leaf });
-      out += el("rect", { y: horizon + h * 0.02, width: w, height: shore - horizon - h * 0.02, fill: leaf });
-      out += el("rect", { y: shore - unit * 0.01, width: w, height: unit * 0.012, fill: "#000", opacity: 0.15 });
+      // The far bank, kept as a group so the river can mirror it through the arches too.
+      const bank = g.id("bank");
+      out += el(
+        "g",
+        { id: bank },
+        el("rect", { y: horizon + h * 0.02, width: w, height: treeLine - horizon - h * 0.02, fill: leaf }),
+        el("rect", { y: treeLine, width: w, height: shore - treeLine, fill: tone(grass + 5, 36, 56, dark) }),
+        el("rect", { y: shore - unit * 0.01, width: w, height: unit * 0.012, fill: "#000", opacity: 0.15 }),
+      );
       // The bridge: one body with the arches cut out, arch rings, and the parapet.
       const stonePaint = g.pick([
         [35, 15, 70],
@@ -54,13 +65,17 @@ export const bridge = /* @__PURE__ */ defineKind(
       const body = tone(stonePaint[0], stonePaint[1], stonePaint[2], dark);
       let d = s`M-1 ${deckTop + parapet}H${w + 1}V${waterY + 1}H-1Z`;
       let rings = "";
+      let soffits = "";
       for (let k = 0; k < arches; k++) {
         const x0 = start + k * (2 * rx + pier);
+        soffits += s`M${x0} ${waterY}V${spring}A${rx} ${ry} 0 0 1 ${x0 + 2 * rx} ${spring}V${waterY}`;
         d += s`M${x0} ${waterY + 1}V${spring}A${rx} ${ry} 0 0 1 ${x0 + 2 * rx} ${spring}V${waterY + 1}Z`;
         const t = ry * 0.09;
         rings += s`M${x0 - t} ${spring}A${rx + t} ${ry + t} 0 0 1 ${x0 + 2 * rx + t} ${spring}`;
       }
-      let bridge = el("path", { d, fill: body, "fill-rule": "evenodd" });
+      // A shadow just inside each arch, under the stone, so the openings read as deep.
+      let bridge = el("path", { d: soffits, fill: "none", stroke: "#000", opacity: 0.22, "stroke-width": ry * 0.22 });
+      bridge += el("path", { d, fill: body, "fill-rule": "evenodd" });
       bridge += el("path", {
         d: rings,
         fill: "none",
@@ -110,8 +125,13 @@ export const bridge = /* @__PURE__ */ defineKind(
       out += el("g", { id }, bridge);
       out += el(
         "g",
-        { "clip-path": `url(#${clip})`, opacity: 0.3 },
-        el("use", { href: `#${id}`, transform: s`translate(0 ${2 * waterY}) scale(1 -1)` }),
+        { "clip-path": `url(#${clip})`, opacity: 0.4 },
+        el(
+          "g",
+          { transform: s`translate(0 ${2 * waterY}) scale(1 -1)` },
+          el("use", { href: `#${bank}` }),
+          el("use", { href: `#${id}` }),
+        ),
       );
       let ripples = "";
       for (let k = g.i(5, 9); k > 0; k--)

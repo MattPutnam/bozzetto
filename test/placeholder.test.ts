@@ -194,3 +194,31 @@ describe("placeholders", () => {
     expect(second.svg).toContain(">2</text>");
   });
 });
+
+describe("choosing kinds as the list grows", () => {
+  const extra = defineKind("new-kind", "New kind", () => "");
+  const seeds = Array.from({ length: 3000 }, (_, k) => k);
+
+  it("keeps every seed's kind unless the new kind wins it", () => {
+    let moved = 0;
+    for (const seed of seeds) {
+      const before = placeholder({ seed }).kind;
+      const after = placeholder({ seed, kind: [kinds, extra] }).kind;
+      if (after !== before) {
+        expect(after).toBe("new-kind");
+        moved++;
+      }
+    }
+    // About one seed in (kinds + 1) goes to the new kind.
+    expect(moved).toBeGreaterThan(0);
+    expect(moved).toBeLessThan((seeds.length / kinds.length) * 2);
+  });
+
+  it("keeps a shuffled list's order, with the new kind slotted in", () => {
+    const before = placeholders(30, { seed: 4 }).map(p => p.kind);
+    const after = placeholders(31, { seed: 4, kind: [kinds, extra] })
+      .map(p => p.kind)
+      .filter(id => id !== "new-kind");
+    expect(after.slice(0, 30)).toEqual(before);
+  });
+});

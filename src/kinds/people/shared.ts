@@ -142,14 +142,17 @@ export function hairBehind(p: Person, cx: number, cy: number, rx: number, ry: nu
   return "";
 }
 
+/** How far below the head's center the shoulders sit, in head radii: a short neck shows under the chin. */
+export const SHOULDER = 1.38;
+
 /** The neck and a torso `sw` wide each side, from the shoulders down to `bottom`, with a neckline. */
 export function bust(p: Person, cx: number, cy: number, rx: number, ry: number, sw: number, bottom: number): string {
-  const top = cy + ry * 1.55;
-  // The neck.
+  const top = cy + ry * SHOULDER;
+  // The neck: short and sturdy, from under the jaw to the shoulders.
   let out = el("rect", {
-    x: cx - rx * 0.32,
+    x: cx - rx * 0.37,
     y: cy + ry * 0.6,
-    width: rx * 0.64,
+    width: rx * 0.74,
     height: top - cy - ry * 0.45,
     fill: p.shade,
   });
@@ -166,15 +169,15 @@ export function bust(p: Person, cx: number, cy: number, rx: number, ry: number, 
   if (p.clothes === "jacket")
     // An open jacket over a light shirt.
     out += el("path", {
-      d: s`M ${cx - rx * 0.42} ${top - 1} H ${cx + rx * 0.42} L ${cx + rx * 0.16} ${bottom} H ${cx - rx * 0.16} Z`,
+      d: s`M ${cx - rx * 0.5} ${top - 1} H ${cx + rx * 0.5} L ${cx + rx * 0.16} ${bottom} H ${cx - rx * 0.16} Z`,
       fill: paint(p.inner),
     });
   // The neckline: a scoop or a V of skin, edged with a band.
   const dip = p.clothes === "vneck" ? ry * 0.5 : p.clothes === "sweater" ? ry * 0.16 : ry * 0.28;
   const neck =
     p.clothes === "vneck"
-      ? s`M ${cx - rx * 0.34} ${top - 1} L ${cx} ${top + dip} L ${cx + rx * 0.34} ${top - 1}`
-      : s`M ${cx - rx * 0.34} ${top - 1} Q ${cx} ${top + dip * 2} ${cx + rx * 0.34} ${top - 1}`;
+      ? s`M ${cx - rx * 0.42} ${top - 1} L ${cx} ${top + dip} L ${cx + rx * 0.42} ${top - 1}`
+      : s`M ${cx - rx * 0.42} ${top - 1} Q ${cx} ${top + dip * 2} ${cx + rx * 0.42} ${top - 1}`;
   out += el("path", { d: neck + " Z", fill: p.shade });
   out += el("path", {
     d: neck,
@@ -188,12 +191,29 @@ export function bust(p: Person, cx: number, cy: number, rx: number, ry: number, 
     for (const side of [-1, 1])
       out += el("path", {
         d: s`M ${cx} ${top + ry * 0.24}
-           L ${cx + side * rx * 0.46} ${top - ry * 0.08}
-           L ${cx + side * rx * 0.34} ${top + ry * 0.34}
+           L ${cx + side * rx * 0.54} ${top - ry * 0.08}
+           L ${cx + side * rx * 0.42} ${top + ry * 0.34}
            Z`,
         fill: paint(p.inner),
       });
   return out;
+}
+
+/**
+ * The outline of hair over the head: a dome with a parting at `part` (from the middle) and two swept
+ * fringes whose depth `left` and `right` (0.15 to 0.5) vary. The fringes always stop well above the
+ * brows, so the forehead shows under any hair color.
+ */
+export function hairline(cx: number, cy: number, rx: number, ry: number, part: number, left: number, right: number) {
+  // Each fringe runs from the temple, up the side of the face, then sweeps in to the parting.
+  const temple = (side: number) => s`${cx + side * rx * 0.97} ${cy - ry * 0.4}`;
+  const sweep = (side: number, depth: number) =>
+    s`${cx + side * rx * (0.35 + depth * 0.5)} ${cy - ry * (0.66 - depth * 0.3)}`;
+  return s`M ${cx - rx * 1.04} ${cy + ry * 0.1}
+     C ${cx - rx * 1.1} ${cy - ry * 1.38} ${cx + rx * 1.1} ${cy - ry * 1.38} ${cx + rx * 1.04} ${cy + ry * 0.1}
+     C ${temple(1)} ${sweep(1, right)} ${cx + part} ${cy - ry * 0.7}
+     C ${sweep(-1, left)} ${temple(-1)} ${cx - rx * 1.04} ${cy + ry * 0.1}
+     Z`;
 }
 
 /**
@@ -257,15 +277,7 @@ export function head(
     out += el("g", { fill: p.hair }, curls);
   }
   if (p.style !== "bald" && p.style !== "scarf")
-    // The hairline: a dome over the head, with a parting and two swept fringes.
-    out += el("path", {
-      d: s`M ${cx - rx * 1.04} ${cy + ry * 0.1}
-         C ${cx - rx * 1.1} ${cy - ry * 1.38} ${cx + rx * 1.1} ${cy - ry * 1.38} ${cx + rx * 1.04} ${cy + ry * 0.1}
-         Q ${cx + rx * 0.9} ${cy - ry * p.right} ${cx + rx * p.part} ${cy - ry * 0.6}
-         Q ${cx - rx * 0.8} ${cy - ry * p.left} ${cx - rx * 1.04} ${cy + ry * 0.1}
-         Z`,
-      fill: p.hair,
-    });
+    out += el("path", { d: hairline(cx, cy, rx, ry, rx * p.part, p.left, p.right), fill: p.hair });
   if (p.beard === "full")
     // A beard along the jaw, leaving the mouth clear.
     out += el("path", {
@@ -390,7 +402,7 @@ export function halfLength(g: Rand, p: Person, w: number, h: number, shift = 0) 
   const ry = rx * p.long;
   const cx = w / 2 + shift;
   const cy = h / 2 - ry * 1.0;
-  return { unit, rx, ry, cx, cy, sw: rx * g.f(1.75, 2.05), shoulderY: cy + ry * 1.55 };
+  return { unit, rx, ry, cx, cy, sw: rx * g.f(1.75, 2.05), shoulderY: cy + ry * SHOULDER };
 }
 
 export const capital = (text: string) => text.charAt(0).toUpperCase() + text.slice(1);

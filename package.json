@@ -1,7 +1,7 @@
 {
   "name": "bozzetto",
-  "version": "0.1.0",
-  "description": "Seeded placeholder images as tiny SVGs: landscapes, art, people, animals, food and still lifes, drawn from a handful of shapes, in any palette.",
+  "version": "1.0.0",
+  "description": "Seeded placeholder images as tiny SVGs: landscapes, art, people, animals, food, plants, buildings, vehicles, products, music, sports, holidays, space and patterns, in any palette.",
   "keywords": [
     "avatar",
     "data-uri",
@@ -31,6 +31,22 @@
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
+  "typesVersions": {
+    "*": {
+      "node": [
+        "./dist/node.d.ts"
+      ],
+      "react": [
+        "./dist/react.d.ts"
+      ],
+      "vue": [
+        "./dist/vue.d.ts"
+      ],
+      "element": [
+        "./dist/element.d.ts"
+      ]
+    }
+  },
   "bin": {
     "bozzetto": "./dist/bin.js"
   },
@@ -90,7 +106,9 @@
     "dist",
     "!dist/bin.cjs",
     "!dist/bin.cjs.map",
+    "!dist/**/*.map",
     "README.md",
+    "CHANGELOG.md",
     "LICENSE"
   ],
   "sideEffects": [
@@ -105,6 +123,7 @@
     "format:check": "prettier --check .",
     "test": "vitest run",
     "test:watch": "vitest",
+    "fingerprints": "UPDATE_FINGERPRINTS=1 vitest run test/stability.test.ts",
     "check": "npm run format:check && npm run lint && npm run typecheck && npm test",
     "dev": "vite demo",
     "pages": "node scripts/pages.mjs",
@@ -159,6 +178,6 @@
     "vue": "^3.5.46"
   },
   "engines": {
-    "node": ">=18.3"
+    "node": ">=20"
   }
 }

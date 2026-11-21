@@ -71,15 +71,22 @@ export const frog = /* @__PURE__ */ defineKind("frog", "Frog", (g, w, h, note) =
   // Body and belly
   out += el("ellipse", { cx, cy: by, rx: bw, ry: bh, fill: colors.skin });
   out += el("ellipse", { cx, cy: by + bh * 0.35, rx: bw * 0.6, ry: bh * 0.5, fill: colors.belly });
-  // Spots
-  if ("spots" in colors)
-    for (let k = g.i(3, 5); k > 0; k--)
-      out += el("circle", {
-        cx: cx + bw * g.f(-0.85, 0.85),
-        cy: by + bh * g.f(-0.6, -0.1),
-        r: bw * g.f(0.04, 0.08),
-        fill: colors.spots,
-      });
+  // Spots: sampled on the back and flanks, each kept wholly inside the body and clear of the eyes,
+  // cheeks and smile (rejected candidates are simply skipped).
+  if ("spots" in colors) {
+    const placed: [number, number, number][] = [];
+    for (let want = g.i(3, 5), tries = 0; placed.length < want && tries < 40; tries++) {
+      const r = bw * g.f(0.045, 0.08);
+      const dx = bw * g.f(-0.9, 0.9);
+      const dy = bh * g.f(-0.95, 0.1);
+      const inBody = (dx / (bw - r * 1.4)) ** 2 + (dy / (bh - r * 1.4)) ** 2 <= 1;
+      const nearEye = [-1, 1].some(sd => Math.hypot(dx - sd * bw * 0.5, dy + bh * 0.78) < bw * 0.32 + r);
+      const nearFace = dy + r > -bh * 0.24 && Math.abs(dx) - r < bw * 0.76;
+      const nearSpot = placed.some(([x, y, q]) => Math.hypot(dx - x, dy - y) < r + q + bw * 0.04);
+      if (inBody && !nearEye && !nearFace && !nearSpot) placed.push([dx, dy, r]);
+    }
+    for (const [dx, dy, r] of placed) out += el("circle", { cx: cx + dx, cy: by + dy, r, fill: colors.spots });
+  }
   // Bulging eyes
   for (const sd of [-1, 1]) {
     const ex = cx + sd * bw * 0.5;

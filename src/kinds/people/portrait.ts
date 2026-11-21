@@ -1,4 +1,5 @@
 import { defineKind, el, fill, hsl, s } from "../../draw/core";
+import { hairline, SHOULDER } from "./shared";
 
 const SKINS = [
   ["#f6d5c1", "#e2b49b"],
@@ -56,12 +57,12 @@ export const portrait = /* @__PURE__ */ defineKind(
 
     // Neck, shoulders, ears, head.
     const shoulderW = rx * g.f(2.3, 2.9);
-    const shoulderY = cy + ry * 1.55;
-    // The neck.
+    const shoulderY = cy + ry * SHOULDER;
+    // The neck: short and sturdy, from under the jaw to the shoulders.
     out += el("rect", {
-      x: cx - rx * 0.32,
+      x: cx - rx * 0.37,
       y: cy + ry * 0.6,
-      width: rx * 0.64,
+      width: rx * 0.74,
       height: shoulderY - cy - ry * 0.45,
       fill: shade,
     });
@@ -97,14 +98,7 @@ export const portrait = /* @__PURE__ */ defineKind(
       const part = rx * hairRand.f(-0.4, 0.4);
       const right = hairRand.f(0.15, 0.5);
       const left = hairRand.f(0.15, 0.5);
-      out += el("path", {
-        d: s`M ${cx - rx * 1.04} ${cy + ry * 0.1}
-           C ${cx - rx * 1.1} ${cy - ry * 1.38} ${cx + rx * 1.1} ${cy - ry * 1.38} ${cx + rx * 1.04} ${cy + ry * 0.1}
-           Q ${cx + rx * 0.9} ${cy - ry * right} ${cx + part} ${cy - ry * 0.6}
-           Q ${cx - rx * 0.8} ${cy - ry * left} ${cx - rx * 1.04} ${cy + ry * 0.1}
-           Z`,
-        fill: hair,
-      });
+      out += el("path", { d: hairline(cx, cy, rx, ry, part, left, right), fill: hair });
     }
 
     // Features.

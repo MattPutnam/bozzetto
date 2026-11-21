@@ -36,9 +36,9 @@ describe("dark", () => {
       expect(tags.length).toBe(dimmed.length);
       tags.forEach((tag, k) => {
         const classes = /class="([^"]*)"/.exec(tag)?.[1].split(" ") ?? [];
-        const paints = [...dimmed[k].matchAll(/\s(fill|stroke|stop-color)="((?:hsl\([^)]*\)|#[0-9a-f]{3,6}))"/g)].map(
-          m => m[2],
-        );
+        const paints = [
+          ...dimmed[k].matchAll(/\s(fill|stroke|stop-color|color)="((?:hsl\([^)]*\)|#[0-9a-f]{3,6}))"/g),
+        ].map(m => m[2]);
         expect(
           classes.map(c => rules.get(c)),
           `${kind.id} ${tag.slice(0, 40)}`,

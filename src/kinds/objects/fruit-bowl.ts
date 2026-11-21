@@ -55,8 +55,13 @@ export const fruitBowl = /* @__PURE__ */ defineKind("fruit-bowl", "Fruit bowl", 
     // pears and lemons are shorter below their center than an apple, so they sit a little lower.
     // The back row sits only slightly higher than the front, so its bottoms stay below the near rim.
     const drop = kind === "pear" ? r * 0.28 : kind === "lemon" ? r * 0.1 : 0;
-    const x = spot.x;
-    const y = (spot.row === 0 ? rimY - r * g.f(0.05, 0.35) : rimY - r * g.f(0.38, 0.58)) + drop;
+    // Keep every fruit within the bowl's opening, clear of its ends
+    const room = Math.max(0, bowlW * 0.9 - r * (kind === "banana" ? 1.75 : 1.2));
+    const x = Math.min(cx + room, Math.max(cx - room, spot.x));
+    const y =
+      kind === "banana"
+        ? rimY - r * (spot.row === 0 ? g.f(0.4, 0.6) : g.f(0.7, 0.9))
+        : (spot.row === 0 ? rimY - r * g.f(0.05, 0.35) : rimY - r * g.f(0.38, 0.58)) + drop;
     fruits.push({
       x,
       y,
@@ -120,17 +125,37 @@ export const fruitBowl = /* @__PURE__ */ defineKind("fruit-bowl", "Fruit bowl", 
               })
             );
           default: {
-            // A banana is flatter than round fruit, so it sits lower to rest on the same surface.
-            const by = fy + r * 0.45;
-            return el("path", {
-              d: s`M ${fx - r * 1.6} ${by - r * 0.6}
-                   Q ${fx} ${by + r * 1.2} ${fx + r * 1.6} ${by - r * 0.7}
-                   Q ${fx} ${by + r * 0.4} ${fx - r * 1.6} ${by - r * 0.6}
-                   Z`,
-              fill: "#f4d03f",
-              stroke: "#c9a227",
-              "stroke-width": r * 0.06,
-            });
+            // A banana, curved like a smile and tapering to a dark tip at one end and a stalk at the
+            // other, drawn about its middle. It lies on top of the fruit, tilted so one end dips into the bowl.
+            const color = g.pick(["#f4d03f", "#f2c94c", "#ead55a"]);
+            const flip = g.chance(0.5) ? 1 : -1;
+            const body =
+              el("path", {
+                d: s`M ${-r * 1.7} ${-r * 0.5}
+                     Q 0 ${r} ${r * 1.55} ${-r * 0.62}
+                     L ${r * 1.62} ${-r * 0.8}
+                     Q 0 ${-r * 0.18} ${-r * 1.62} ${-r * 0.66}
+                     Z`,
+                fill: color,
+                stroke: mix(color, "#8a6a00", 0.35),
+                "stroke-width": r * 0.05,
+                "stroke-linejoin": "round",
+              }) +
+              el("path", {
+                d: s`M ${-r * 1.4} ${-r * 0.45} Q 0 ${r * 0.55} ${r * 1.4} ${-r * 0.55}`,
+                stroke: mix(color, "#8a6a00", 0.25),
+                "stroke-width": r * 0.05,
+                fill: "none",
+                opacity: "0.6",
+              }) +
+              el("path", {
+                d: s`M ${r * 1.58} ${-r * 0.71} L ${r * 1.92} ${-r * 0.98}`,
+                stroke: "#7a6a2a",
+                "stroke-width": r * 0.15,
+                "stroke-linecap": "round",
+              }) +
+              el("circle", { cx: -r * 1.68, cy: -r * 0.58, r: r * 0.1, fill: "#4a3b24" });
+            return el("g", { transform: s`translate(${fx} ${fy}) rotate(${g.f(-22, 22)}) scale(${flip} 1)` }, body);
           }
         }
       },

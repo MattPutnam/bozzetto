@@ -42,14 +42,17 @@ export const marble = /* @__PURE__ */ defineKind("marble", "Marble", (g, w, h, n
   // Veins share a general direction, each wandering from beyond one edge to beyond the other.
   const base = g.f(-0.6, 0.6) + (h > w * 1.2 ? Math.PI / 2 : 0);
   const diag = Math.hypot(w, h);
-  const spread = Math.round((w + h) / unit) + g.i(0, 1);
-  const veins: string[] = [];
-  const twigs: string[] = [];
   const nx = -Math.sin(base);
   const ny = Math.cos(base);
+  // How far the frame reaches across the flow: veins are spaced along it at much the same distance
+  // whatever the frame's shape, so a wide or tall picture stays as calm as a 4:3 one.
+  const across = Math.abs(nx) * w + Math.abs(ny) * h;
+  const spread = Math.max(2, Math.round((across / unit) * 1.6) + g.i(0, 1));
+  const veins: string[] = [];
+  const twigs: string[] = [];
   for (let k = 0; k < spread; k++) {
     // Start points spaced across the frame, perpendicular to the flow.
-    const off = ((k + g.f(0.2, 0.8)) / spread - 0.5) * (Math.abs(nx) * w + Math.abs(ny) * h);
+    const off = ((k + g.f(0.2, 0.8)) / spread - 0.5) * across;
     const cx = w / 2 + nx * off;
     const cy = h / 2 + ny * off;
     let a = base + g.f(-0.25, 0.25);

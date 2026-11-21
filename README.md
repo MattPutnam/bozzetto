@@ -257,6 +257,10 @@ placeholders(6, { kind: [dot, "owl"] }); // custom kinds mix with built-in ones
 
 `r` has `f(min, max)`, `i(min, max)`, `pick(list)`, `chance(p)`, `next()`, and `id(name)` for gradient and mask ids that stay unique when several pictures are inlined on one page.
 
+## Stability
+
+Pictures are part of the API. Within a major version, the same kind, seed, size and options always draw the same picture with the same alt text, and kind ids, options and categories are never renamed or removed. Minor versions can add kinds: a new kind takes its fair share of the seeds that choose from a list it joins (about one in however many kinds the list holds) and leaves every other seed's pick alone. Choose from your own list of kinds to keep every pick fixed. Redrawing a kind needs a new major version. The [stability guide](https://mattputnam.github.io/bozzetto/guide/stability) has the details.
+
 ## Develop
 
 ```sh

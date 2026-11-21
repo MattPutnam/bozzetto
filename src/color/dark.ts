@@ -1,7 +1,8 @@
 /**
  * Dark mode inside the picture: an SVG that recolors itself when the viewer's color scheme is dark.
  *
- * Every element that has a color gets a class naming that color, and a `<style>` inside the SVG
+ * Every element that has a color (a fill, stroke, gradient stop, or the `color` that `currentColor`
+ * paints with) gets a class naming that color, and a `<style>` inside the SVG
  * gives each class its dark color under `@media (prefers-color-scheme: dark)`. CSS beats SVG's
  * presentation attributes, so the light colors stay as they are and the dark ones win only in
  * dark mode. Class names are unique to the picture, so many can share a page.
@@ -9,8 +10,8 @@
 import { hash } from "../draw/core";
 
 const COLOR = String.raw`hsl\(\d+(?:\.\d+)? \d+(?:\.\d+)?% \d+(?:\.\d+)?%\)|#(?:[0-9a-fA-F]{6}|[0-9a-fA-F]{3})`;
-const PAINT = new RegExp(String.raw`\s(fill|stroke|stop-color)="(${COLOR})"`, "g");
-const PROPERTY = { fill: "f", stroke: "s", "stop-color": "p" } as const;
+const PAINT = new RegExp(String.raw`\s(fill|stroke|stop-color|color)="(${COLOR})"`, "g");
+const PROPERTY = { fill: "f", stroke: "s", "stop-color": "p", color: "c" } as const;
 const TAG = /<[a-zA-Z][^>]*>/g;
 const MASK = /<mask[\s\S]*?<\/mask>/g;
 
@@ -57,7 +58,7 @@ export function withDarkMode(light: string, dark: string, selector?: string): st
     })
     .join("");
   const css = selector
-    ? rules.replace(/\.(bzd[a-z0-9]+-[fsp]\d+)\{/g, `${selector} .$1{`)
+    ? rules.replace(/\.(bzd[a-z0-9]+-[fspc]\d+)\{/g, `${selector} .$1{`)
     : `@media (prefers-color-scheme: dark){${rules}}`;
   // The style goes first inside the root element, so it applies to everything after it.
   return classed.replace(/^(<svg[^>]*>)/, `$1<style>${css}</style>`);
