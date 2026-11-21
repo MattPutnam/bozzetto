@@ -415,13 +415,18 @@ export const dog = defineKind("dog", "Dog", (g, w, h, note) => {
   out += el("ellipse", { cx, cy, rx, ry, fill: coat.fur });
   // Spots
   if ("spots" in coat)
-    for (let k = g.i(3, 5); k > 0; k--)
-      out += el("circle", {
-        cx: cx + rx * g.f(-0.8, 0.8),
-        cy: cy + ry * g.f(-0.8, 0.1),
-        r: rx * g.f(0.06, 0.12),
-        fill: "#2b2b2b",
-      });
+    for (let k = g.i(3, 5); k > 0; k--) {
+      // A spot somewhere on the upper face, pulled in if it would hang over the edge of the head.
+      let dx = rx * g.f(-0.8, 0.8);
+      let dy = ry * g.f(-0.8, 0.1);
+      const r = rx * g.f(0.06, 0.12);
+      const reach = (dx / (rx - r * 1.3)) ** 2 + (dy / (ry - r * 1.3)) ** 2;
+      if (reach > 1) {
+        dx /= Math.sqrt(reach);
+        dy /= Math.sqrt(reach);
+      }
+      out += el("circle", { cx: cx + dx, cy: cy + dy, r, fill: "#2b2b2b" });
+    }
   // Eye patch
   const patchSide = g.chance(0.4) ? g.pick([-1, 1]) : 0;
   if (patchSide)
