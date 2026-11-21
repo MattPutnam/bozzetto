@@ -17,9 +17,10 @@ import {
   toSvg,
 } from "../src";
 
-// Color words, except where they name a thing: "an orange" (the fruit) and "ice cream" or "cream" on a cake.
+// Color words, except where they name a thing: "an orange" (the fruit), "ice cream" or "cream" on a cake, and
+// "chocolate chip" cookies.
 const COLOR_WORDS =
-  /\b(red|yellow|green|blue|purple|violet|pink|brown|black|white|grey|gray|golden|gold|silver|teal|navy|tan|beige|chocolate|crimson|scarlet|turquoise)\b|(?<!\ban )\borange\b/i;
+  /\b(red|yellow|green|blue|purple|violet|pink|brown|black|white|grey|gray|golden|gold|silver|teal|navy|tan|beige|crimson|scarlet|turquoise)\b|\bchocolate\b(?! chip)|(?<!\ban )\borange\b/i;
 
 describe("categories", () => {
   it("cover every kind exactly once", () => {
@@ -118,7 +119,7 @@ describe("placeholder", () => {
   it("chooses from nested lists of kinds, ids and categories", () => {
     const pool = new Set([...animals.map(k => k.id), "donut"]);
     for (let seed = 0; seed < 60; seed++) expect(pool).toContain(resolveKind([animals, "donut"], seed).id);
-    const seen = new Set(Array.from({ length: 300 }, (_, seed) => resolveKind(undefined, seed).id));
+    const seen = new Set(Array.from({ length: 2000 }, (_, seed) => resolveKind(undefined, seed).id));
     expect(seen.size).toBe(kinds.length);
   });
 

@@ -18,10 +18,14 @@ const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as 
 const NOTES: Record<keyof typeof categories, string> = {
   landscapes: "Gradient skies and layered silhouettes. Hue and horizon move with the seed.",
   art: "Loose homages to familiar 20th-century styles, from a dozen or so rectangles, circles and blobs.",
-  people: "Skin, hair color and style, head shape, brows, smile and glasses all vary.",
+  people: "Portraits, people reading, working and out for a walk, pairs and groups. Skin, hair, age and clothes vary.",
   animals: "Built from ellipses and triangles. Coats, markings and the way they face vary.",
   food: "Seen from above or on a plate, with toppings that vary.",
   objects: "Still lifes on a table or shelf.",
+  plants: "Potted plants, and close-ups of real flowers.",
+  products: "Studio product shots, one item on a seamless backdrop, as in a shop.",
+  patterns: "Calm, even textures to sit behind text on cards and banners.",
+  vehicles: "Side views on roads, rails, water and sky, by day, dusk or night.",
 };
 const SECTIONS = (Object.keys(categories) as (keyof typeof categories)[]).map(name => ({
   name: name[0].toUpperCase() + name.slice(1),

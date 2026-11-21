@@ -6,7 +6,22 @@ const withOptions = kinds.filter(k => Object.keys(k.options).length > 0);
 
 describe("kind options", () => {
   it("are offered by some kinds, and described as data", () => {
-    expect(withOptions.map(k => k.id).sort()).toEqual(["cat", "hills", "night", "pizza", "portrait"]);
+    expect(withOptions.map(k => k.id).sort()).toEqual([
+      "airplane",
+      "beach",
+      "bear",
+      "bus",
+      "cat",
+      "dots",
+      "hills",
+      "lamp",
+      "lion",
+      "night",
+      "pizza",
+      "portrait",
+      "rocket",
+      "walker",
+    ]);
     expect(cat.options).toEqual({ tabby: [true, false], muzzle: [true, false], pupils: ["slit", "round"] });
     expect(Object.keys(render(cat).options).sort()).toEqual(["muzzle", "pupils", "tabby"]);
   });

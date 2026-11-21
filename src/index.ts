@@ -13,24 +13,208 @@
  *     import { animals, donut, placeholders } from "bozzetto";
  *     const photos = placeholders(12, { kind: [animals, donut], size: ["400x300", "300x400"] });
  */
-import { bird, cat, dog, fish, fox, frog, owl, penguin, rabbit, snail, whale } from "./animals";
-import { bauhaus, cutouts, field, grid, orbits, squares } from "./art";
+import {
+  bear,
+  bird,
+  cat,
+  dog,
+  elephant,
+  fish,
+  fox,
+  frog,
+  giraffe,
+  koala,
+  lion,
+  owl,
+  panda,
+  penguin,
+  pig,
+  rabbit,
+  sheep,
+  snail,
+  whale,
+} from "./animals";
+import {
+  arches,
+  bauhaus,
+  confetti,
+  cutouts,
+  dots,
+  field,
+  grid,
+  orbits,
+  pebbles,
+  squares,
+  stripes,
+  sunburst,
+  triangles,
+  waves,
+} from "./art";
+import { bee, butterfly, crab, duck, hedgehog, jellyfish, ladybug, mouse, octopus, turtle } from "./critters";
+import { daisy, hibiscus, lotus, poppy, rose, sunflower, tulip } from "./blooms";
 import { portrait } from "./faces";
-import { cake, donut, egg, iceCream, pizza, sushi } from "./food";
-import { city, dunes, forest, hills, mountains, night, sea } from "./landscapes";
+import { backpack, handbag, perfume, sneakers, sunglasses, watch } from "./products";
+import { controller, headphones, laptop, phone, speaker } from "./gadgets";
+import { cafe, group, pair, reader, walker, worker } from "./people";
+import { gingham, gradient, marble, plaid, terrazzo, topography } from "./patterns";
+import {
+  avocado,
+  burger,
+  cake,
+  cookies,
+  cupcake,
+  donut,
+  egg,
+  iceCream,
+  pancakes,
+  pie,
+  pizza,
+  popsicle,
+  ramen,
+  salad,
+  sushi,
+  taco,
+  watermelon,
+} from "./food";
+import {
+  autumn,
+  beach,
+  city,
+  dunes,
+  farm,
+  forest,
+  hills,
+  island,
+  lake,
+  lighthouse,
+  mountains,
+  night,
+  sea,
+  volcano,
+  winter,
+} from "./landscapes";
 import { makeAvatar, type AvatarsOptions } from "./avatar";
 import { makePlaceholders } from "./placeholder";
 import { seedToInt } from "./core";
 import type { Picture } from "./render";
-import { books, bottles, cactus, coffee, flowers, fruitBowl } from "./objects";
+import {
+  armchair,
+  balloons,
+  books,
+  bottles,
+  cactus,
+  camera,
+  candles,
+  clock,
+  coffee,
+  flowers,
+  fruitBowl,
+  houseplant,
+  lamp,
+  succulents,
+  teapot,
+} from "./objects";
+import { airplane, bicycle, bus, car, hotAirBalloon, rocket, sailboat, train } from "./vehicles";
 
 // Kinds
-export { bird, cat, dog, fish, fox, frog, owl, penguin, rabbit, snail, whale } from "./animals";
-export { bauhaus, cutouts, field, grid, orbits, squares } from "./art";
+export {
+  bear,
+  bird,
+  cat,
+  dog,
+  elephant,
+  fish,
+  fox,
+  frog,
+  giraffe,
+  koala,
+  lion,
+  owl,
+  panda,
+  penguin,
+  pig,
+  rabbit,
+  sheep,
+  snail,
+  whale,
+} from "./animals";
+export {
+  arches,
+  bauhaus,
+  confetti,
+  cutouts,
+  dots,
+  field,
+  grid,
+  orbits,
+  pebbles,
+  squares,
+  stripes,
+  sunburst,
+  triangles,
+  waves,
+} from "./art";
+export { bee, butterfly, crab, duck, hedgehog, jellyfish, ladybug, mouse, octopus, turtle } from "./critters";
+export { daisy, hibiscus, lotus, poppy, rose, sunflower, tulip } from "./blooms";
 export { portrait } from "./faces";
-export { cake, donut, egg, iceCream, pizza, sushi } from "./food";
-export { city, dunes, forest, hills, mountains, night, sea } from "./landscapes";
-export { books, bottles, cactus, coffee, flowers, fruitBowl } from "./objects";
+export { backpack, handbag, perfume, sneakers, sunglasses, watch } from "./products";
+export { controller, headphones, laptop, phone, speaker } from "./gadgets";
+export { cafe, group, pair, reader, walker, worker } from "./people";
+export { gingham, gradient, marble, plaid, terrazzo, topography } from "./patterns";
+export {
+  avocado,
+  burger,
+  cake,
+  cookies,
+  cupcake,
+  donut,
+  egg,
+  iceCream,
+  pancakes,
+  pie,
+  pizza,
+  popsicle,
+  ramen,
+  salad,
+  sushi,
+  taco,
+  watermelon,
+} from "./food";
+export {
+  autumn,
+  beach,
+  city,
+  dunes,
+  farm,
+  forest,
+  hills,
+  island,
+  lake,
+  lighthouse,
+  mountains,
+  night,
+  sea,
+  volcano,
+  winter,
+} from "./landscapes";
+export {
+  armchair,
+  balloons,
+  books,
+  bottles,
+  cactus,
+  camera,
+  candles,
+  clock,
+  coffee,
+  flowers,
+  fruitBowl,
+  houseplant,
+  lamp,
+  succulents,
+  teapot,
+} from "./objects";
+export { airplane, bicycle, bus, car, hotAirBalloon, rocket, sailboat, train } from "./vehicles";
 
 // Rendering
 export { defineKind, seedToInt } from "./core";
@@ -64,18 +248,148 @@ export type { KindChoice, OneOrMany, Order, PlaceholderOptions, PlaceholdersOpti
  * Categories group kinds for convenience: use one wherever a list of kinds is accepted,
  * alone or mixed with single kinds, as in `[animals, donut]`.
  */
-export const landscapes = [hills, mountains, sea, dunes, forest, night, city] as const;
-export const art = [field, grid, squares, orbits, cutouts, bauhaus] as const;
-export const people = [portrait] as const;
-export const animals = [cat, bird, fish, owl, dog, fox, penguin, whale, frog, rabbit, snail] as const;
-export const food = [donut, pizza, iceCream, sushi, cake, egg] as const;
-export const objects = [fruitBowl, flowers, cactus, coffee, books, bottles] as const;
+export const landscapes = [
+  hills,
+  mountains,
+  sea,
+  dunes,
+  forest,
+  night,
+  city,
+  lake,
+  beach,
+  island,
+  lighthouse,
+  volcano,
+  winter,
+  autumn,
+  farm,
+] as const;
+export const art = [
+  field,
+  grid,
+  squares,
+  orbits,
+  cutouts,
+  bauhaus,
+  waves,
+  dots,
+  arches,
+  confetti,
+  triangles,
+  sunburst,
+  pebbles,
+  stripes,
+] as const;
+export const people = [portrait, reader, worker, cafe, pair, group, walker] as const;
+export const animals = [
+  cat,
+  bird,
+  fish,
+  owl,
+  dog,
+  fox,
+  penguin,
+  whale,
+  frog,
+  rabbit,
+  snail,
+  bear,
+  panda,
+  elephant,
+  lion,
+  giraffe,
+  sheep,
+  pig,
+  koala,
+  turtle,
+  duck,
+  hedgehog,
+  mouse,
+  butterfly,
+  ladybug,
+  bee,
+  octopus,
+  jellyfish,
+  crab,
+] as const;
+export const food = [
+  donut,
+  pizza,
+  iceCream,
+  sushi,
+  cake,
+  egg,
+  burger,
+  taco,
+  cupcake,
+  watermelon,
+  popsicle,
+  pancakes,
+  avocado,
+  ramen,
+  cookies,
+  pie,
+  salad,
+] as const;
+export const objects = [
+  fruitBowl,
+  flowers,
+  coffee,
+  books,
+  bottles,
+  teapot,
+  lamp,
+  clock,
+  candles,
+  balloons,
+  camera,
+  armchair,
+] as const;
+export const plants = [cactus, houseplant, succulents, sunflower, rose, tulip, daisy, poppy, hibiscus, lotus] as const;
+export const products = [
+  sneakers,
+  watch,
+  backpack,
+  sunglasses,
+  handbag,
+  perfume,
+  headphones,
+  phone,
+  laptop,
+  speaker,
+  controller,
+] as const;
+export const patterns = [terrazzo, marble, gingham, plaid, topography, gradient] as const;
+export const vehicles = [car, bicycle, sailboat, hotAirBalloon, rocket, train, bus, airplane] as const;
 
 /** Every category by name, for listing them (in a demo, say). */
-export const categories = { landscapes, art, people, animals, food, objects } as const;
+export const categories = {
+  landscapes,
+  art,
+  people,
+  animals,
+  food,
+  objects,
+  plants,
+  vehicles,
+  products,
+  patterns,
+} as const;
 
 /** Every built-in kind. */
-export const kinds = [...landscapes, ...art, ...people, ...animals, ...food, ...objects] as const;
+export const kinds = [
+  ...landscapes,
+  ...art,
+  ...people,
+  ...animals,
+  ...food,
+  ...objects,
+  ...plants,
+  ...vehicles,
+  ...products,
+  ...patterns,
+] as const;
 
 /** The id of any built-in kind, such as `"owl"` or `"ice-cream"`. */
 export type KindId = (typeof kinds)[number]["id"];
@@ -84,7 +398,35 @@ const chooser = makePlaceholders(kinds);
 export const { resolveKind, placeholder, placeholders } = chooser;
 
 /** Kinds with a face, which can be avatars. Unlike the categories above, it overlaps them. */
-export const faces = [portrait, cat, dog, fox, rabbit, owl, frog, penguin] as const;
+export const faces = [
+  portrait,
+  reader,
+  worker,
+  cafe,
+  pair,
+  group,
+  cat,
+  dog,
+  fox,
+  rabbit,
+  owl,
+  frog,
+  penguin,
+  bear,
+  panda,
+  lion,
+  koala,
+  sheep,
+  pig,
+  elephant,
+  giraffe,
+  turtle,
+  duck,
+  hedgehog,
+  mouse,
+  octopus,
+  crab,
+] as const;
 
 /**
  * An avatar: a face kind framed in a square around its head, round by default. With no `kind`, the

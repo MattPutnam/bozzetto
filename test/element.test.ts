@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { cat, owl, render } from "../src";
+import { animals, cat, owl, render } from "../src";
 import "../src/element";
 
 const make = (attributes: Record<string, string>) => {
@@ -30,20 +30,7 @@ describe("<bozzetto-img>", () => {
     expect(element.picture?.options).toMatchObject({ tabby: true, pupils: "round" });
     expect(element.picture?.svg).toBe(render(cat.with({ tabby: true, pupils: "round" }), { seed: 2 }).svg);
     const mixed = make({ kind: "animals donut", seed: "9" });
-    expect([
-      "cat",
-      "bird",
-      "fish",
-      "owl",
-      "dog",
-      "fox",
-      "penguin",
-      "whale",
-      "frog",
-      "rabbit",
-      "snail",
-      "donut",
-    ]).toContain(mixed.picture?.kind);
+    expect([...animals.map(k => k.id), "donut"]).toContain(mixed.picture?.kind);
   });
 
   it("draws again when an attribute changes", () => {
