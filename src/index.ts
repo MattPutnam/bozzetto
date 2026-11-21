@@ -31,9 +31,9 @@ export { books, bottles, cactus, coffee, flowers, fruitBowl } from "./objects";
 
 // Rendering
 export { defineKind, seedToInt } from "./core";
-export type { Draw, Kind, Rand } from "./core";
-export { resolveSize, toDataUri, toSvg } from "./render";
-export type { RenderOptions, Size } from "./render";
+export type { Draw, Kind, Notes, Rand } from "./core";
+export { render, resolveSize, toDataUri, toSvg } from "./render";
+export type { Picture, RenderOptions, Size } from "./render";
 
 // Colors
 export {
@@ -74,4 +74,4 @@ export const kinds = [...landscapes, ...art, ...people, ...animals, ...food, ...
 /** The id of any built-in kind, such as `"owl"` or `"ice-cream"`. */
 export type KindId = (typeof kinds)[number]["id"];
 
-export const { resolveKind, placeholder, placeholderSvg, placeholders } = makePlaceholders(kinds);
+export const { resolveKind, placeholder, placeholders } = makePlaceholders(kinds);

@@ -1,7 +1,7 @@
 import { defineKind, el, fill, hsl, lin, pts, qpt, s, type Point } from "./core";
 
 /** Soft hills under a gradient sky and a sun, sometimes with a lone tree. */
-export const hills = defineKind("hills", "Rolling hills", (g, w, h) => {
+export const hills = defineKind("hills", "Rolling hills", (g, w, h, note) => {
   const hue = g.f(0, 360);
   const sky = g.id("sky");
   // The far hill: one curve and its smooth continuation.
@@ -16,12 +16,11 @@ export const hills = defineKind("hills", "Rolling hills", (g, w, h) => {
 
   let out = el("defs", {}, lin(sky, [hsl(hue, 55, 78), "#fff"]));
   out += fill(w, h, `url(#${sky})`);
-  out += el("circle", {
-    cx: w * g.f(0.2, 0.8),
-    cy: h * g.f(0.22, 0.38),
-    r: h * g.f(0.07, 0.12),
-    fill: hsl(hue + 180, 80, 88),
-  });
+  const sunX = w * g.f(0.2, 0.8);
+  const sunY = h * g.f(0.22, 0.38);
+  out += el("circle", { cx: sunX, cy: sunY, r: h * g.f(0.07, 0.12), fill: hsl(hue + 180, 80, 88) });
+  note.alt("Rolling hills under a low sun");
+  note.focus(sunX, sunY);
   out += el("path", {
     d: s`M0 ${h * farMid + h * 0.08}
          Q ${w * 0.3} ${h * farPeak} ${w * 0.6} ${h * farMid}
@@ -35,6 +34,8 @@ export const hills = defineKind("hills", "Rolling hills", (g, w, h) => {
     const th = h * g.f(0.1, 0.16);
     out += el("rect", { x: tx - th * 0.05, y: ty - th, width: th * 0.1, height: th + 6, fill: hsl(hue + 20, 30, 30) });
     out += el("circle", { cx: tx, cy: ty - th, r: th * g.f(0.35, 0.5), fill: hsl(hue + 40, 38, 36) });
+    note.alt("Rolling hills with a lone tree under a low sun");
+    note.focus(tx, ty - th * 0.7);
   }
   out += el("path", {
     d: s`M0 ${y0}
@@ -46,20 +47,27 @@ export const hills = defineKind("hills", "Rolling hills", (g, w, h) => {
 });
 
 /** Three jagged ranges fading into the distance. */
-export const mountains = defineKind("mountains", "Mountain ranges", (g, w, h) => {
+export const mountains = defineKind("mountains", "Mountain ranges", (g, w, h, note) => {
   const hue = g.f(180, 260);
   const shift = g.f(-35, 30);
   const sky = g.id("sky");
   let out = el("defs", {}, lin(sky, [hsl(hue + shift, 45, 70), hsl(hue + shift + 30, 55, 92)]));
   out += fill(w, h, `url(#${sky})`);
   // The sun, most of the time.
-  if (g.chance(0.7))
-    out += el("circle", {
-      cx: w * g.f(0.15, 0.85),
-      cy: h * g.f(0.18, 0.32),
-      r: h * g.f(0.05, 0.09),
-      fill: hsl(hue + shift + 180, 70, 92),
-    });
+  let sun: Point | undefined;
+  if (g.chance(0.7)) {
+    const sunX = w * g.f(0.15, 0.85);
+    const sunY = h * g.f(0.18, 0.32);
+    sun = [sunX, sunY];
+    out += el("circle", { cx: sunX, cy: sunY, r: h * g.f(0.05, 0.09), fill: hsl(hue + shift + 180, 70, 92) });
+  }
+  note.alt(
+    sun
+      ? "Three jagged mountain ranges fading into the distance under a sun"
+      : "Three jagged mountain ranges fading into the distance",
+  );
+  // Without a sun, the eye goes to the highest peak.
+  let peak: Point = [w / 2, h];
   // Three ranges, back to front: each lower, flatter and darker than the last.
   for (let range = 0; range < 3; range++) {
     const base = h * (0.52 + 0.15 * range);
@@ -71,14 +79,18 @@ export const mountains = defineKind("mountains", "Mountain ranges", (g, w, h) =>
       // Odd steps are peaks, even steps are valleys.
       ridge.push([x, step % 2 ? base - amp * g.f(0.55, 1) : base - amp * g.f(0, 0.35)]);
     }
+    // Inner points only, so the focus never sits on an edge.
+    for (const point of ridge.slice(1)) if (point[1] < peak[1]) peak = point;
     ridge.push([w, base - g.f(0, amp * 0.6)], [w, h], [0, h]);
     out += el("polygon", { points: pts(ridge), fill: hsl(hue + shift + 10, 16 + 8 * range, 64 - 17 * range) });
   }
+  const [focusX, focusY] = sun ?? peak;
+  note.focus(focusX, focusY);
   return out;
 });
 
 /** A low sun over the sea, with its reflection broken into streaks. */
-export const sea = defineKind("sea", "Sunset sea", (g, w, h) => {
+export const sea = defineKind("sea", "Sunset sea", (g, w, h, note) => {
   const hue = g.f(-15, 45);
   const horizon = h * g.f(0.55, 0.68);
   const sunX = w * g.f(0.25, 0.75);
@@ -96,6 +108,8 @@ export const sea = defineKind("sea", "Sunset sea", (g, w, h) => {
   out += fill(w, h, `url(#${sky})`);
   // The sun.
   out += el("circle", { cx: sunX, cy: sunY, r: sunR, fill: sun });
+  note.alt("A sun setting into a calm sea, its reflection streaking the water");
+  note.focus(sunX, sunY);
   if (g.chance(0.4)) {
     // A distant island on the horizon.
     const islandX = w * g.f(0, 0.8);
@@ -105,6 +119,7 @@ export const sea = defineKind("sea", "Sunset sea", (g, w, h) => {
            Q ${islandX + islandW * 0.4} ${horizon - h * g.f(0.04, 0.09)} ${islandX + islandW} ${horizon}Z`,
       fill: hsl(hue + 250, 30, 25),
     });
+    note.alt("A sun setting into a calm sea beside a distant island");
   }
   // The water.
   out += el("rect", { y: horizon, width: w, height: h - horizon, fill: `url(#${water})` });
@@ -127,19 +142,19 @@ export const sea = defineKind("sea", "Sunset sea", (g, w, h) => {
 });
 
 /** Layered sand ridges under a pale sun. */
-export const dunes = defineKind("dunes", "Desert dunes", (g, w, h) => {
+export const dunes = defineKind("dunes", "Desert dunes", (g, w, h, note) => {
   const sand = g.f(16, 40);
   const skyHue = g.f(185, 220);
   const sky = g.id("sky");
   let out = el("defs", {}, lin(sky, [hsl(skyHue, 55, 68), hsl(skyHue - 20, 60, 92)]));
   out += fill(w, h, `url(#${sky})`);
   // The pale sun.
-  out += el("circle", {
-    cx: w * g.f(0.15, 0.85),
-    cy: h * g.f(0.18, 0.3),
-    r: h * g.f(0.05, 0.08),
-    fill: "hsl(48 95% 94%)",
-  });
+  const sunX = w * g.f(0.15, 0.85);
+  const sunY = h * g.f(0.18, 0.3);
+  out += el("circle", { cx: sunX, cy: sunY, r: h * g.f(0.05, 0.08), fill: "hsl(48 95% 94%)" });
+  const side = sunX < w * 0.4 ? " on the left" : sunX > w * 0.6 ? " on the right" : "";
+  note.alt(`Three rows of desert dunes under a hazy sun${side}`);
+  note.focus(sunX, sunY);
   // Three dune ridges, back to front, each a single S-curve.
   for (let ridge = 0; ridge < 3; ridge++) {
     const y0 = h * (0.5 + 0.14 * ridge + g.f(-0.04, 0.04));
@@ -173,7 +188,7 @@ const pine = (x: number, y: number, ht: number, wd: number, paint: string) =>
   el("polygon", { points: pts(PINE.map(([px, py]): Point => [x + px * wd, y + py * ht])), fill: paint });
 
 /** A pale back row of pines and a dark, scattered front row. */
-export const forest = defineKind("forest", "Pine forest", (g, w, h) => {
+export const forest = defineKind("forest", "Pine forest", (g, w, h, note) => {
   const hue = g.f(90, 165);
   const skyHue = g.f(180, 235);
   const groundY = h * g.f(0.66, 0.76);
@@ -193,15 +208,26 @@ export const forest = defineKind("forest", "Pine forest", (g, w, h) => {
     x: w * g.f(-0.05, 1.05),
     y: groundY + (h - groundY) * g.f(0.15, 0.9),
   })).sort((a, b) => a.y - b.y);
+  // The eye goes to the tallest front pine that stands fully inside the frame.
+  let focus: Point = [w / 2, groundY];
+  let tallest = 0;
   for (const tree of front) {
     const ht = h * g.f(0.32, 0.55);
     out += pine(tree.x, tree.y, ht, ht * g.f(0.45, 0.58), hsl(hue + g.f(-10, 10), 35, g.f(18, 28)));
+    const inFrame = tree.x > w * 0.08 && tree.x < w * 0.92;
+    if (inFrame && tree.y - ht * 0.5 > 0 && ht > tallest) {
+      tallest = ht;
+      focus = [tree.x, tree.y - ht * 0.5];
+    }
   }
+  const count = ["four", "five", "six", "seven", "eight"][front.length - 4];
+  note.alt(`A pine forest with ${count} tall pines before a distant treeline`);
+  note.focus(...focus);
   return out;
 });
 
 /** Stars, a full or crescent moon, and dark hills. */
-export const night = defineKind("night", "Night sky", (g, w, h) => {
+export const night = defineKind("night", "Night sky", (g, w, h, note) => {
   const hue = g.f(210, 285);
   const moonX = w * g.f(0.2, 0.8);
   const moonY = h * g.f(0.18, 0.35);
@@ -239,6 +265,9 @@ export const night = defineKind("night", "Night sky", (g, w, h) => {
     fill: "hsl(50 60% 92%)",
     mask: crescent ? `url(#${bite})` : undefined,
   });
+  const stargazing = stars >= 22 ? "a sky full of stars" : "a scattering of stars";
+  note.alt(`A ${crescent ? "crescent" : "full"} moon and ${stargazing} over rolling hills`);
+  note.focus(moonX, moonY);
   // The far hills.
   out += el("path", {
     d: s`M0 ${h * g.f(0.66, 0.76)}
@@ -257,7 +286,7 @@ export const night = defineKind("night", "Night sky", (g, w, h) => {
 });
 
 /** Two rows of buildings against a dusk sky; some windows are lit. */
-export const city = defineKind("city", "City at dusk", (g, w, h) => {
+export const city = defineKind("city", "City at dusk", (g, w, h, note) => {
   const hue = g.f(0, 360);
   const sky = g.id("sky");
   const win = g.id("win");
@@ -274,12 +303,10 @@ export const city = defineKind("city", "City at dusk", (g, w, h) => {
   );
   out += fill(w, h, `url(#${sky})`);
   // The setting sun.
-  out += el("circle", {
-    cx: w * g.f(0.15, 0.85),
-    cy: h * g.f(0.3, 0.5),
-    r: h * g.f(0.06, 0.1),
-    fill: hsl(hue + 20, 90, 88),
-  });
+  const sunX = w * g.f(0.15, 0.85);
+  const sunY = h * g.f(0.3, 0.5);
+  out += el("circle", { cx: sunX, cy: sunY, r: h * g.f(0.06, 0.1), fill: hsl(hue + 20, 90, 88) });
+  note.focus(sunX, sunY);
   // The pale back row of buildings, packed side by side.
   for (let x = -5; x < w;) {
     const bw = w * g.f(0.06, 0.13);
@@ -288,11 +315,15 @@ export const city = defineKind("city", "City at dusk", (g, w, h) => {
     x += bw + g.f(-2, 3);
   }
   // The dark front row, some with lit windows.
+  let fronts = 0;
+  let lit = 0;
   for (let x = -5; x < w;) {
+    fronts++;
     const bw = w * g.f(0.08, 0.16);
     const bh = h * g.f(0.16, 0.45);
     out += el("rect", { x, y: h - bh, width: bw, height: bh, fill: hsl(hue + 230, 22, 18) });
-    if (g.chance(0.6))
+    if (g.chance(0.6)) {
+      lit++;
       out += el("rect", {
         x: x + 3,
         y: h - bh + 6,
@@ -301,7 +332,10 @@ export const city = defineKind("city", "City at dusk", (g, w, h) => {
         fill: `url(#${win})`,
         opacity: g.f(0.35, 0.9),
       });
+    }
     x += bw + g.f(0, 4);
   }
+  const windows = lit === 0 ? "" : lit * 2 <= fronts ? " with a few lit windows" : " with many lit windows";
+  note.alt(`A dusk skyline${windows} below a setting sun`);
   return out;
 });

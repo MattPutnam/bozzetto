@@ -1,7 +1,8 @@
 import { defineKind, el, fill, hsl, s, type Point, type Rand } from "./core";
+import { capitalize, numberWord } from "./words";
 
 /** Two or three soft-edged bands on a dark ground, after the color-field painters. */
-export const field = defineKind("field", "Color field", (g, w, h) => {
+export const field = defineKind("field", "Color field", (g, w, h, note) => {
   const hue = g.f(0, 360);
   const margin = w * 0.08;
   const gap = h * 0.05;
@@ -37,13 +38,14 @@ export const field = defineKind("field", "Color field", (g, w, h) => {
     });
     y += bandH + gap;
   }
+  note.alt(`${capitalize(numberWord(count))} soft-edged bands of color, in the style of a color-field painting`);
   return out;
 });
 
 const OFF_WHITE = "#f3f0e6";
 
 /** The canvas split again and again into rectangles, a few of them filled with primaries. */
-export const grid = defineKind("grid", "Primary grid", (g, w, h) => {
+export const grid = defineKind("grid", "Primary grid", (g, w, h, note) => {
   type Cell = { x: number; y: number; w: number; h: number };
   const cells: Cell[] = [{ x: 0, y: 0, w, h }];
   // Repeatedly split one of the largest cells across its longer side.
@@ -66,6 +68,13 @@ export const grid = defineKind("grid", "Primary grid", (g, w, h) => {
   if (!fills.some(f => f !== OFF_WHITE)) fills[g.i(0, fills.length - 1)] = palette[0];
   // The cells, outlined in thick dark lines.
   const strokeWidth = Math.min(w, h) * 0.02;
+  const colored = cells.filter((_, k) => fills[k] !== OFF_WHITE);
+  note.alt(
+    `${capitalize(numberWord(cells.length))} rectangles divided by thick lines, ${numberWord(colored.length)} filled with color, after Mondrian`,
+  );
+  // Focus on the largest colored cell.
+  const main = colored.reduce((a, b) => (b.w * b.h > a.w * a.h ? b : a));
+  note.focus(main.x + main.w / 2, main.y + main.h / 2);
   return cells
     .map((cell, k) =>
       el("rect", {
@@ -82,7 +91,7 @@ export const grid = defineKind("grid", "Primary grid", (g, w, h) => {
 });
 
 /** Squares nested low in the frame in neighboring colors, after Albers. */
-export const squares = defineKind("squares", "Nested squares", (g, w, h) => {
+export const squares = defineKind("squares", "Nested squares", (g, w, h, note) => {
   const hue = g.f(0, 360);
   const dir = g.pick([-1, 1]);
   const step = g.f(5, 18);
@@ -107,18 +116,22 @@ export const squares = defineKind("squares", "Nested squares", (g, w, h) => {
       height: side,
       fill: hsl(hue + dir * step * k, sat + g.f(-8, 8), baseLight + lightStep * k),
     });
+    // The innermost square, set low in the frame.
+    note.focus(ox + margin + side / 2, oy + margin * 1.5 + side / 2);
   }
+  note.alt(`${capitalize(numberWord(count))} nested squares set low in the frame, after Josef Albers`);
   return out;
 });
 
 /** A large haloed circle among small circles, rings and thin lines. */
-export const orbits = defineKind("orbits", "Orbiting circles", (g, w, h) => {
+export const orbits = defineKind("orbits", "Orbiting circles", (g, w, h, note) => {
   const dark = g.chance(0.55);
   const ink = dark ? "#efe7d6" : "#1c1c22";
   const palette = ["#d9473b", "#f0b62e", "#2f6db5", "#1f9e89", "#7a3e9d", "#e57ea1", ink];
   let out = fill(w, h, dark ? hsl(g.f(200, 250), 30, 14) : hsl(g.f(30, 50), 35, 88));
   // Thin lines across the picture.
-  for (let k = g.i(2, 3); k > 0; k--) {
+  const lines = g.i(2, 3);
+  for (let k = lines; k > 0; k--) {
     out += el("line", {
       x1: w * g.f(-0.1, 0.5),
       y1: h * g.f(0, 1),
@@ -136,10 +149,15 @@ export const orbits = defineKind("orbits", "Orbiting circles", (g, w, h) => {
   out += el("circle", { cx, cy, r: radius * 1.22, fill: g.pick(palette), opacity: "0.35" });
   out += el("circle", { cx, cy, r: radius, fill: g.pick(palette), opacity: "0.92" });
   // Small circles, some of them rings.
-  for (let k = g.i(5, 9); k > 0; k--) {
+  note.focus(cx, cy);
+  const smalls = g.i(5, 9);
+  let rings = 0;
+  for (let k = smalls; k > 0; k--) {
     const r = Math.min(w, h) * g.f(0.02, 0.1);
     const paint = g.pick(palette);
-    out += g.chance(0.25)
+    const ring = g.chance(0.25);
+    if (ring) rings++;
+    out += ring
       ? el("circle", {
           cx: w * g.f(0.05, 0.95),
           cy: h * g.f(0.08, 0.92),
@@ -150,6 +168,10 @@ export const orbits = defineKind("orbits", "Orbiting circles", (g, w, h) => {
         })
       : el("circle", { cx: w * g.f(0.05, 0.95), cy: h * g.f(0.08, 0.92), r, fill: paint, opacity: "0.88" });
   }
+  const solids = smalls - rings;
+  const plural = (k: number, one: string, many: string): string => `${numberWord(k)} ${k === 1 ? one : many}`;
+  const parts = [solids && plural(solids, "small circle", "small circles"), rings && plural(rings, "ring", "rings")];
+  note.alt(`A large haloed circle among ${parts.filter(Boolean).join(" and ")}, crossed by ${numberWord(lines)} lines`);
   return out;
 });
 
@@ -176,7 +198,7 @@ function blob(g: Rand, cx: number, cy: number, r: number, lobes: number, amp: nu
 }
 
 /** Flat, lobed shapes in bold colors, like cut paper. */
-export const cutouts = defineKind("cutouts", "Paper cutouts", (g, w, h) => {
+export const cutouts = defineKind("cutouts", "Paper cutouts", (g, w, h, note) => {
   const palette = g.pick([
     ["#1d4e89", "#e8563f", "#f2c14e", "#2a9d8f", "#111111"],
     ["#264653", "#e76f51", "#f4a261", "#8ab17d", "#ffffff"],
@@ -185,17 +207,28 @@ export const cutouts = defineKind("cutouts", "Paper cutouts", (g, w, h) => {
   let out = fill(w, h, g.pick(["#f6efe2", "#e9eef2", "#f3e1d8", "#1d4e89", "#f0e6c8"]));
   const unit = Math.min(w, h);
   // The cut shapes.
-  for (let k = g.i(3, 6); k > 0; k--) {
+  const shapes = g.i(3, 6);
+  let biggest = 0;
+  for (let k = shapes; k > 0; k--) {
+    const x = w * g.f(0.1, 0.9);
+    const y = h * g.f(0.15, 0.85);
+    const r = unit * g.f(0.1, 0.24);
     out += el("path", {
-      d: blob(g, w * g.f(0.1, 0.9), h * g.f(0.15, 0.85), unit * g.f(0.1, 0.24), g.i(3, 7), g.f(0.18, 0.45)),
+      d: blob(g, x, y, r, g.i(3, 7), g.f(0.18, 0.45)),
       fill: g.pick(palette),
     });
+    // Focus on the largest shape.
+    if (r > biggest) {
+      biggest = r;
+      note.focus(x, y);
+    }
   }
+  note.alt(`${capitalize(numberWord(shapes))} lobed paper cutout shapes scattered on a plain ground, after Matisse`);
   return out;
 });
 
 /** A grid of tiles, each holding a circle, half circle, quarter circle or triangle. */
-export const bauhaus = defineKind("bauhaus", "Bauhaus tiles", (g, w, h) => {
+export const bauhaus = defineKind("bauhaus", "Bauhaus tiles", (g, w, h, note) => {
   const palette = g.pick([
     ["#e63946", "#f1c453", "#1d3557", "#f1faee"],
     ["#d1495b", "#edae49", "#00798c", "#30638e"],
@@ -206,6 +239,7 @@ export const bauhaus = defineKind("bauhaus", "Bauhaus tiles", (g, w, h) => {
   const rows = Math.ceil(h / cell);
   const cols = Math.ceil(w / cell);
   let out = "";
+  const used = new Set<number>();
   for (let row = 0; row < rows; row++) {
     for (let col = 0; col < cols; col++) {
       const x = col * cell;
@@ -218,7 +252,9 @@ export const bauhaus = defineKind("bauhaus", "Bauhaus tiles", (g, w, h) => {
       const transform = s`rotate(${90 * g.i(0, 3)} ${x + cell / 2} ${y + cell / 2})`;
       // The tile, slightly oversized so no seams show.
       out += el("rect", { x, y, width: cell + 0.5, height: cell + 0.5, fill: ground });
-      switch (g.i(0, 4)) {
+      const shape = g.i(0, 4);
+      used.add(shape);
+      switch (shape) {
         case 0:
           // A large circle.
           out += el("circle", { cx: x + cell / 2, cy: y + cell / 2, r: cell * 0.42, fill: paint });
@@ -252,5 +288,14 @@ export const bauhaus = defineKind("bauhaus", "Bauhaus tiles", (g, w, h) => {
       }
     }
   }
+  // Name the shapes that appear, in a fixed order; both circle sizes read as "circles".
+  const names = [
+    used.has(0) || used.has(4) ? "circles" : "",
+    used.has(1) ? "half circles" : "",
+    used.has(2) ? "quarter circles" : "",
+    used.has(3) ? "triangles" : "",
+  ].filter(Boolean);
+  const list = names.length > 1 ? `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}` : names[0];
+  note.alt(`A grid of ${numberWord(rows * cols)} Bauhaus-style tiles with ${list}`);
   return out;
 });

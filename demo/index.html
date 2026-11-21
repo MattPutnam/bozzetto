@@ -114,11 +114,40 @@
         border-radius: 14px;
         padding: 20px;
       }
+      .stage {
+        position: relative;
+        min-width: 0;
+      }
       .bench img {
         width: 100%;
         aspect-ratio: 4 / 3;
         display: block;
         border-radius: 8px;
+      }
+      /* Marks the picture's focal point: a ring with a dot, readable on light and dark pictures. */
+      .focus-mark {
+        position: absolute;
+        width: 22px;
+        height: 22px;
+        margin: -11px 0 0 -11px;
+        border-radius: 50%;
+        border: 2px solid #fff;
+        box-shadow:
+          0 0 0 1.5px rgba(0, 0, 0, 0.55),
+          inset 0 0 0 1.5px rgba(0, 0, 0, 0.55);
+        pointer-events: none;
+      }
+      .swatch-chip {
+        display: inline-block;
+        width: 0.9em;
+        height: 0.9em;
+        border-radius: 3px;
+        vertical-align: -1px;
+        margin-right: 6px;
+        border: 1px solid var(--line);
+      }
+      .alt-text {
+        font-family: var(--body);
       }
       .facts {
         display: grid;
@@ -347,7 +376,10 @@
       </header>
 
       <div class="bench" aria-live="polite">
-        <img id="big" alt="" />
+        <div class="stage">
+          <img id="big" alt="" />
+          <span class="focus-mark" id="focus-mark" title="Focal point"></span>
+        </div>
         <div class="facts">
           <h2 id="big-name">—</h2>
           <dl>
@@ -357,6 +389,12 @@
             <dd id="f-seed">—</dd>
             <dt>Style</dt>
             <dd id="f-style">—</dd>
+            <dt>Alt text</dt>
+            <dd id="f-alt" class="alt-text">—</dd>
+            <dt>Focus</dt>
+            <dd id="f-focus">—</dd>
+            <dt>Color</dt>
+            <dd id="f-color">—</dd>
             <dt>Shapes</dt>
             <dd id="f-shapes">—</dd>
             <dt>Size</dt>

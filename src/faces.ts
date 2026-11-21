@@ -12,7 +12,7 @@ const HAIR = ["#2b1d16", "#4a2f1f", "#7b4a26", "#c58a3d", "#e3c27a", "#a33b20", 
 const STYLES = ["short", "long", "bun", "curly", "bald", "bob"] as const;
 
 /** Head and shoulders. Skin, hair color and style, head shape, brows, smile and glasses vary. */
-export const portrait = defineKind("portrait", "Portrait", (g, w, h) => {
+export const portrait = defineKind("portrait", "Portrait", (g, w, h, note) => {
   const [skin, shade] = g.pick(SKINS);
   const hair = g.pick(HAIR);
   const style = g.pick(STYLES);
@@ -140,15 +140,17 @@ export const portrait = defineKind("portrait", "Portrait", (g, w, h) => {
   // The smile.
   const mouthY = cy + ry * 0.55;
   const mouthW = rx * g.f(0.2, 0.36);
+  const curve = g.f(0.04, 0.3);
   out += el("path", {
     d: s`M ${cx - mouthW} ${mouthY}
-         Q ${cx} ${mouthY + ry * g.f(0.04, 0.3)} ${cx + mouthW} ${mouthY}`,
+         Q ${cx} ${mouthY + ry * curve} ${cx + mouthW} ${mouthY}`,
     stroke: "#7a3b33",
     "stroke-width": rx * 0.06,
     "stroke-linecap": "round",
     fill: "none",
   });
-  if (g.chance(0.3)) {
+  const glasses = g.chance(0.3);
+  if (glasses) {
     // Glasses: two round lenses joined by a bridge.
     out += el(
       "g",
@@ -158,5 +160,20 @@ export const portrait = defineKind("portrait", "Portrait", (g, w, h) => {
       el("path", { d: s`M ${cx - eyeX + rx * 0.22} ${eyeY} H ${cx + eyeX - rx * 0.22}` }),
     );
   }
+  const hairs = {
+    short: "short hair",
+    long: "long hair",
+    bun: "hair in a bun",
+    curly: "curly hair",
+    bald: "a bald head",
+    bob: "a bob haircut",
+  };
+  const smile = curve > 0.18 ? "a broad smile" : "a gentle smile";
+  note.alt(
+    glasses
+      ? `Portrait of a person with ${hairs[style]}, ${smile} and glasses`
+      : `Portrait of a person with ${hairs[style]} and ${smile}`,
+  );
+  note.focus(cx, eyeY);
   return out;
 });

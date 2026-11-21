@@ -1,7 +1,7 @@
 /** Choosing kinds and options for one picture or a whole list. */
 import { hash, makeRand, seedToInt, type Kind } from "./core";
 import { parseColor } from "./color";
-import { toDataUri, toSvg, type RenderOptions, type Size } from "./render";
+import { render, type Picture, type RenderOptions, type Size } from "./render";
 import type { Mapping, Texture } from "./style";
 import type { PaletteSpec } from "./palettes";
 
@@ -96,7 +96,7 @@ export interface PlaceholdersOptions {
   order?: Order;
 }
 
-/** Builds the functions behind `placeholder`, `placeholderSvg` and `placeholders` for a set of known kinds. */
+/** Builds the functions behind `placeholder` and `placeholders` for a set of known kinds. */
 export function makePlaceholders(all: readonly Kind[]) {
   const known = new Map(all.map(k => [k.id, k]));
   const pool = (choice: KindChoice | undefined) => {
@@ -111,16 +111,12 @@ export function makePlaceholders(all: readonly Kind[]) {
     return list.length === 1 ? list[0] : list[Math.floor(makeRand(seedToInt(seed) ^ 0x9e3779b9).next() * list.length)];
   };
 
-  /** One picture as a `data:image/svg+xml` URI. */
-  const placeholder = (options: PlaceholderOptions = {}): string =>
-    toDataUri(resolveKind(options.kind, options.seed), options);
+  /** One picture, its kind chosen by the seed when given a list. */
+  const placeholder = (options: PlaceholderOptions = {}): Picture =>
+    render(resolveKind(options.kind, options.seed), options);
 
-  /** One picture as SVG markup, for inlining. */
-  const placeholderSvg = (options: PlaceholderOptions = {}): string =>
-    toSvg(resolveKind(options.kind, options.seed), options);
-
-  /** `count` pictures as data URIs, going through each option's list of values. */
-  const placeholders = (count: number, options: PlaceholdersOptions = {}): string[] => {
+  /** `count` pictures, going through each option's list of values. */
+  const placeholders = (count: number, options: PlaceholdersOptions = {}): Picture[] => {
     const base = seedToInt(options.seed);
     const order = options.order ?? "shuffle";
     const kindAt = picker(pool(options.kind), order, base, "kind");
@@ -129,7 +125,7 @@ export function makePlaceholders(all: readonly Kind[]) {
     const mappingAt = picker(many(options.mapping), order, base, "mapping");
     const textureAt = picker(many(options.texture), order, base, "texture");
     return Array.from({ length: count }, (_, k) =>
-      toDataUri(kindAt(k), {
+      render(kindAt(k), {
         size: sizeAt(k),
         palette: paletteAt(k),
         mapping: mappingAt(k),
@@ -140,5 +136,5 @@ export function makePlaceholders(all: readonly Kind[]) {
     );
   };
 
-  return { resolveKind, placeholder, placeholderSvg, placeholders };
+  return { resolveKind, placeholder, placeholders };
 }

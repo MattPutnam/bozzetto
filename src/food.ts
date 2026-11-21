@@ -1,10 +1,11 @@
 import { defineKind, el, fill, hsl, mix, pts, s, type Point } from "./core";
+import { andList, numberWord } from "./words";
 import { blob, sprinkles, table } from "./shapes";
 
 const SPRINKLES = ["#f25c78", "#4fb4e6", "#f2c14e", "#7bd389", "#ffffff", "#9b6bd6"];
 
 /** A glazed donut from above, with sprinkles on some. */
-export const donut = defineKind("donut", "Donut", (g, w, h) => {
+export const donut = defineKind("donut", "Donut", (g, w, h, note) => {
   const unit = Math.min(w, h);
   const cx = w / 2 + w * g.f(-0.05, 0.05);
   const cy = h / 2 + h * g.f(-0.04, 0.04);
@@ -13,7 +14,8 @@ export const donut = defineKind("donut", "Donut", (g, w, h) => {
   const bg = hsl(g.f(0, 360), g.f(30, 55), g.f(82, 90));
   const glaze = g.pick(["#f49ac1", "#6b3e2e", "#fbf4e8", "#8fd3f4", "#f6d365", "#c9a7eb"]);
   let out = fill(w, h, bg);
-  if (g.chance(0.5)) {
+  const plate = g.chance(0.5);
+  if (plate) {
     // Plate, with a faint dip in the middle
     out += el("circle", { cx, cy: cy + unit * 0.015, r: radius * 1.28, fill: "#fff", opacity: "0.85" });
     out += el("circle", { cx, cy: cy + unit * 0.015, r: radius * 1.08, fill: "#000", opacity: "0.04" });
@@ -27,7 +29,8 @@ export const donut = defineKind("donut", "Donut", (g, w, h) => {
   // Bare dough around the hole, then the hole itself
   out += el("circle", { cx, cy, r: hole * 1.35, fill: "#d99a5b" });
   out += el("circle", { cx, cy, r: hole, fill: bg });
-  if (g.chance(0.7))
+  const sprinkled = g.chance(0.7);
+  if (sprinkled)
     out += sprinkles(
       g,
       cx,
@@ -49,11 +52,13 @@ export const donut = defineKind("donut", "Donut", (g, w, h) => {
     fill: "none",
     opacity: "0.4",
   });
+  note.alt(`A glazed donut${sprinkled ? " with sprinkles" : ""}${plate ? " on a plate" : ""}`);
+  note.focus(cx, cy);
   return out;
 });
 
 /** A whole pizza from above, cut into slices, with toppings. */
-export const pizza = defineKind("pizza", "Pizza", (g, w, h) => {
+export const pizza = defineKind("pizza", "Pizza", (g, w, h, note) => {
   const unit = Math.min(w, h);
   const cx = w / 2;
   const cy = h / 2;
@@ -81,13 +86,16 @@ export const pizza = defineKind("pizza", "Pizza", (g, w, h) => {
       spots.push([cx + Math.cos(angle) * dist, cy + Math.sin(angle) * dist]);
     }
   }
+  const toppings = new Set<string>();
   for (const [x, y] of spots) {
     if (kind === "pepperoni") {
       // Pepperoni
       out += el("circle", { cx: x, cy: y, r: radius * g.f(0.085, 0.105), fill: "#a8322a" });
     } else if (kind === "margherita") {
       // Mozzarella or basil
-      out += g.chance(0.55)
+      const cheese = g.chance(0.55);
+      toppings.add(cheese ? "mozzarella" : "basil");
+      out += cheese
         ? el("ellipse", {
             cx: x,
             cy: y,
@@ -106,7 +114,9 @@ export const pizza = defineKind("pizza", "Pizza", (g, w, h) => {
           });
     } else {
       // Olive ring or pepper strip
-      out += g.chance(0.5)
+      const olive = g.chance(0.5);
+      toppings.add(olive ? "olives" : "peppers");
+      out += olive
         ? el("circle", {
             cx: x,
             cy: y,
@@ -134,13 +144,22 @@ export const pizza = defineKind("pizza", "Pizza", (g, w, h) => {
     cuts += s`M ${cx - Math.cos(angle) * radius} ${cy - Math.sin(angle) * radius} L ${cx + Math.cos(angle) * radius} ${cy + Math.sin(angle) * radius} `;
   }
   out += el("path", { d: cuts.trim(), stroke: "#8a5a2b", "stroke-width": radius * 0.018, opacity: "0.55" });
+  const order = ["mozzarella", "basil", "olives", "peppers"].filter(t => toppings.has(t));
+  const name =
+    kind === "pepperoni"
+      ? "A pepperoni pizza"
+      : kind === "margherita"
+        ? `A margherita pizza with ${andList(order)}`
+        : `A vegetable pizza with ${andList(order)}`;
+  note.alt(`${name}, cut into ${numberWord(slices)} slices`);
+  note.focus(cx, cy);
   return out;
 });
 
 const SCOOPS = ["#f7c6d0", "#7b4a35", "#fff4dd", "#b8e0b0", "#f6d365", "#c9a7eb", "#f28b66"];
 
 /** One to three scoops on a waffle cone, maybe with a cherry. */
-export const iceCream = defineKind("ice-cream", "Ice cream", (g, w, h) => {
+export const iceCream = defineKind("ice-cream", "Ice cream", (g, w, h, note) => {
   const unit = Math.min(w, h);
   const cx = w / 2 + w * g.f(-0.04, 0.04);
   const scoops = g.i(1, 3);
@@ -179,7 +198,10 @@ export const iceCream = defineKind("ice-cream", "Ice cream", (g, w, h) => {
     const r = scoopR * (1 - k * 0.08);
     const color = g.pick(SCOOPS);
     const sy = y - r * (k === 0 ? 0.8 : 0.75);
-    out += el("circle", { cx: cx + g.f(-0.08, 0.08) * r, cy: sy, r, fill: color });
+    const sx = cx + g.f(-0.08, 0.08) * r;
+    out += el("circle", { cx: sx, cy: sy, r, fill: color });
+    // The top scoop.
+    note.focus(sx, sy);
     if (k === 0) {
       // A scalloped skirt where the first scoop melts over the rim of the cone.
       let skirt = s`M ${cx - r * 1.05} ${y - r * 0.25}`;
@@ -196,7 +218,10 @@ export const iceCream = defineKind("ice-cream", "Ice cream", (g, w, h) => {
     }
     y = sy - r * 0.5;
   }
-  if (g.chance(0.5)) {
+  const cherry = g.chance(0.5);
+  const stack = scoops === 1 ? "one scoop" : `${numberWord(scoops)} scoops`;
+  note.alt(`An ice cream cone with ${stack}${cherry ? " and a cherry on top" : ""}`);
+  if (cherry) {
     // Cherry and its stem
     out += el("path", {
       d: s`M ${cx} ${y + scoopR * 0.1}
@@ -212,7 +237,7 @@ export const iceCream = defineKind("ice-cream", "Ice cream", (g, w, h) => {
 });
 
 /** Nigiri and maki on a dark plate, with chopsticks. */
-export const sushi = defineKind("sushi", "Sushi", (g, w, h) => {
+export const sushi = defineKind("sushi", "Sushi", (g, w, h, note) => {
   const unit = Math.min(w, h);
   const bg = g.pick(["#d9cbb5", "#c9d6d0", "#e6ddd0", "#3a3f3a"]);
   let out = fill(w, h, bg);
@@ -240,10 +265,12 @@ export const sushi = defineKind("sushi", "Sushi", (g, w, h) => {
   });
   const count = g.i(3, 4);
   const slot = plateW / count;
+  const pieces: Record<string, number> = { salmon: 0, tuna: 0, egg: 0, maki: 0 };
   for (let k = 0; k < count; k++) {
     const x = plateX + slot * (k + 0.5);
     const y = plateY + plateH * 0.55;
     const kind = g.pick(["salmon", "tuna", "egg", "maki", "maki"]);
+    pieces[kind]++;
     if (kind === "maki") {
       // Maki: nori, rice, filling
       const r = Math.min(slot, plateH) * 0.34;
@@ -302,6 +329,14 @@ export const sushi = defineKind("sushi", "Sushi", (g, w, h) => {
     "stroke-width": unit * 0.022,
     "stroke-linecap": "round",
   });
+  // Group the nigiri by topping ("Two salmon and tuna nigiri"), then the maki.
+  const fish = (["salmon", "tuna", "egg"] as const)
+    .filter(kind => pieces[kind])
+    .map(kind => (pieces[kind] === 1 ? kind : `${numberWord(pieces[kind])} ${kind}`));
+  const maki = pieces.maki === 1 ? "a maki roll" : `${numberWord(pieces.maki)} maki rolls`;
+  const text = !fish.length ? maki : `${andList(fish)} nigiri${pieces.maki ? ` with ${maki}` : ""}`;
+  note.alt(`${text.charAt(0).toUpperCase()}${text.slice(1)} on a plate beside chopsticks`);
+  note.focus(w / 2, plateY + plateH * 0.5);
   return out;
 });
 
@@ -309,7 +344,7 @@ const SPONGE = ["#f3d9a4", "#7b4a35", "#f7e7c6", "#e9b872"];
 const CREAM = ["#fbf4e8", "#f7c6d0", "#f6d365", "#6b3e2e"];
 
 /** A layered slice of cake on a plate, with a berry on top. */
-export const cake = defineKind("cake", "Slice of cake", (g, w, h) => {
+export const cake = defineKind("cake", "Slice of cake", (g, w, h, note) => {
   const unit = Math.min(w, h);
   const sponge = g.pick(SPONGE);
   const cream = g.pick(CREAM.filter(c => c !== sponge));
@@ -362,7 +397,13 @@ export const cake = defineKind("cake", "Slice of cake", (g, w, h) => {
   out += el("rect", { x: x0, y: topY, width: frontW, height: frontH * 0.06, fill: frost });
   const tx = x0 + frontW * 0.55 + dx * 0.4;
   const ty = topY - dy * 0.45;
-  if (g.chance(0.5)) {
+  const berry = g.chance(0.5);
+  const tiers = (layers + 1) / 2;
+  note.alt(
+    `A slice of ${numberWord(tiers)}-layer cake on a plate, topped with ${berry ? "a strawberry" : "cream and a cherry"}`,
+  );
+  note.focus(tx, ty - unit * 0.04);
+  if (berry) {
     // Strawberry and its leaves
     out += el("path", {
       d: s`M ${tx} ${ty - unit * 0.08}
@@ -394,7 +435,7 @@ export const cake = defineKind("cake", "Slice of cake", (g, w, h) => {
 });
 
 /** A fried egg in a pan or on a plate, sometimes with bacon. */
-export const egg = defineKind("egg", "Fried egg", (g, w, h) => {
+export const egg = defineKind("egg", "Fried egg", (g, w, h, note) => {
   const unit = Math.min(w, h);
   const cx = w / 2;
   const cy = h / 2;
@@ -419,7 +460,8 @@ export const egg = defineKind("egg", "Fried egg", (g, w, h) => {
     out += el("circle", { cx, cy, r: radius, fill: "#fff" });
     out += el("circle", { cx, cy, r: radius * 0.78, fill: "#000", opacity: "0.04" });
   }
-  if (g.chance(0.45))
+  const bacon = g.chance(0.45);
+  if (bacon)
     for (let k = 0; k < 2; k++) {
       // A rasher of bacon: a wavy stroke with a paler streak of fat along it
       const by = cy + radius * (0.25 + k * 0.22);
@@ -452,6 +494,8 @@ export const egg = defineKind("egg", "Fried egg", (g, w, h) => {
   const yolkX = ex + radius * g.f(-0.12, 0.12);
   const yolkY = ey + radius * g.f(-0.1, 0.05);
   out += el("circle", { cx: yolkX, cy: yolkY, r: radius * 0.2, fill: "#f6a21a" });
+  note.alt(`A fried egg ${pan ? "in a pan" : "on a plate"}${bacon ? " with two rashers of bacon" : ""}`);
+  note.focus(yolkX, yolkY);
   out += el("circle", {
     cx: yolkX - radius * 0.06,
     cy: yolkY - radius * 0.07,

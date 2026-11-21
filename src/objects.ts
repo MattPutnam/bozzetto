@@ -1,8 +1,9 @@
 import { defineKind, el, hsl, mix, pts, s } from "./core";
+import { andList, numberWord, tally } from "./words";
 import { blob, table } from "./shapes";
 
 /** A bowl of apples, oranges, pears and bananas on a table. */
-export const fruitBowl = defineKind("fruit-bowl", "Fruit bowl", (g, w, h) => {
+export const fruitBowl = defineKind("fruit-bowl", "Fruit bowl", (g, w, h, note) => {
   const unit = Math.min(w, h);
   const top = h * g.f(0.6, 0.68);
   const cx = w / 2;
@@ -45,8 +46,10 @@ export const fruitBowl = defineKind("fruit-bowl", "Fruit bowl", (g, w, h) => {
     const gap = (place[k].x + place[k + 1].x) / 2;
     place.push({ x: gap + g.f(-0.1, 0.1) * slot, row: 1 });
   }
+  const kinds: string[] = [];
   for (const spot of place) {
     const kind = g.pick(["apple", "apple", "orange", "pear", "lemon", "banana"]);
+    kinds.push(kind);
     const r = unit * g.f(0.08, 0.105);
     // Every fruit's lowest point lands about r below its y, so rows line up whatever the shape:
     // pears and lemons are shorter below their center than an apple, so they sit a little lower.
@@ -134,6 +137,10 @@ export const fruitBowl = defineKind("fruit-bowl", "Fruit bowl", (g, w, h) => {
     });
   }
   fruits.sort((a, b) => a.y - b.y);
+  // Name each kind of fruit once: "apples" for several, "an apple" for one.
+  const fruitNames = tally(kinds, name => `${name}s`, true).map(phrase => phrase.replace(/^a ([ao])/, "an $1"));
+  note.alt(`A bowl of ${andList(fruitNames)} on a table`);
+  note.focus(cx, fruits.reduce((sum, fruit) => sum + fruit.y, 0) / fruits.length);
   for (const fruit of fruits) out += fruit.draw(fruit.x, fruit.y);
   // The bowl's body in front of the fruit: its top edge is the near half of the rim, so fruit shows above it.
   out += el("path", {
@@ -166,7 +173,7 @@ export const fruitBowl = defineKind("fruit-bowl", "Fruit bowl", (g, w, h) => {
 });
 
 /** A vase of round flowers on a table. */
-export const flowers = defineKind("flowers", "Vase of flowers", (g, w, h) => {
+export const flowers = defineKind("flowers", "Vase of flowers", (g, w, h, note) => {
   const unit = Math.min(w, h);
   const top = h * g.f(0.74, 0.8);
   const cx = w / 2 + w * g.f(-0.05, 0.05);
@@ -219,6 +226,12 @@ export const flowers = defineKind("flowers", "Vase of flowers", (g, w, h) => {
   // Vase
   const shape = g.pick(["round", "tall", "jar"]);
   const vaseTop = vaseY - vaseH;
+  const holder = shape === "round" ? "a round vase" : shape === "tall" ? "a tall vase" : "a jar";
+  note.alt(`${numberWord(count).replace(/^./, c => c.toUpperCase())} flowers in ${holder} on a table`);
+  note.focus(
+    heads.reduce((sum, head) => sum + head.x, 0) / count,
+    heads.reduce((sum, head) => sum + head.y, 0) / count,
+  );
   const neck = vaseW * (shape === "jar" ? 0.9 : 0.45);
   const d =
     shape === "round"
@@ -254,7 +267,7 @@ export const flowers = defineKind("flowers", "Vase of flowers", (g, w, h) => {
 });
 
 /** A cactus or succulent in a terracotta pot. */
-export const cactus = defineKind("cactus", "Potted cactus", (g, w, h) => {
+export const cactus = defineKind("cactus", "Potted cactus", (g, w, h, note) => {
   const unit = Math.min(w, h);
   const top = h * g.f(0.78, 0.84);
   const cx = w / 2;
@@ -307,7 +320,12 @@ export const cactus = defineKind("cactus", "Potted cactus", (g, w, h) => {
       "stroke-linecap": "round",
     });
     // Flower on top
-    if (g.chance(0.5))
+    const flowering = g.chance(0.5);
+    const armsText = arms.length === 0 ? "" : arms.length === 1 ? " with one arm" : " with two arms";
+    const flowerText = flowering ? (arms.length ? " and a flower" : " with a flower") : "";
+    note.alt(`A potted cactus${armsText}${flowerText}`);
+    note.focus(cx, stemTop + stemH * 0.35);
+    if (flowering)
       out += el("path", {
         d: blob(g, cx, stemTop + stemW * 0.05, stemW * 0.28, stemW * 0.22, 5, 0.3, 0.03),
         fill: hsl(g.f(320, 380), 75, 68),
@@ -317,6 +335,8 @@ export const cactus = defineKind("cactus", "Potted cactus", (g, w, h) => {
     const leaves = g.i(7, 11);
     const spread = potW * g.f(1.1, 1.4);
     const cy = rimY - unit * 0.05;
+    note.alt("A succulent rosette in a pot");
+    note.focus(cx, cy - spread * 0.2);
     for (let k = 0; k < leaves; k++) {
       const angle = Math.PI + (k / (leaves - 1)) * Math.PI;
       const leafX = cx + Math.cos(angle) * spread * 0.55;
@@ -355,7 +375,7 @@ export const cactus = defineKind("cactus", "Potted cactus", (g, w, h) => {
 });
 
 /** A cup of coffee on a saucer, or a mug, with steam. */
-export const coffee = defineKind("coffee", "Coffee", (g, w, h) => {
+export const coffee = defineKind("coffee", "Coffee", (g, w, h, note) => {
   const unit = Math.min(w, h);
   const top = h * g.f(0.68, 0.76);
   const cx = w / 2 - unit * 0.03;
@@ -412,7 +432,12 @@ export const coffee = defineKind("coffee", "Coffee", (g, w, h) => {
     ry: cupW * 0.17,
     fill: g.pick(["#5a3622", "#7b4a2e", "#c69c6d"]),
   });
-  if (g.chance(0.5))
+  const latte = g.chance(0.5);
+  const vessel = mug ? "A steaming mug of coffee" : "A steaming cup of coffee on a saucer";
+  const art = latte ? (mug ? " with latte art" : ", with latte art") : mug ? " on a table" : "";
+  note.alt(vessel + art);
+  note.focus(cx, topY);
+  if (latte)
     // Latte art
     out += el("path", {
       d: s`M ${cx - cupW * 0.25} ${topY + cupW * 0.02}
@@ -441,7 +466,7 @@ export const coffee = defineKind("coffee", "Coffee", (g, w, h) => {
 });
 
 /** Books standing and leaning on a shelf, sometimes with a small plant. */
-export const books = defineKind("books", "Bookshelf", (g, w, h) => {
+export const books = defineKind("books", "Bookshelf", (g, w, h, note) => {
   const unit = Math.min(w, h);
   const shelfY = h * g.f(0.74, 0.8);
   const wall = hsl(g.f(0, 360), g.f(15, 35), g.f(82, 90));
@@ -454,6 +479,10 @@ export const books = defineKind("books", "Bookshelf", (g, w, h) => {
   let x = w * g.f(0.04, 0.12);
   const end = w * g.f(0.85, 0.96);
   const plantAt = g.chance(0.5) ? g.i(2, 5) : -1;
+  const startX = x;
+  let bookCount = 0;
+  let leaning = 0;
+  let plant = false;
   for (let k = 0; x < end; k++) {
     if (k === plantAt) {
       // A small potted plant
@@ -472,6 +501,7 @@ export const books = defineKind("books", "Bookshelf", (g, w, h) => {
         fill: "#4f8a5a",
       });
       x += potR * 1.6 + unit * 0.03;
+      plant = true;
       continue;
     }
     const bookW = unit * g.f(0.04, 0.075);
@@ -493,14 +523,19 @@ export const books = defineKind("books", "Bookshelf", (g, w, h) => {
     // A leaning book tips over its bottom right corner.
     out += lean ? el("g", { transform: s`rotate(${lean} ${x + bookW} ${shelfY})` }, book) : book;
     x += bookW + (lean ? bookH * Math.sin((lean * Math.PI) / 180) : unit * 0.004);
+    bookCount++;
+    if (lean) leaning++;
   }
+  const leanText = leaning === 0 ? "" : leaning === 1 ? ", one leaning" : `, ${numberWord(leaning)} leaning`;
+  note.alt(`A row of ${numberWord(bookCount)} books on a shelf${leanText}${plant ? ", beside a small plant" : ""}`);
+  note.focus((startX + x) / 2, shelfY - h * 0.18);
   return out;
 });
 
 const MORANDI = ["#c9b8a4", "#a89f91", "#8e9aa0", "#d7cbb7", "#b07d62", "#6f7d74", "#e3dccf", "#9c8b7a", "#7f8c9a"];
 
 /** Bottles, jars and boxes in muted colors, after Morandi's still lifes. */
-export const bottles = defineKind("bottles", "Bottles", (g, w, h) => {
+export const bottles = defineKind("bottles", "Bottles", (g, w, h, note) => {
   const unit = Math.min(w, h);
   const top = h * g.f(0.66, 0.72);
   const base = h * g.f(0.8, 0.86);
@@ -509,6 +544,9 @@ export const bottles = defineKind("bottles", "Bottles", (g, w, h) => {
   out += el("rect", { y: top, width: w, height: h - top, fill: g.pick(["#cdbfa9", "#c3baa8", "#d4c7b0"]) });
   const count = g.i(3, 5);
   const items: { x: number; draw: string; z: number }[] = [];
+  const kinds: string[] = [];
+  let sumX = 0;
+  let sumY = 0;
   for (let k = 0; k < count; k++) {
     const x = w * (0.2 + (0.6 * (k + g.f(0.2, 0.8))) / count);
     const z = g.f(0, 1);
@@ -518,6 +556,9 @@ export const bottles = defineKind("bottles", "Bottles", (g, w, h) => {
     const kind = g.pick(["bottle", "bottle", "jar", "box", "vase"]);
     const itemW = unit * g.f(0.06, 0.1);
     const itemH = unit * g.f(0.25, 0.5);
+    kinds.push(kind);
+    sumX += x;
+    sumY += y - itemH * 0.4;
     let markup: string;
     if (kind === "bottle")
       // Bottle with shoulders and a neck
@@ -588,6 +629,9 @@ export const bottles = defineKind("bottles", "Bottles", (g, w, h) => {
     items.push({ x, z, draw: markup });
   }
   items.sort((a, b) => b.z - a.z);
+  const plural = (name: string): string => (name === "box" ? "boxes" : `${name}s`);
+  note.alt(`A still life of ${andList(tally(kinds, plural))}, after Giorgio Morandi`);
+  note.focus(sumX / count, sumY / count);
   for (const item of items) out += item.draw;
   return out;
 });

@@ -45,7 +45,33 @@ const photos = placeholders(24, {
 - **Picture k uses seed `seed + k`,** so asking for more pictures later keeps the first ones the same.
 - **`numbered: true`** labels the pictures 1, 2, 3… in the corner.
 
-`placeholder` makes a single picture, choosing a kind by seed when given a list (`placeholderSvg` returns markup instead of a data URI). Both `placeholder` and `placeholders` bundle every kind; import kinds directly to keep a bundle small.
+`placeholder` makes a single picture, choosing a kind by seed when given a list. Both `placeholder` and `placeholders` bundle every kind; import kinds directly to keep a bundle small.
+
+### Pictures
+
+`placeholder`, `placeholders` and `render(kind, options)` return pictures with what a gallery needs:
+
+```ts
+for (const photo of placeholders(12, { kind: animals, size: ["400x300", "300x400"] })) {
+  const img = new Image(photo.width, photo.height);
+  img.src = photo.src; // a data URI; photo.svg is the markup, for inlining
+  img.alt = photo.alt; // "A fox with dark-tipped ears", "An owl on a branch under a crescent moon"
+  img.style.objectPosition = `${photo.focus.x * 100}% ${photo.focus.y * 100}%`;
+  img.style.background = photo.color; // the main background color, shown while it loads
+  gallery.append(img);
+}
+```
+
+| Field             |                                                                                           |
+| ----------------- | ----------------------------------------------------------------------------------------- |
+| `src`, `svg`      | The picture as a data URI and as SVG markup                                               |
+| `width`, `height` | Its size in px                                                                            |
+| `kind`            | The id of the kind that drew it, such as `"owl"`                                          |
+| `alt`             | A short description for screen readers. It never names colors, since palettes change them |
+| `focus`           | The point of interest (a face, the sun) as fractions of the width and height              |
+| `color`           | The main background color as `#rrggbb`                                                    |
+
+`toSvg` and `toDataUri` return just the markup or the data URI, for when that's all you need.
 
 ## Kinds
 
@@ -102,10 +128,10 @@ In `placeholders`, `kind`, `size`, `palette`, `mapping` and `texture` each take 
 
 ### Your own kinds
 
-A kind is a function from a seeded random source and a size to the markup inside `<svg>`:
+A kind is a function from a seeded random source and a size to the markup inside `<svg>`. It can also describe what it drew, with `note.alt(text)`, and point out its focus, with `note.focus(x, y)`:
 
 ```ts
-import { defineKind, toDataUri } from "bozzetto";
+import { defineKind, placeholders, render, toDataUri } from "bozzetto";
 
 const dot = defineKind(
   "dot",
@@ -115,6 +141,7 @@ const dot = defineKind(
 );
 
 img.src = toDataUri(dot, { seed: 1, palette: "riso" });
+render(dot).alt; // "A single dot on a plain ground"; without note.alt it would be the kind's name, "Dot"
 placeholders(6, { kind: [dot, "owl"] }); // custom kinds mix with built-in ones
 ```
 

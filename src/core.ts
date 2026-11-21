@@ -18,8 +18,22 @@ export interface Rand {
   id(name: string): string;
 }
 
+/**
+ * What a kind can say about the picture it drew. Both are optional: without them a picture's
+ * alt text is the kind's name and its focus is the center.
+ */
+export interface Notes {
+  /**
+   * A short description for screen readers, such as "An owl on a branch under a crescent moon".
+   * Start with a capital, leave off the final period, and don't name colors: palettes change them.
+   */
+  alt(text: string): void;
+  /** The point of interest, in px, such as a face or the sun, for cropping and `object-position`. */
+  focus(x: number, y: number): void;
+}
+
 /** Draws one picture's contents (everything inside `<svg>`) at the given size. */
-export type Draw = (r: Rand, width: number, height: number) => string;
+export type Draw = (r: Rand, width: number, height: number, note: Notes) => string;
 
 /** One kind of picture: hills, an owl, a color field. */
 export interface Kind<I extends string = string> {

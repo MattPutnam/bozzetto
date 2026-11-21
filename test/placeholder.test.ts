@@ -8,7 +8,8 @@ import {
   owl,
   placeholder,
   placeholders,
-  placeholderSvg,
+  defineKind,
+  render,
   resolveKind,
   resolveSize,
   seedToInt,
@@ -16,14 +17,9 @@ import {
   toSvg,
 } from "../src";
 
-const decode = (uri: string) => decodeURIComponent(uri.slice(uri.indexOf(",") + 1));
-const sizeOf = (uri: string) => /width="([\d.]+)" height="([\d.]+)"/.exec(decode(uri))!.slice(1).join("x");
-/** Which kind drew each picture of a `placeholders` list, given its base seed: picture k uses seed + k. */
-const kindsIn = (uris: string[], seed = 1) =>
-  uris.map((uri, k) => {
-    const size = sizeOf(uri) as `${number}x${number}`;
-    return kinds.find(kind => toSvg(kind, { size, seed: seed + k }) === decode(uri))?.id;
-  });
+// Color words, except where they name a thing: "an orange" (the fruit) and "ice cream" or "cream" on a cake.
+const COLOR_WORDS =
+  /\b(red|yellow|green|blue|purple|violet|pink|brown|black|white|grey|gray|golden|gold|silver|teal|navy|tan|beige|chocolate|crimson|scarlet|turquoise)\b|(?<!\ban )\borange\b/i;
 
 describe("categories", () => {
   it("cover every kind exactly once", () => {
@@ -67,10 +63,56 @@ describe("seeds, ids and labels", () => {
   });
 });
 
+describe("pictures", () => {
+  it("carry their source, markup, size and kind", () => {
+    const picture = render(owl, { seed: 1, size: "320x240" });
+    expect(picture.src).toBe(toDataUri(owl, { seed: 1, size: "320x240" }));
+    expect(picture.svg).toBe(toSvg(owl, { seed: 1, size: "320x240" }));
+    expect(picture).toMatchObject({ width: 320, height: 240, kind: "owl" });
+  });
+
+  it("describe themselves for every kind, without naming colors", () => {
+    for (const kind of kinds) {
+      for (const size of ["400x300", "300x400"] as const) {
+        for (let seed = 1; seed <= 25; seed++) {
+          const { alt, focus, color } = render(kind, { seed, size });
+          expect(alt, `${kind.id} seed ${seed}`).toMatch(/^[A-Z]/);
+          expect(alt, `${kind.id} seed ${seed}`).not.toMatch(/\.$/);
+          expect(alt, `${kind.id} seed ${seed}: "${alt}"`).not.toMatch(COLOR_WORDS);
+          expect(focus.x).toBeGreaterThanOrEqual(0);
+          expect(focus.x).toBeLessThanOrEqual(1);
+          expect(focus.y).toBeGreaterThanOrEqual(0);
+          expect(focus.y).toBeLessThanOrEqual(1);
+          expect(color).toMatch(/^#[0-9a-f]{6}$/);
+        }
+      }
+    }
+  });
+
+  it("give every kind real alt text that varies with the seed", () => {
+    for (const kind of kinds) {
+      const alts = new Set(Array.from({ length: 40 }, (_, seed) => render(kind, { seed }).alt));
+      expect(
+        [...alts].some(alt => alt !== kind.name),
+        kind.id,
+      ).toBe(true);
+    }
+  });
+
+  it("fall back to the kind's name and the center", () => {
+    const dot = defineKind("dot", "Dot", (_, w, h) => `<rect width="${w}" height="${h}" fill="#abcdef"/>`);
+    expect(render(dot)).toMatchObject({ alt: "Dot", focus: { x: 0.5, y: 0.5 }, color: "#abcdef" });
+  });
+
+  it("report the background after a palette is applied", () => {
+    const plain = render(hills, { seed: 3 }).color;
+    expect(render(hills, { seed: 3, palette: "grayscale" }).color).not.toBe(plain);
+  });
+});
+
 describe("placeholder", () => {
-  it("returns a data URI or markup", () => {
-    expect(placeholder({ kind: "owl", seed: 1 })).toBe(toDataUri(owl, { seed: 1 }));
-    expect(placeholderSvg({ kind: hills, seed: 5 })).toBe(toSvg(hills, { seed: 5 }));
+  it("returns a picture", () => {
+    expect(placeholder({ kind: "owl", seed: 1 })).toEqual(render(owl, { seed: 1 }));
   });
 
   it("chooses from nested lists of kinds, ids and categories", () => {
@@ -81,7 +123,7 @@ describe("placeholder", () => {
   });
 
   it("passes style options through", () => {
-    expect(placeholder({ kind: hills, seed: 2, palette: "pastel" })).toBe(
+    expect(placeholder({ kind: hills, seed: 2, palette: "pastel" }).src).toBe(
       toDataUri(hills, { seed: 2, palette: "pastel" }),
     );
   });
@@ -101,19 +143,20 @@ describe("placeholders", () => {
   it("shuffles: every kind once per round, in a seeded order", () => {
     const pool = [animals, donut];
     const n = animals.length + 1;
-    const ids = kindsIn(placeholders(n * 2, { kind: pool, seed: 3 }), 3);
+    const ids = placeholders(n * 2, { kind: pool, seed: 3 }).map(p => p.kind);
     expect(new Set(ids.slice(0, n)).size).toBe(n);
     expect(new Set(ids.slice(n)).size).toBe(n);
     expect(ids.slice(0, n)).not.toEqual(ids.slice(n));
   });
 
   it("cycles in the order given", () => {
-    const ids = kindsIn(placeholders(6, { kind: [hills, owl, donut], order: "cycle" }));
+    const ids = placeholders(6, { kind: [hills, owl, donut], order: "cycle" }).map(p => p.kind);
     expect(ids).toEqual(["hills", "owl", "donut", "hills", "owl", "donut"]);
   });
 
   it("goes through a list of sizes", () => {
     const sizes = ["400x300", "300x400", "300x300"] as const;
+    const sizeOf = (p: { width: number; height: number }) => `${p.width}x${p.height}`;
     const got = placeholders(6, { kind: hills, size: sizes, order: "cycle" }).map(sizeOf);
     expect(got).toEqual([...sizes, ...sizes]);
     const shuffled = placeholders(6, { kind: hills, size: sizes }).map(sizeOf);
@@ -123,10 +166,10 @@ describe("placeholders", () => {
   it("tells one palette of colors from a list of palettes", () => {
     const colors = ["#264653", "#e76f51", "#e9c46a"];
     const onePalette = placeholders(3, { kind: hills, palette: colors, order: "cycle" });
-    expect(onePalette).toEqual([0, 1, 2].map(k => toDataUri(hills, { seed: 1 + k, palette: colors })));
+    expect(onePalette.map(p => p.src)).toEqual([0, 1, 2].map(k => toDataUri(hills, { seed: 1 + k, palette: colors })));
     const twoPalettes = placeholders(2, { kind: hills, palette: ["pastel", colors], order: "cycle" });
-    expect(twoPalettes[0]).toBe(toDataUri(hills, { seed: 1, palette: "pastel" }));
-    expect(twoPalettes[1]).toBe(toDataUri(hills, { seed: 2, palette: colors }));
+    expect(twoPalettes[0].src).toBe(toDataUri(hills, { seed: 1, palette: "pastel" }));
+    expect(twoPalettes[1].src).toBe(toDataUri(hills, { seed: 2, palette: colors }));
   });
 
   it("picks randomly but deterministically", () => {
@@ -136,7 +179,7 @@ describe("placeholders", () => {
 
   it("numbers pictures on request", () => {
     const [first, second] = placeholders(2, { kind: hills, numbered: true });
-    expect(decode(first)).toContain(">1</text>");
-    expect(decode(second)).toContain(">2</text>");
+    expect(first.svg).toContain(">1</text>");
+    expect(second.svg).toContain(">2</text>");
   });
 });

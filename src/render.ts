@@ -1,6 +1,25 @@
-/** Turning a kind into finished SVG: size, seed, label, and the colors and texture to style it with. */
+/** Turning a kind into a finished picture: size, seed, label, and the colors and texture to style it with. */
+import { parseColor, toHex } from "./color";
 import { el, hash, makeRand, seedToInt, type Kind } from "./core";
 import { stylize, type StyleOptions } from "./style";
+
+/** A finished picture, with what a gallery needs to lay it out and describe it. */
+export interface Picture {
+  /** A `data:image/svg+xml` URI, for an `<img src>` or CSS `url()`. */
+  readonly src: string;
+  /** The SVG markup, for inlining. Element ids are unique to this picture. */
+  readonly svg: string;
+  readonly width: number;
+  readonly height: number;
+  /** The id of the kind that drew it, such as `"owl"`. */
+  readonly kind: string;
+  /** A short description for screen readers, such as "An owl on a branch under a crescent moon". */
+  readonly alt: string;
+  /** The point of interest as fractions of the width and height, for `object-position` or cropping. */
+  readonly focus: { readonly x: number; readonly y: number };
+  /** The picture's main background color as `#rrggbb`, to show while it loads. */
+  readonly color: string;
+}
 
 /**
  * A picture's size in px, as `"400x300"` or `{ width: 400, height: 300 }`.
@@ -29,12 +48,18 @@ export function resolveSize(size: Size = "400x300"): { width: number; height: nu
   return { width: parsed[0], height: parsed[1] };
 }
 
-/** The full SVG markup for one picture. */
-export function toSvg(kind: Kind, options: RenderOptions = {}): string {
+/** Draws a picture, with its alt text, focus and background color. */
+export function render(kind: Kind, options: RenderOptions = {}): Picture {
   const { width, height } = resolveSize(options.size);
   const seed = seedToInt(options.seed);
   const prefix = `bz${hash(`${kind.id}:${seed}:${width}x${height}`).toString(36)}-`;
-  let body = kind.draw(makeRand(seed, prefix), width, height);
+  let alt = kind.name;
+  let focus = { x: 0.5, y: 0.5 };
+  const clamp = (v: number) => Math.round(Math.max(0, Math.min(1, v)) * 1000) / 1000;
+  let body = kind.draw(makeRand(seed, prefix), width, height, {
+    alt: text => (alt = text),
+    focus: (x, y) => (focus = { x: clamp(x / width), y: clamp(y / height) }),
+  });
   if (options.label !== undefined && options.label !== "") {
     const fontSize = Math.min(width, height) * 0.093;
     const pad = fontSize * 0.57;
@@ -54,7 +79,7 @@ export function toSvg(kind: Kind, options: RenderOptions = {}): string {
     );
   }
   // The size is written as given, not rounded, so it matches the caller's numbers exactly.
-  const svg = el(
+  let svg = el(
     "svg",
     {
       xmlns: "http://www.w3.org/2000/svg",
@@ -65,12 +90,47 @@ export function toSvg(kind: Kind, options: RenderOptions = {}): string {
     },
     body,
   );
-  return options.palette !== undefined || options.texture !== undefined ? stylize(svg, options) : svg;
+  if (options.palette !== undefined || options.texture !== undefined) svg = stylize(svg, options);
+  return {
+    src: `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`,
+    svg,
+    width,
+    height,
+    kind: kind.id,
+    alt,
+    focus,
+    color: backgroundColor(svg, width, height),
+  };
+}
+
+/** The full SVG markup for one picture. */
+export function toSvg(kind: Kind, options: RenderOptions = {}): string {
+  return render(kind, options).svg;
 }
 
 /** The picture as a `data:image/svg+xml` URI, ready for an `<img src>` or CSS `url()`. */
 export function toDataUri(kind: Kind, options: RenderOptions = {}): string {
-  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(toSvg(kind, options))}`;
+  return render(kind, options).src;
+}
+
+/**
+ * The color of the first shape that covers the whole picture, or failing that the first color used.
+ * A gradient counts as the average of its stops.
+ */
+function backgroundColor(svg: string, width: number, height: number): string {
+  const full = new RegExp(`<rect (?:x="0" y="0" )?width="${width}" height="${height}" fill="([^"]+)"`).exec(svg);
+  const paint = full?.[1] ?? /fill="(#[0-9a-f]{3,6}|hsl\([^)]*\)|rgb\([^)]*\))"/i.exec(svg)?.[1] ?? "#cccccc";
+  const gradient = /^url\(#([^)]+)\)$/.exec(paint);
+  if (gradient) {
+    const def = new RegExp(`<linearGradient id="${gradient[1]}"[^>]*>(.*?)</linearGradient>`).exec(svg)?.[1] ?? "";
+    const stops = [...def.matchAll(/stop-color="([^"]+)"/g)].map(m => parseColor(m[1])).filter(c => c !== undefined);
+    if (stops.length) {
+      const mean = [0, 1, 2].map(k => stops.reduce((sum, c) => sum + c[k], 0) / stops.length);
+      return toHex(mean as [number, number, number]);
+    }
+  }
+  const rgb = parseColor(paint);
+  return rgb ? toHex(rgb) : "#cccccc";
 }
 
 function escapeXml(text: string): string {

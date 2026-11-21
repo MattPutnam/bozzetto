@@ -3,6 +3,7 @@ import {
   PALETTES,
   categories,
   kinds,
+  render as renderPicture,
   toSvg,
   type Kind,
   type Mapping,
@@ -120,10 +121,16 @@ function select(id: string, i: number) {
 function drawBench() {
   const kind = byId.get(state.selected.id)!;
   const seed = state.seeds[kind.id] + state.selected.i;
-  const svg = render(kind, seed);
-  const u = uri(svg);
+  const picture = renderPicture(kind, { size: `${W}x${H}`, seed, ...state.style });
+  const svg = picture.svg;
+  const u = picture.src;
   $<HTMLImageElement>("big").src = u;
-  $<HTMLImageElement>("big").alt = `${kind.name}, seed ${seed}`;
+  $<HTMLImageElement>("big").alt = picture.alt;
+  $("f-alt").textContent = picture.alt;
+  $("f-focus").textContent = `x ${picture.focus.x.toFixed(2)}, y ${picture.focus.y.toFixed(2)}`;
+  $("f-color").innerHTML = `<span class="swatch-chip" style="background:${picture.color}"></span>${picture.color}`;
+  $("focus-mark").style.left = `${picture.focus.x * 100}%`;
+  $("focus-mark").style.top = `${picture.focus.y * 100}%`;
   $("big-name").textContent = kind.name;
   $("f-kind").textContent = `${categoryOf.get(kind.id)} / ${kind.id}`;
   $("f-seed").textContent = String(seed);

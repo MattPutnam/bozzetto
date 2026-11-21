@@ -1,4 +1,5 @@
 import { defineKind, el, facing, fill, hsl, lin, mix, pts, s, type Point } from "./core";
+import { andList } from "./words";
 
 const COATS = [
   ["#e89a4b", "#f7d3a6"],
@@ -10,7 +11,7 @@ const COATS = [
 ] as const;
 
 /** A cat's face and shoulders. Coat, eyes, tabby stripes and muzzle vary. */
-export const cat = defineKind("cat", "Cat", (g, w, h) => {
+export const cat = defineKind("cat", "Cat", (g, w, h, note) => {
   const [fur, light] = g.pick(COATS);
   const whisker = fur === "#efe9df" ? "#555" : "#f4f1ea";
   const unit = Math.min(w, h);
@@ -38,7 +39,8 @@ export const cat = defineKind("cat", "Cat", (g, w, h) => {
   }
   // Head.
   out += el("ellipse", { cx, cy, rx, ry, fill: fur });
-  if (g.chance(0.35))
+  const tabby = g.chance(0.35);
+  if (tabby)
     // Tabby stripes on the forehead.
     out += el("path", {
       d: s`M ${cx} ${cy - ry * 0.98} v ${ry * 0.3}
@@ -49,7 +51,8 @@ export const cat = defineKind("cat", "Cat", (g, w, h) => {
       "stroke-width": rx * 0.08,
       "stroke-linecap": "round",
     });
-  if (g.chance(0.5))
+  const muzzle = g.chance(0.5);
+  if (muzzle)
     // A pale muzzle.
     out += el("ellipse", { cx, cy: cy + ry * 0.42, rx: rx * 0.42, ry: ry * 0.3, fill: light });
   // Eyes, with slit or round pupils.
@@ -88,11 +91,14 @@ export const cat = defineKind("cat", "Cat", (g, w, h) => {
     for (const k of [-1, 0, 1])
       whiskers += s`M ${cx + side * rx * 0.25} ${cy + ry * 0.38 + k * ry * 0.06} L ${cx + side * rx * 1.05} ${cy + ry * 0.3 + k * ry * 0.16} `;
   out += el("path", { d: whiskers.trim(), stroke: whisker, "stroke-width": rx * 0.02, opacity: "0.8" });
+  const features = [muzzle && "a pale muzzle", slit ? "slit pupils" : "round pupils"];
+  note.alt(`A ${tabby ? "tabby " : ""}cat's face with ${andList(features)}`);
+  note.focus(cx, cy - ry * 0.05);
   return out;
 });
 
 /** A round songbird on a leafy branch, facing either way. */
-export const bird = defineKind("bird", "Bird on a branch", (g, w, h) => {
+export const bird = defineKind("bird", "Bird on a branch", (g, w, h, note) => {
   const hue = g.f(0, 360);
   const body = hsl(hue, g.f(45, 70), g.f(40, 58));
   const belly = hsl(hue + g.f(20, 50), g.f(50, 80), g.f(70, 82));
@@ -160,7 +166,8 @@ export const bird = defineKind("bird", "Bird on a branch", (g, w, h) => {
     fill: wing,
     transform: s`rotate(-14 ${bodyX - size * 0.25} ${bodyY})`,
   });
-  if (g.chance(0.35))
+  const crest = g.chance(0.35);
+  if (crest)
     // A crest.
     out += el("polygon", {
       points: s`${headX - size * 0.25},${headY - size * 0.4} ${headX - size * 0.45},${headY - size * 0.95} ${headX + size * 0.1},${headY - size * 0.5}`,
@@ -176,11 +183,13 @@ export const bird = defineKind("bird", "Bird on a branch", (g, w, h) => {
   // Eye and its highlight.
   out += el("circle", { cx: headX + size * 0.2, cy: headY - size * 0.08, r: size * 0.085, fill: "#111" });
   out += el("circle", { cx: headX + size * 0.23, cy: headY - size * 0.11, r: size * 0.025, fill: "#fff" });
+  note.alt(`A ${crest ? "crested " : ""}songbird on a leafy branch, facing ${dir > 0 ? "right" : "left"}`);
+  note.focus(cx + dir * (headX + size * 0.2 - cx), headY - size * 0.08);
   return out + "</g>";
 });
 
 /** A fish among weeds and bubbles. Color, stripes and direction vary. */
-export const fish = defineKind("fish", "Fish", (g, w, h) => {
+export const fish = defineKind("fish", "Fish", (g, w, h, note) => {
   const waterHue = g.f(180, 215);
   const hue = g.f(0, 360);
   const dir = g.pick([1, -1]);
@@ -227,7 +236,8 @@ export const fish = defineKind("fish", "Fish", (g, w, h) => {
   });
   // Body.
   out += el("path", { d: bodyD, fill: hsl(hue, 72, 56) });
-  if (g.chance(0.65)) {
+  const striped = g.chance(0.65);
+  if (striped) {
     // Stripes, clipped to the body.
     const stripe = g.chance(0.5) ? "#fff" : hsl(hue + 20, 60, 28);
     const count = g.i(2, 3);
@@ -262,11 +272,14 @@ export const fish = defineKind("fish", "Fish", (g, w, h) => {
       opacity: "0.7",
     });
   }
+  // The body is drawn facing left, so it faces right when mirrored.
+  note.alt(`A ${striped ? "striped " : ""}fish among weeds and bubbles, facing ${dir > 0 ? "left" : "right"}`);
+  note.focus(cx - dir * length * 0.62, cy - height * 0.1);
   return out;
 });
 
 /** An owl on a branch at dusk, sometimes with the moon. Plumage, eyes and gaze vary. */
-export const owl = defineKind("owl", "Owl", (g, w, h) => {
+export const owl = defineKind("owl", "Owl", (g, w, h, note) => {
   const hue = g.f(200, 290);
   const feather = g.pick(["#8a6a4f", "#6e6a66", "#b08a5e", "#d9d2c5", "#5a4636"]);
   const light = mix(feather, "#ffffff", 0.45);
@@ -280,7 +293,8 @@ export const owl = defineKind("owl", "Owl", (g, w, h) => {
   const bodyY = branchY - bodyH * 0.85;
   let out = el("defs", {}, lin(sky, [hsl(hue, 40, 30), hsl(hue + 30, 45, 62)]));
   out += fill(w, h, `url(#${sky})`);
-  if (g.chance(0.6))
+  const moon = g.chance(0.6);
+  if (moon)
     // The moon, off to one side.
     out += el("circle", {
       cx: w * g.pick([g.f(0.12, 0.3), g.f(0.7, 0.88)]),
@@ -341,6 +355,8 @@ export const owl = defineKind("owl", "Owl", (g, w, h) => {
     "stroke-width": bodyW * 0.06,
     "stroke-linecap": "round",
   });
+  note.alt(moon ? "An owl on a branch at dusk under the moon" : "An owl perched on a branch at dusk");
+  note.focus(cx, bodyY - bodyH * 0.4);
   return out;
 });
 
@@ -354,7 +370,7 @@ const DOG_COATS = [
 ] as const;
 
 /** A dog's face: floppy or pointed ears, a muzzle, sometimes an eye patch, a tongue and a collar. */
-export const dog = defineKind("dog", "Dog", (g, w, h) => {
+export const dog = defineKind("dog", "Dog", (g, w, h, note) => {
   const coat = g.pick(DOG_COATS);
   const size = Math.min(w, h);
   const cx = w / 2;
@@ -434,7 +450,8 @@ export const dog = defineKind("dog", "Dog", (g, w, h) => {
   // Nose
   out += el("ellipse", { cx, cy: cy + ry * 0.2, rx: rx * 0.16, ry: ry * 0.11, fill: "#1c1512" });
   // Tongue
-  if (g.chance(0.5)) out += el("ellipse", { cx, cy: cy + ry * 0.62, rx: rx * 0.12, ry: ry * 0.16, fill: "#e46f7b" });
+  const tongue = g.chance(0.5);
+  if (tongue) out += el("ellipse", { cx, cy: cy + ry * 0.62, rx: rx * 0.12, ry: ry * 0.16, fill: "#e46f7b" });
   // Mouth: a line down from the nose, then two curves
   out += el("path", {
     d: s`M ${cx} ${cy + ry * 0.3}
@@ -447,6 +464,14 @@ export const dog = defineKind("dog", "Dog", (g, w, h) => {
     fill: "none",
     "stroke-linecap": "round",
   });
+  const features = [
+    floppy ? "floppy ears" : "pointed ears",
+    patchSide && "an eye patch",
+    tongue && "its tongue out",
+    "a collar",
+  ];
+  note.alt(`A ${"spots" in coat ? "spotted " : ""}dog's face with ${andList(features)}`);
+  note.focus(cx, cy - ry * 0.12);
   return out;
 });
 
@@ -458,7 +483,7 @@ const FOXES = [
 ] as const;
 
 /** An angular fox face with pale cheeks and dark-tipped ears. */
-export const fox = defineKind("fox", "Fox", (g, w, h) => {
+export const fox = defineKind("fox", "Fox", (g, w, h, note) => {
   const palette = g.pick(FOXES);
   const size = Math.min(w, h);
   const cx = w / 2;
@@ -537,11 +562,13 @@ export const fox = defineKind("fox", "Fox", (g, w, h) => {
     });
   // Nose
   out += el("circle", { cx, cy: cy + ry * 0.9, r: rx * 0.09, fill: palette.dark });
+  note.alt("A fox's face with pale cheeks and dark-tipped ears");
+  note.focus(cx, cy - ry * 0.12);
   return out;
 });
 
 /** A penguin on the ice, sometimes with an emperor's golden neck. */
-export const penguin = defineKind("penguin", "Penguin", (g, w, h) => {
+export const penguin = defineKind("penguin", "Penguin", (g, w, h, note) => {
   const size = Math.min(w, h);
   const sky = g.id("sky");
   const skyHue = g.f(190, 215);
@@ -620,11 +647,18 @@ export const penguin = defineKind("penguin", "Penguin", (g, w, h) => {
     fill: emperor ? "#e86f2d" : "#f08a24",
   });
   out += "</g>";
+  const side = dir > 0 ? "right" : "left";
+  note.alt(
+    emperor
+      ? `An emperor penguin with a neck patch on the ice, facing ${side}`
+      : `A penguin on the ice near icebergs, facing ${side}`,
+  );
+  note.focus(cx + dir * bw * 0.42, by - bh * 0.66);
   return out;
 });
 
 /** A whale at the surface, half under the water, blowing a spout. */
-export const whale = defineKind("whale", "Whale", (g, w, h) => {
+export const whale = defineKind("whale", "Whale", (g, w, h, note) => {
   const skyHue = g.f(185, 225);
   const sky = g.id("sky");
   const sea = g.id("sea");
@@ -644,7 +678,8 @@ export const whale = defineKind("whale", "Whale", (g, w, h) => {
       lin(sea, [hsl(skyHue + 5, 55, 48), hsl(skyHue + 15, 60, 25)]),
     ) + fill(w, h, `url(#${sky})`);
   // Clouds
-  if (g.chance(0.6))
+  const clouds = g.chance(0.6);
+  if (clouds)
     for (let k = g.i(1, 3); k > 0; k--) {
       const x = w * g.f(0, 1);
       const y = h * g.f(0.1, 0.3);
@@ -723,6 +758,10 @@ export const whale = defineKind("whale", "Whale", (g, w, h) => {
     fill: "none",
     opacity: "0.8",
   });
+  note.alt(
+    `A whale blowing a spout at the surface${clouds ? " under clouds" : ""}, facing ${dir > 0 ? "right" : "left"}`,
+  );
+  note.focus(cx + dir * length * 0.36, wy - height * 0.42);
   return out;
 });
 
@@ -748,7 +787,7 @@ function lilyPad(x: number, y: number, rx: number, ry: number, notch: number, pa
 }
 
 /** A frog on a lily pad, with bulging eyes and a wide smile. */
-export const frog = defineKind("frog", "Frog", (g, w, h) => {
+export const frog = defineKind("frog", "Frog", (g, w, h, note) => {
   const colors = g.pick(FROGS);
   const size = Math.min(w, h);
   const water = g.id("water");
@@ -775,7 +814,8 @@ export const frog = defineKind("frog", "Frog", (g, w, h) => {
   // The frog's shadow on the pad
   out += el("ellipse", { cx, cy: py + pr * 0.04, rx: pr * 0.62, ry: pr * 0.13, fill: "#000", opacity: "0.15" });
   // Flower on the pad
-  if (g.chance(0.45)) {
+  const flower = g.chance(0.45);
+  if (flower) {
     const fx = cx + pr * g.pick([-0.78, 0.74]);
     const fy = py - pr * 0.02;
     out += el("circle", { cx: fx, cy: fy - size * 0.035, r: size * 0.045, fill: "#f6a6c1" });
@@ -831,6 +871,8 @@ export const frog = defineKind("frog", "Frog", (g, w, h) => {
       fill: "#ff7a8a",
       opacity: "0.4",
     });
+  note.alt(`A ${"spots" in colors ? "spotted " : ""}frog smiling on a lily pad${flower ? " beside a flower" : ""}`);
+  note.focus(cx, by - bh * 0.6);
   return out;
 });
 
@@ -843,7 +885,7 @@ const RABBITS = [
 ] as const;
 
 /** A rabbit in a meadow: tall or lop ears, pink nose, whiskers. */
-export const rabbit = defineKind("rabbit", "Rabbit", (g, w, h) => {
+export const rabbit = defineKind("rabbit", "Rabbit", (g, w, h, note) => {
   const coat = g.pick(RABBITS);
   const size = Math.min(w, h);
   const cx = w / 2;
@@ -934,11 +976,13 @@ export const rabbit = defineKind("rabbit", "Rabbit", (g, w, h) => {
     for (const k of [-1, 1])
       whiskers += s`M ${cx + sd * rx * 0.2} ${cy + ry * 0.33 + k * ry * 0.04} L ${cx + sd * rx * 0.95} ${cy + ry * 0.28 + k * ry * 0.14} `;
   out += el("path", { d: whiskers, stroke: "#6b5d55", "stroke-width": rx * 0.02, opacity: "0.6" });
+  note.alt(lop ? "A lop-eared rabbit in a meadow" : "A rabbit with tall ears in a meadow");
+  note.focus(cx, cy - ry * 0.08);
   return out;
 });
 
 /** A snail with a spiral shell on a leaf. */
-export const snail = defineKind("snail", "Snail", (g, w, h) => {
+export const snail = defineKind("snail", "Snail", (g, w, h, note) => {
   const size = Math.min(w, h);
   const gy = h * g.f(0.72, 0.8);
   const dir = g.pick([-1, 1]);
@@ -1017,6 +1061,8 @@ export const snail = defineKind("snail", "Snail", (g, w, h) => {
   });
   out += el("circle", { cx: sx - sr * 0.35, cy: sy - sr * 0.4, r: sr * 0.18, fill: "#fff", opacity: "0.25" });
   out += "</g>";
+  note.alt(`A snail with a spiral shell on a leaf, facing ${dir > 0 ? "right" : "left"}`);
+  note.focus(cx + dir * (ex + sr * 0.07 - cx), ey - sr * 0.4);
   return out;
 });
 
