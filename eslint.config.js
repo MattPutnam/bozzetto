@@ -3,7 +3,18 @@ import globals from "globals";
 import tseslint from "typescript-eslint";
 
 export default tseslint.config(
-  { ignores: ["dist/", "demo/dist/", "demo/out/", "media/"] },
+  {
+    ignores: [
+      "dist/",
+      "demo/dist/",
+      "demo/out/",
+      "media/",
+      "docs/.vitepress/dist/",
+      "docs/.vitepress/cache/",
+      "docs/reference/api/",
+      ".vitepress/",
+    ],
+  },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {
@@ -18,7 +29,7 @@ export default tseslint.config(
     },
   },
   {
-    files: ["scripts/**", "*.config.{js,ts}"],
+    files: ["scripts/**", "docs/scripts/**", "docs/.vitepress/config.ts", "demo/vite.config.ts", "*.config.{js,ts}"],
     languageOptions: { globals: { ...globals.node } },
   },
 );

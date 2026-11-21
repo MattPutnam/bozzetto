@@ -4,3 +4,7 @@ dist
 .release/
 demo/dist/
 demo/out/
+docs/.vitepress/dist/
+docs/.vitepress/cache/
+docs/reference/api/
+docs/public/examples/

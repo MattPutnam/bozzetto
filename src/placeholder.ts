@@ -62,10 +62,12 @@ const many = <T>(value: T | readonly T[] | undefined): readonly (T | undefined)[
  * The palettes a `palette` option stands for. A list whose items are all colors is one palette;
  * any other list is several palettes (names, codes, or lists of colors).
  */
-function palettesOf(value: PaletteSpec | readonly PaletteSpec[] | undefined): readonly (PaletteSpec | undefined)[] {
+function palettesOf(
+  value: PaletteSpec | readonly (PaletteSpec | undefined)[] | undefined,
+): readonly (PaletteSpec | undefined)[] {
   if (value === undefined || typeof value === "string") return [value];
   const isOnePalette = value.every(item => typeof item === "string" && parseColor(item) !== undefined);
-  return isOnePalette ? [value as PaletteSpec] : (value as readonly PaletteSpec[]);
+  return isOnePalette ? [value as PaletteSpec] : (value as readonly (PaletteSpec | undefined)[]);
 }
 
 export interface PlaceholderOptions extends RenderOptions {
@@ -83,11 +85,13 @@ export interface PlaceholdersOptions {
   size?: OneOrMany<Size>;
   /**
    * A palette, or a list of palettes. A list made only of colors is a single palette:
-   * `["#264653", "#e76f51"]` is one palette, `["pastel", "riso"]` is two.
+   * `["#264653", "#e76f51"]` is one palette, `["pastel", "riso"]` is two. `undefined` in a list
+   * keeps those pictures' own colors: `[undefined, "pastel"]` alternates original and pastel.
    */
-  palette?: PaletteSpec | readonly PaletteSpec[];
+  palette?: PaletteSpec | readonly (PaletteSpec | undefined)[];
   mapping?: OneOrMany<Mapping>;
-  texture?: OneOrMany<Texture>;
+  /** A texture, or a list; `undefined` in a list leaves those pictures plain. */
+  texture?: Texture | readonly (Texture | undefined)[];
   /** Picture k uses seed `seed + k`, so a list grows without changing the pictures already in it. Default 1. */
   seed?: number | string;
   /** Number the pictures 1, 2, 3… in the corner. */

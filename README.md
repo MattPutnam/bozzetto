@@ -4,6 +4,8 @@ Seeded placeholder images as tiny SVGs: landscapes, modern-art homages, people, 
 
 A _bozzetto_ is a painter's small preliminary sketch, made before the real work. These are the stand-ins for your real pictures.
 
+**[Read the manual](https://mattputnam.github.io/bozzetto/)**, see [every kind](https://mattputnam.github.io/bozzetto/guide/kinds), or [make a palette](https://mattputnam.github.io/bozzetto/demo/picker.html).
+
 ![Two seeds of every kind](media/gallery.svg)
 
 - **Deterministic.** The same seed gives the same picture, everywhere. Seeds can be numbers or strings, such as a user id.
@@ -168,6 +170,7 @@ npm run build     # the library and the bozzetto command, in dist/
 npm run check     # format check, lint, typecheck and tests
 npm run pages     # self-contained copies of the demo pages in demo/out/
 npm run gallery   # regenerate media/gallery.svg
+npm run docs:dev  # the manual, with live examples (docs:build builds the whole site, as GitHub Pages does)
 ```
 
 ## License

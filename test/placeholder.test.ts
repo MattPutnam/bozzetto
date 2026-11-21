@@ -172,6 +172,15 @@ describe("placeholders", () => {
     expect(twoPalettes[1].src).toBe(toDataUri(hills, { seed: 2, palette: colors }));
   });
 
+  it("keeps original colors and no texture for undefined in a list", () => {
+    const [plain, pastel] = placeholders(2, { kind: hills, palette: [undefined, "pastel"], order: "cycle" });
+    expect(plain.src).toBe(toDataUri(hills, { seed: 1 }));
+    expect(pastel.src).toBe(toDataUri(hills, { seed: 2, palette: "pastel" }));
+    const [smooth, grainy] = placeholders(2, { kind: hills, texture: [undefined, "grain"], order: "cycle" });
+    expect(smooth.svg).not.toContain("feTurbulence");
+    expect(grainy.svg).toContain("feTurbulence");
+  });
+
   it("picks randomly but deterministically", () => {
     const a = placeholders(10, { kind: animals, order: "random", seed: 4 });
     expect(placeholders(10, { kind: animals, order: "random", seed: 4 })).toEqual(a);

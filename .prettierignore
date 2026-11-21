@@ -4,3 +4,9 @@ demo/dist/
 demo/out/
 media/
 package-lock.json
+
+# Docs site: generated
+docs/.vitepress/dist/
+docs/.vitepress/cache/
+docs/reference/api/
+docs/public/examples/

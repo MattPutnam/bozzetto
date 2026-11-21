@@ -1,0 +1,23 @@
+{
+  "$schema": "https://typedoc-plugin-markdown.org/schema.json",
+  "entryPoints": ["../src/index.ts"],
+  "tsconfig": "./tsconfig.typedoc.json",
+  "out": "./reference/api",
+  "plugin": ["typedoc-plugin-markdown", "typedoc-vitepress-theme"],
+  "docsRoot": ".",
+  "readme": "none",
+  "excludePrivate": true,
+  "excludeInternal": true,
+  "excludeExternals": true,
+  "hidePageHeader": true,
+  "hideBreadcrumbs": true,
+  "useCodeBlocks": true,
+  "parametersFormat": "table",
+  "interfacePropertiesFormat": "list",
+  "typeDeclarationFormat": "list",
+  "sanitizeComments": true,
+  "validation": { "invalidLink": false, "notExported": false },
+  "logLevel": "Warn",
+  "name": "bozzetto",
+  "disableSources": true
+}
