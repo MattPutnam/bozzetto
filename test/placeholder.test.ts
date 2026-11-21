@@ -79,7 +79,8 @@ describe("pictures", () => {
           const { alt, focus, color } = render(kind, { seed, size });
           expect(alt, `${kind.id} seed ${seed}`).toMatch(/^[A-Z]/);
           expect(alt, `${kind.id} seed ${seed}`).not.toMatch(/\.$/);
-          expect(alt, `${kind.id} seed ${seed}: "${alt}"`).not.toMatch(COLOR_WORDS);
+          // "Black hole" names a thing, not a color.
+          expect(alt.replace(/\bblack holes?\b/gi, ""), `${kind.id} seed ${seed}: "${alt}"`).not.toMatch(COLOR_WORDS);
           expect(focus.x).toBeGreaterThanOrEqual(0);
           expect(focus.x).toBeLessThanOrEqual(1);
           expect(focus.y).toBeGreaterThanOrEqual(0);

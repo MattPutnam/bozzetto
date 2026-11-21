@@ -678,3 +678,465 @@ export const moon = defineKind("moon", "Moon surface", (g, w, h, note) => {
   note.focus(px, py);
   return out;
 });
+
+/** Path data through points, whole pixels and no spaces before minus signs, to keep data URIs small. */
+function pathOf(cmd: string, points: readonly Point[]): string {
+  let out = cmd;
+  for (const [x, y] of points) {
+    const xs = String(Math.round(x));
+    const ys = String(Math.round(y));
+    out += (out.length > 1 && !xs.startsWith("-") ? " " : "") + xs + (ys.startsWith("-") ? "" : " ") + ys;
+  }
+  return out;
+}
+
+/** A smooth open curve through the midpoints of points, as quadratic pieces. */
+function smoothOpen(p: readonly Point[]): string {
+  const mid = (a: Point, b: Point): Point => [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
+  let d = pathOf("M", [p[0]]) + pathOf("L", [mid(p[0], p[1])]);
+  for (let k = 1; k < p.length - 1; k++) d += pathOf("Q", [p[k], k === p.length - 2 ? p[k + 1] : mid(p[k], p[k + 1])]);
+  return d;
+}
+
+/** A smooth closed shape through the midpoints of a ring of points. */
+function smoothRing(ring: readonly Point[]): string {
+  const mid = (a: Point, b: Point): Point => [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
+  const count = ring.length;
+  let d = pathOf("M", [mid(ring[count - 1], ring[0])]);
+  for (let k = 0; k < count; k++) d += pathOf("Q", [ring[k], mid(ring[k], ring[(k + 1) % count])]);
+  return d + "Z";
+}
+
+/** A radial gradient in the shape's own box, from `stops` as [offset, color, opacity]. */
+const radial = (id: string, stops: readonly [number, string, number][], attrs: Record<string, number | string> = {}) =>
+  el(
+    "radialGradient",
+    { id, ...attrs },
+    ...stops.map(([offset, color, alpha]) =>
+      el("stop", { offset, "stop-color": color, "stop-opacity": alpha === 1 ? undefined : alpha }),
+    ),
+  );
+
+/** The half-extents of an ellipse with half-axes rx, ry turned by `deg` degrees. */
+function extents(rx: number, ry: number, deg: number): [number, number] {
+  const a = (deg * Math.PI) / 180;
+  return [Math.hypot(rx * Math.cos(a), ry * Math.sin(a)), Math.hypot(rx * Math.sin(a), ry * Math.cos(a))];
+}
+
+/** A spiral galaxy: a glowing core and soft arms with dust lanes and star-forming knots, at a tilt. */
+export const galaxy = defineKind("galaxy", "Galaxy", (g, w, h, note) => {
+  const unit = Math.min(w, h);
+  const skyHue = g.f(225, 275);
+  const sky = g.id("sky");
+  const core = g.id("core");
+  const armPaint = g.id("arm");
+  const halo = g.id("halo");
+  const soft = g.id("soft");
+  const fine = g.id("fine");
+  const lanes = g.id("lanes");
+  const far = g.id("far");
+  // Palette: a warm core, with arms that are classic blue, teal or violet.
+  const coreHue = g.f(28, 48);
+  const armHue = g.pick([g.f(205, 222), g.f(180, 194), g.f(250, 272)]);
+  const knotHue = g.f(322, 348);
+  // The view: face-on (round) to steeply inclined (a narrow ellipse), turned any way.
+  const tilt = g.chance(0.3) ? g.f(0.82, 1) : g.f(0.3, 0.8);
+  // Laid along a wide or tall picture's long side, and any way in a squarer one.
+  const swing = g.f(-1, 1);
+  const turn = w > h * 1.5 ? swing * 25 : h > w * 1.15 ? 90 + swing * 35 : swing * 90;
+  const barred = g.chance(0.35);
+  const arms = barred ? 2 : g.pick([2, 2, 2, 3, 4]);
+  const wind = g.pick([-1, 1]);
+  // As large as fits, the turned disc kept inside the picture.
+  const [ex, ey] = extents(1, tilt, turn);
+  const R = Math.min((w * 0.47) / ex, (h * 0.45) / ey, unit * 0.72);
+  const cx = w / 2 + (w / 2 - ex * R) * g.f(-0.6, 0.6);
+  const cy = h / 2 + (h / 2 - ey * R) * g.f(-0.6, 0.6);
+  const bar = R * g.f(0.26, 0.34);
+  const r0 = barred ? bar : R * g.f(0.07, 0.13);
+  const turns = g.f(1.05, 1.6) * Math.PI * (arms > 2 ? 0.85 : 1);
+  const b = Math.log((R * 0.97) / r0) / (turns * 1.2);
+  const skew = g.f(0, Math.PI * 2);
+  let out = el(
+    "defs",
+    {},
+    lin(sky, [hsl(skyHue, 45, 4), hsl(skyHue + 15, 40, 12)]),
+    radial(core, [
+      [0, hsl(coreHue + 10, 90, 96), 1],
+      [0.25, hsl(coreHue, 90, 78), 0.9],
+      [0.6, hsl(coreHue - 5, 80, 60), 0.35],
+      [1, hsl(coreHue - 10, 70, 50), 0],
+    ]),
+    radial(
+      armPaint,
+      [
+        [0, hsl(coreHue, 85, 80), 1],
+        [0.4, hsl(armHue, 70, 72), 1],
+        [1, hsl(armHue + 10, 60, 60), 1],
+      ],
+      { gradientUnits: "userSpaceOnUse", cx: 0, cy: 0, r: Math.round(R) },
+    ),
+    radial(halo, [
+      [0, hsl(armHue, 60, 60), 0.35],
+      [1, hsl(armHue, 60, 40), 0],
+    ]),
+    radial(far, [
+      [0, hsl(coreHue, 70, 88), 0.9],
+      [1, hsl(armHue, 50, 60), 0],
+    ]),
+    el(
+      "filter",
+      { id: soft, x: "-25%", y: "-25%", width: "150%", height: "150%" },
+      el("feGaussianBlur", { stdDeviation: R * 0.045 }),
+    ),
+    el(
+      "filter",
+      { id: lanes, x: "-25%", y: "-25%", width: "150%", height: "150%" },
+      el("feGaussianBlur", { stdDeviation: R * 0.018 }),
+    ),
+    el(
+      "filter",
+      { id: fine, x: "-25%", y: "-25%", width: "150%", height: "150%" },
+      el("feGaussianBlur", { stdDeviation: Math.max(0.6, R * 0.012) }),
+    ),
+  );
+  out += fill(w, h, `url(#${sky})`);
+  out += starDots(g, w, h, starCount(g, w, h), unit);
+  // One or two tiny far galaxies, kept clear of the big one.
+  let farCount = 0;
+  for (let k = g.i(1, 2), tries = 0; k > 0 && tries < 30; tries++) {
+    const rx = unit * g.f(0.025, 0.045);
+    const x = rx * 2 + (w - rx * 4) * g.f(0, 1);
+    const y = rx * 2 + (h - rx * 4) * g.f(0, 1);
+    const angle = g.f(0, 180);
+    const ry = rx * g.f(0.3, 0.8);
+    if (Math.hypot((x - cx) / (ex * R + rx * 2), (y - cy) / (ey * R + rx * 2)) < 1) continue;
+    k--;
+    farCount++;
+    out += el("ellipse", {
+      cx: x,
+      cy: y,
+      rx,
+      ry,
+      fill: `url(#${far})`,
+      transform: s`rotate(${angle} ${x} ${y})`,
+    });
+  }
+
+  // A point on arm `k` at fraction t of its length, in the disc's own (face-on) frame.
+  const spiral = (k: number, t: number): Point => {
+    const theta = t * turns;
+    const r = r0 * Math.exp(b * theta);
+    const a = wind * theta + skew + (k * Math.PI * 2) / arms;
+    return [Math.cos(a) * r, Math.sin(a) * r];
+  };
+  const normal = (k: number, t: number): Point => {
+    const [x0, y0] = spiral(k, t - 0.01);
+    const [x1, y1] = spiral(k, t + 0.01);
+    const len = Math.hypot(x1 - x0, y1 - y0) || 1;
+    return [-(y1 - y0) / len, (x1 - x0) / len];
+  };
+  // An arm as a band out to `end` that widens outward then tapers to its tip.
+  const band = (k: number, end: number, width: (t: number) => number, steps = 9) => {
+    const left: Point[] = [];
+    const right: Point[] = [];
+    for (let q = 0; q <= steps; q++) {
+      const t = (q / steps) * end;
+      const [x, y] = spiral(k, t);
+      const [nx, ny] = normal(k, t);
+      const half = (width(t) / 2) * Math.min(1, ((end - t) / end) * 3.5, 0.5 + t * 2);
+      left.push([x + nx * half, y + ny * half]);
+      right.unshift([x - nx * half, y - ny * half]);
+    }
+    return smoothRing([...left, ...right]);
+  };
+  let glow = "";
+  let bright = "";
+  let dust = "";
+  // Young stars and knots scattered along each arm, one path per color.
+  const dots = ["", "", ""];
+  for (let k = 0; k < arms; k++) {
+    glow += band(k, 1.2, t => R * (0.15 + 0.2 * t));
+    bright += band(k, 1, t => R * (0.05 + 0.07 * t));
+    // The dust lane runs along the inside edge of the arm.
+    const lane: Point[] = [];
+    for (let q = 0; q <= 7; q++) {
+      const t = 0.08 + q * 0.11;
+      const [x, y] = spiral(k, t);
+      const [nx, ny] = normal(k, t);
+      const off = wind * R * (0.02 + 0.03 * t);
+      lane.push([x + nx * off, y + ny * off]);
+    }
+    dust += smoothOpen(lane);
+    for (let q = Math.round(30 / Math.sqrt(arms)); q > 0; q--) {
+      const t = g.f(0.12, 1.05);
+      const [x, y] = spiral(k, t);
+      const [nx, ny] = normal(k, t);
+      const off = R * (0.03 + 0.08 * t) * g.f(-1, 1);
+      const kind = g.chance(0.22) ? 1 : g.chance(0.25) ? 2 : 0;
+      dots[kind] += pathOf("M", [[x + nx * off, y + ny * off]]) + "h0";
+    }
+  }
+  let disc = el("circle", { r: Math.round(R), fill: `url(#${halo})` });
+  disc += el(
+    "g",
+    { filter: `url(#${soft})` },
+    el("path", { d: glow, fill: `url(#${armPaint})`, opacity: 0.45 }),
+    el("path", { d: bright, fill: `url(#${armPaint})`, opacity: 0.7 }),
+  );
+  const dotWidths = [R * 0.028, R * 0.05, R * 0.018];
+  const dotColors = [hsl(armHue - 5, 80, 82), hsl(knotHue, 80, 72), "#ffffff"];
+  disc += el(
+    "g",
+    { filter: `url(#${lanes})` },
+    el("path", {
+      d: dust,
+      fill: "none",
+      stroke: hsl(skyHue, 40, 6),
+      "stroke-width": R * 0.04,
+      "stroke-linecap": "round",
+      opacity: 0.42,
+    }),
+  );
+  disc += el(
+    "g",
+    { filter: `url(#${fine})` },
+    ...dots.map((d, k) =>
+      el("path", {
+        d,
+        stroke: dotColors[k],
+        "stroke-width": dotWidths[k],
+        "stroke-linecap": "round",
+        opacity: k === 1 ? 0.85 : 0.75,
+      }),
+    ),
+  );
+  if (barred)
+    disc += el("ellipse", {
+      rx: Math.round(bar * 1.1),
+      ry: Math.round(bar * 0.3),
+      fill: `url(#${core})`,
+      transform: s`rotate(${(skew * 180) / Math.PI})`,
+    });
+  out += el(
+    "g",
+    {
+      transform: `translate(${Math.round(cx)} ${Math.round(cy)})rotate(${Math.round(turn)})scale(1 ${tilt.toFixed(2)})`,
+    },
+    disc,
+  );
+  // The core's bulge stands out of the disc, so it is squashed less than the disc.
+  const bulge = R * (barred ? g.f(0.15, 0.19) : g.f(0.24, 0.32));
+  out += el("ellipse", {
+    cx,
+    cy,
+    rx: bulge,
+    ry: bulge * (0.55 + 0.45 * tilt),
+    fill: `url(#${core})`,
+    transform: s`rotate(${turn} ${cx} ${cy})`,
+  });
+  out += el("circle", { cx, cy, r: R * 0.035, fill: hsl(coreHue + 10, 90, 97) });
+  // A few crisp foreground stars.
+  out += starDots(g, w, h, Math.round(starCount(g, w, h) / 4), unit);
+  const view = tilt > 0.82 ? "seen face-on" : tilt > 0.55 ? "seen at a tilt" : "seen at a steep slant";
+  note.alt(
+    `A ${barred ? "barred " : ""}spiral galaxy ${view} among distant stars${farCount ? `, with ${farCount === 2 ? "two tiny far galaxies" : "a tiny far galaxy"} beyond` : ""}`,
+  );
+  note.focus(cx, cy);
+  return out;
+});
+
+/** A black hole: a dark shadow in a thin bright ring, its glowing disc passing in front and bent up over the top. */
+export const blackHole = defineKind("black-hole", "Black hole", (g, w, h, note) => {
+  const unit = Math.min(w, h);
+  const skyHue = g.f(225, 275);
+  const sky = g.id("sky");
+  const heat = g.id("heat");
+  const lens = g.id("lens");
+  const beam = g.id("beam");
+  const lit = g.id("lit");
+  const aura = g.id("aura");
+  const jet = g.id("jet");
+  // The disc: classic hot gold, blue-white, or magenta.
+  const hue = g.pick([g.f(26, 42), g.f(205, 222), g.f(300, 325)]);
+  const open = g.chance(0.3) ? g.f(0.2, 0.3) : g.f(0.07, 0.16);
+  const turn = g.f(-1, 1) * (w > h * 1.5 ? 10 : 24);
+  const width = g.f(2.4, 3.4);
+  const arch = g.f(1.5, 1.85);
+  const toward = g.pick([-1, 1]);
+  const jets = g.chance(0.35);
+  // The shadow's radius, as large as lets the disc and the bent light above it fit.
+  const [ex, ey] = extents(width, width * open, turn);
+  const rs = Math.min((w * 0.45) / Math.max(ex, arch), (h * 0.42) / Math.max(ey, arch), unit * 0.24);
+  const cx = w / 2;
+  const cy = h / 2 + rs * 0.1;
+  const D = rs * width;
+  const inner = rs * 1.12;
+  const edge = inner / D;
+  const hot = hsl(hue + 12, 95, 95);
+  const warm = hsl(hue, 95, 66);
+  const deep = hsl(hue - 14, 90, 42);
+  let out = el(
+    "defs",
+    {},
+    lin(sky, [hsl(skyHue, 45, 4), hsl(skyHue + 15, 40, 10)]),
+    radial(
+      heat,
+      [
+        [edge, warm, 0.5],
+        [edge + 0.06, hot, 1],
+        [edge + (1 - edge) * 0.35, warm, 1],
+        [edge + (1 - edge) * 0.7, deep, 0.75],
+        [1, deep, 0],
+      ],
+      { gradientUnits: "userSpaceOnUse", cx: 0, cy: 0, r: Math.round(D) },
+    ),
+    radial(
+      lens,
+      [
+        [1 / arch, hot, 1],
+        [(1 / arch + 1) / 2, warm, 0.95],
+        [1, deep, 0],
+      ],
+      { gradientUnits: "userSpaceOnUse", cx: 0, cy: 0, r: Math.round(rs * arch) },
+    ),
+    // The side of the disc turning toward us shines brighter: a mask that lets light through on that side.
+    el(
+      "linearGradient",
+      {
+        id: lit,
+        gradientUnits: "userSpaceOnUse",
+        x1: Math.round(-D * toward),
+        x2: Math.round(D * toward),
+        y1: 0,
+        y2: 0,
+      },
+      el("stop", { offset: 0.1, "stop-color": "#ffffff" }),
+      el("stop", { offset: 0.75, "stop-color": "#000000" }),
+    ),
+    el(
+      "mask",
+      {
+        id: beam,
+        maskUnits: "userSpaceOnUse",
+        x: Math.round(-D),
+        y: Math.round(-D),
+        width: Math.round(D * 2),
+        height: Math.round(D * 2),
+      },
+      el("rect", {
+        x: Math.round(-D),
+        y: Math.round(-D),
+        width: Math.round(D * 2),
+        height: Math.round(D * 2),
+        fill: `url(#${lit})`,
+      }),
+    ),
+    radial(aura, [
+      [0.25, warm, 0.4],
+      [1, deep, 0],
+    ]),
+    el(
+      "linearGradient",
+      { id: jet, x1: 0, y1: 0, x2: 0, y2: 1 },
+      el("stop", { offset: 0, "stop-color": hsl(215, 80, 88), "stop-opacity": 0 }),
+      el("stop", { offset: 0.5, "stop-color": hsl(215, 80, 88), "stop-opacity": 0.4 }),
+      el("stop", { offset: 1, "stop-color": hsl(215, 80, 88), "stop-opacity": 0 }),
+    ),
+  );
+  out += fill(w, h, `url(#${sky})`);
+  // Stars, those near the hole drawn out a little along circles around it.
+  const reach = rs * 2.6;
+  let dots = "";
+  let arcs = "";
+  for (let k = starCount(g, w, h); k > 0; k--) {
+    const x = w * g.f(0, 1);
+    const y = h * g.f(0, 1);
+    const d = Math.hypot(x - cx, y - cy);
+    if (d > reach || d < rs * 1.2) {
+      dots += s`M${x} ${y}h0`;
+      continue;
+    }
+    const a = Math.atan2(y - cy, x - cx);
+    const span = Math.min(0.16, 0.035 * (reach / d) ** 2);
+    arcs += s`M${cx + Math.cos(a - span) * d} ${cy + Math.sin(a - span) * d}A${d} ${d} 0 0 1 ${cx + Math.cos(a + span) * d} ${cy + Math.sin(a + span) * d}`;
+  }
+  const star = unit * 0.007;
+  out += el("path", { d: dots, stroke: "#fff", "stroke-width": star, "stroke-linecap": "round", opacity: 0.75 });
+  out += el("path", {
+    d: arcs,
+    stroke: "#fff",
+    "stroke-width": star * 0.8,
+    "stroke-linecap": "round",
+    fill: "none",
+    opacity: 0.6,
+  });
+
+  // Everything else is drawn turned with the disc, centered on the hole.
+  let hole = el("ellipse", { rx: Math.round(D * 1.2), ry: Math.round(rs * 2.6), fill: `url(#${aura})` });
+  if (jets) {
+    const len = rs * g.f(2.6, 3.4);
+    const base = rs * 0.035;
+    hole += el("path", {
+      d: s`M${-base} 0L${-base * 4} ${-len}H${base * 4}L${base} 0L${base * 4} ${len}H${-base * 4}Z`,
+      fill: `url(#${jet})`,
+    });
+  }
+  // Half of the disc, squashed by the tilt: the far half (side -1) or the near half (side 1).
+  const half = (side: number) => {
+    const sweep = side > 0 ? 0 : 1;
+    return s`M${-D} 0A${D} ${D} 0 0 ${sweep} ${D} 0H${inner}A${inner} ${inner} 0 0 ${1 - sweep} ${-inner} 0Z`;
+  };
+  // Swirling streaks on a half of the disc, light and dark.
+  const streaks = (side: number) => {
+    let light = "";
+    let dark = "";
+    for (let k = 0; k < 6; k++) {
+      const r = inner + (D - inner) * g.f(0.08, 0.6);
+      const a0 = g.f(0.05, 0.6) * Math.PI;
+      const a1 = a0 + g.f(0.2, 0.4) * Math.PI;
+      const arc = s`M${Math.cos(a0) * r} ${Math.sin(a0) * r * side}A${r} ${r} 0 0 ${side > 0 ? 1 : 0} ${Math.cos(a1) * r} ${Math.sin(a1) * r * side}`;
+      if (k % 2) dark += arc;
+      else light += arc;
+    }
+    return (
+      el("path", { d: light, fill: "none", stroke: hot, "stroke-width": rs * 0.08, opacity: 0.22 }) +
+      el("path", { d: dark, fill: "none", stroke: deep, "stroke-width": rs * 0.1, opacity: 0.3 })
+    );
+  };
+  const squash = `scale(1 ${open.toFixed(3)})`;
+  // A shape in the disc's glow: dimmer, plus a brighter copy masked to the side turning toward us.
+  const glowing = (d: string, paint: string, alpha = 1) =>
+    el("path", { d, fill: `url(#${paint})`, opacity: 0.75 * alpha }) +
+    el("path", { d, fill: `url(#${paint})`, mask: `url(#${beam})`, opacity: alpha === 1 ? undefined : alpha });
+  const disc = (side: number) => el("g", { transform: squash }, glowing(half(side), heat), streaks(side));
+  hole += disc(-1);
+  // The far side of the disc, its light bent up over the top of the hole and, fainter, under it.
+  const top = rs * arch;
+  const under = rs * 1.16;
+  const ring = rs * 1.03;
+  hole += glowing(s`M${-top} 0A${top} ${top} 0 0 1 ${top} 0H${ring}A${ring} ${ring} 0 0 0 ${-ring} 0Z`, lens);
+  hole += glowing(
+    s`M${-under} 0A${under} ${under} 0 0 0 ${under} 0H${ring}A${ring} ${ring} 0 0 1 ${-ring} 0Z`,
+    lens,
+    0.6,
+  );
+  let bands = "";
+  for (let k = 0; k < 3; k++) {
+    const r = rs * (1.12 + ((arch - 1.12) * (k + g.f(0.2, 0.8))) / 3);
+    const a = g.f(0, 0.25) * Math.PI;
+    bands += s`M${-Math.cos(a) * r} ${-Math.sin(a) * r}A${r} ${r} 0 0 1 ${Math.cos(a + 0.3) * r} ${-Math.sin(a + 0.3) * r}`;
+  }
+  hole += el("path", { d: bands, fill: "none", stroke: deep, "stroke-width": rs * 0.05, opacity: 0.3 });
+  // The shadow and its thin photon ring.
+  hole += el("circle", { r: rs, fill: "#000" });
+  hole += el("circle", { r: ring, fill: "none", stroke: warm, "stroke-width": rs * 0.12, opacity: 0.45 });
+  hole += el("circle", { r: ring, fill: "none", stroke: hot, "stroke-width": rs * 0.035 });
+  hole += disc(1);
+  out += el("g", { transform: s`translate(${cx} ${cy})rotate(${turn})` }, hole);
+  note.alt(
+    `A black hole ringed by a glowing accretion disc${open > 0.2 ? " seen from a little above" : ""}${jets ? ", faint jets streaming from its poles" : ""}, among stars`,
+  );
+  note.focus(cx, cy);
+  return out;
+});

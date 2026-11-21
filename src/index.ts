@@ -75,8 +75,18 @@ import { bridge, castle, cottage, greenhouse, rowHouses, windmill } from "./buil
 import { portrait } from "./faces";
 import { cds, drums, guitar, notes, piano, record } from "./music";
 import { baseball, basketball, football, hockey, skateboard, surfboard, tennis } from "./sports";
-import { eggBasket, gifts, holidayTree, pumpkins, snowman } from "./holidays";
-import { astronaut, moon, nebula, planets } from "./space";
+import {
+  eggBasket,
+  fallLeaves,
+  fireworks,
+  gifts,
+  hearts,
+  holidayTree,
+  pumpkins,
+  snowflakes,
+  snowman,
+} from "./holidays";
+import { astronaut, blackHole, galaxy, moon, nebula, planets } from "./space";
 import { backpack, handbag, perfume, sneakers, sunglasses, watch } from "./products";
 import { controller, headphones, laptop, phone, speaker } from "./gadgets";
 import { cafe, group, pair, reader, walker, worker } from "./people";
@@ -220,8 +230,18 @@ export { bridge, castle, cottage, greenhouse, rowHouses, windmill } from "./buil
 export { portrait } from "./faces";
 export { cds, drums, guitar, notes, piano, record } from "./music";
 export { baseball, basketball, football, hockey, skateboard, surfboard, tennis } from "./sports";
-export { eggBasket, gifts, holidayTree, pumpkins, snowman } from "./holidays";
-export { astronaut, moon, nebula, planets } from "./space";
+export {
+  eggBasket,
+  fallLeaves,
+  fireworks,
+  gifts,
+  hearts,
+  holidayTree,
+  pumpkins,
+  snowflakes,
+  snowman,
+} from "./holidays";
+export { astronaut, blackHole, galaxy, moon, nebula, planets } from "./space";
 export { backpack, handbag, perfume, sneakers, sunglasses, watch } from "./products";
 export { controller, headphones, laptop, phone, speaker } from "./gadgets";
 export { cafe, group, pair, reader, walker, worker } from "./people";
@@ -474,8 +494,18 @@ export const patterns = [terrazzo, marble, gingham, plaid, topography, gradient]
 export const buildings = [cottage, windmill, castle, bridge, rowHouses, greenhouse] as const;
 export const music = [guitar, piano, drums, record, cds, notes] as const;
 export const sports = [baseball, basketball, football, hockey, tennis, skateboard, surfboard] as const;
-export const holidays = [pumpkins, snowman, holidayTree, gifts, eggBasket] as const;
-export const space = [planets, nebula, astronaut, moon] as const;
+export const holidays = [
+  fireworks,
+  hearts,
+  eggBasket,
+  fallLeaves,
+  pumpkins,
+  snowflakes,
+  snowman,
+  holidayTree,
+  gifts,
+] as const;
+export const space = [planets, nebula, galaxy, blackHole, astronaut, moon] as const;
 export const vehicles = [car, bicycle, sailboat, hotAirBalloon, rocket, train, bus, airplane] as const;
 
 /** Every category by name, for listing them (in a demo, say). */

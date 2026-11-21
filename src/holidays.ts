@@ -1,6 +1,6 @@
-import { defineKind, el, fill, hsl, lin, pts, qpt, s, type Point, type Rand } from "./core";
-import { table } from "./shapes";
-import { capitalize, numberWord } from "./words";
+import { defineKind, el, fill, hex, hsl, lin, pts, qpt, s, type Point, type Rand } from "./core";
+import { smoothClosed, table } from "./shapes";
+import { andList, capitalize, numberWord } from "./words";
 
 /** A soft round glow: `color` fading out from the center. */
 const glow = (id: string, color: string, strength = 0.7): string =>
@@ -1207,5 +1207,1266 @@ export const eggBasket = defineKind("egg-basket", "Basket of eggs", (g, w, h, no
   });
   note.alt(`A woven basket of ${numberWord(eggs)} painted eggs on the grass`);
   note.focus(cx, rimY);
+  return compact(out);
+});
+
+/**
+ * Path data written with relative moves, which keep numbers short. `M`, `L` and `Q` take absolute
+ * points; each is written relative to the last point (or, for a move, absolute when that's shorter),
+ * measured from the rounded values so the error never builds up. Numbers are rounded to tenths, or to
+ * whole pixels when `whole`.
+ */
+function pen(whole = false) {
+  let d = "";
+  let at: Point = [0, 0];
+  const r = (v: number) => (whole ? Math.round(v) : Math.round(v * 10) / 10);
+  const pair = (x: number, y: number) => `${x}${y < 0 ? "" : " "}${y}`;
+  const rel = (x: number, y: number) => pair(r(r(x) - at[0]), r(r(y) - at[1]));
+  return {
+    M(x: number, y: number) {
+      const abs = "M" + pair(r(x), r(y));
+      const move = "m" + rel(x, y);
+      d += d && move.length < abs.length ? move : abs;
+      at = [r(x), r(y)];
+      return this;
+    },
+    L(x: number, y: number) {
+      d += "l" + rel(x, y);
+      at = [r(x), r(y)];
+      return this;
+    },
+    Q(cx: number, cy: number, x: number, y: number) {
+      const end = rel(x, y);
+      d += "q" + rel(cx, cy) + (end.startsWith("-") ? "" : " ") + end;
+      at = [r(x), r(y)];
+      return this;
+    },
+    dot(x: number, y: number) {
+      this.M(x, y);
+      d += "h0";
+      return this;
+    },
+    get d() {
+      return d;
+    },
+  };
+}
+
+/** Round dots as one path: each a zero-length round-capped stroke. */
+const penDots = (points: readonly Point[], r: number, paint: string, opacity = "1", whole = true): string => {
+  const p = pen(whole);
+  for (const [x, y] of points) p.dot(x, y);
+  return points.length
+    ? el("path", { d: p.d, stroke: paint, "stroke-width": r * 2, "stroke-linecap": "round", opacity })
+    : "";
+};
+
+/** Round-capped strokes as one path. */
+const strokes = (d: string, paint: string, width: number, opacity = "1"): string =>
+  d ? el("path", { d, stroke: paint, "stroke-width": width, "stroke-linecap": "round", fill: "none", opacity }) : "";
+
+/** Spreads circles over the frame: each new one at the best of several tries, clear of the others. */
+function spread(
+  g: Rand,
+  placed: [number, number, number][],
+  r: number,
+  x0: number,
+  x1: number,
+  y0: number,
+  y1: number,
+  tries: number,
+): [number, number] {
+  let best: [number, number] = [g.f(x0, x1), g.f(y0, y1)];
+  let score = -Infinity;
+  for (let k = 0; k < tries; k++) {
+    const x = g.f(x0, x1);
+    const y = g.f(y0, y1);
+    let gap = Number.MAX_VALUE;
+    for (const [px, py, pr] of placed) gap = Math.min(gap, Math.hypot(px - x, py - y) - pr - r);
+    if (gap > score) {
+      score = gap;
+      best = [x, y];
+    }
+  }
+  placed.push([best[0], best[1], r]);
+  return best;
+}
+
+type Style = "peony" | "willow" | "ring" | "crossette" | "crackle";
+
+/**
+ * One burst, drawn around the origin, `r` across each way, in its main and second colors. Smaller,
+ * farther bursts have fewer sparks (`detail` below 1), which keeps the markup small.
+ */
+function burst(g: Rand, style: Style, r: number, main: string, second: string, detail: number): string {
+  const some = (lo: number, hi: number) => Math.round(g.f(lo, hi) * detail);
+  const gold = hex(g.f(38, 48), 90, 66);
+  const spark = hex(50, 100, 94);
+  // Sparks fall a little as they fly, more the farther they go.
+  const fall = r * g.f(0.08, 0.16);
+  const at = (a: number, d: number): Point => [Math.cos(a) * d, Math.sin(a) * d + fall * (d / r) ** 2];
+  let out = "";
+  if (style === "peony") {
+    const count = some(16, 26);
+    const streaks = g.chance(0.6);
+    const turn = g.f(0, Math.PI * 2);
+    const d = pen(true);
+    const tips: Point[] = [];
+    const inner: Point[] = [];
+    for (let k = 0; k < count; k++) {
+      const a = turn + (k / count) * Math.PI * 2 + g.f(-0.08, 0.08);
+      const len = r * g.f(0.82, 1);
+      if (streaks) {
+        const [x0, y0] = at(a, len * 0.3);
+        const [x1, y1] = at(a, len * 0.9);
+        d.M(x0, y0).L(x1, y1);
+      } else for (const t of [0.45, 0.68]) inner.push(at(a, len * t));
+      tips.push(at(a, len));
+    }
+    out += strokes(d.d, main, r * 0.03, "0.75");
+    out += penDots(inner, r * 0.025, main, "0.8");
+    out += penDots(tips, r * 0.04, g.chance(0.4) ? second : main);
+    // A small bright heart of another color, sometimes.
+    if (g.chance(0.5)) {
+      const heart: Point[] = [];
+      for (let k = 0; k < 9; k++) heart.push(at(turn + (k / 9) * Math.PI * 2, r * 0.26));
+      out += penDots(heart, r * 0.03, second);
+    }
+  } else if (style === "willow") {
+    // Long trails arching out and hanging down, with glitter at their ends.
+    const count = some(12, 18);
+    const turn = g.f(0, Math.PI * 2);
+    const d = pen(true);
+    const ends: Point[] = [];
+    for (let k = 0; k < count; k++) {
+      const a = turn + (k / count) * Math.PI * 2 + g.f(-0.1, 0.1);
+      const len = r * g.f(0.75, 0.95);
+      const cx = Math.cos(a) * len;
+      const cy = Math.sin(a) * len * 0.8 - r * 0.15;
+      const ex = cx * 0.85;
+      const ey = cy * 0.5 + r * g.f(0.55, 0.8);
+      d.M(0, 0).Q(cx, cy, ex, ey);
+      ends.push([ex, ey], [(cx + ex) / 2, (cy + ey) / 2 + r * 0.05]);
+    }
+    out += strokes(d.d, gold, r * 0.022, "0.7");
+    out += penDots(ends, r * 0.022, spark, "0.9");
+  } else if (style === "ring") {
+    const count = some(22, 32);
+    const ry = g.f(0.4, 1);
+    const tilt = g.f(0, Math.PI);
+    const ring: Point[] = [];
+    for (let k = 0; k < count; k++) {
+      const a = (k / count) * Math.PI * 2;
+      const x = Math.cos(a) * r * 0.9;
+      const y = Math.sin(a) * r * 0.9 * ry;
+      ring.push([x * Math.cos(tilt) - y * Math.sin(tilt), x * Math.sin(tilt) + y * Math.cos(tilt)]);
+    }
+    out += penDots(ring, r * 0.04, main);
+    // A little peony at its middle.
+    const core: Point[] = [];
+    for (let k = 0; k < 8; k++) core.push(at((k / 8) * Math.PI * 2, r * 0.22));
+    out += penDots(core, r * 0.03, second);
+  } else if (style === "crossette") {
+    // Stars that fly out and split into crosses.
+    const count = g.i(5, 7);
+    const turn = g.f(0, Math.PI * 2);
+    const d = pen(true);
+    const split = pen(true);
+    const tips: Point[] = [];
+    for (let k = 0; k < count; k++) {
+      const a = turn + (k / count) * Math.PI * 2;
+      const [x0, y0] = at(a, r * 0.1);
+      const [x1, y1] = at(a, r * 0.55);
+      d.M(x0, y0).L(x1, y1);
+      // Four short pieces, drawn as two vees through the split point.
+      const ends = [-0.8, -0.27, 0.27, 0.8].map((b): Point => [
+        x1 + Math.cos(a + b) * r * 0.4,
+        y1 + Math.sin(a + b) * r * 0.4 + fall * 0.5,
+      ]);
+      split
+        .M(...ends[0])
+        .L(x1, y1)
+        .L(...ends[1])
+        .M(...ends[2])
+        .L(x1, y1)
+        .L(...ends[3]);
+      tips.push(...ends);
+    }
+    out += strokes(d.d, main, r * 0.025, "0.6");
+    out += strokes(split.d, second, r * 0.02, "0.75");
+    out += penDots(tips, r * 0.032, spark);
+  } else {
+    // Glitter crackling all through a loose round cloud.
+    const count = some(30, 44);
+    const glitter: Point[] = [];
+    const big: Point[] = [];
+    for (let k = 0; k < count; k++) {
+      const a = g.f(0, Math.PI * 2);
+      const p = at(a, r * Math.sqrt(g.f(0.04, 1)));
+      (k % 3 ? glitter : big).push(p);
+    }
+    out += penDots(glitter, r * 0.022, spark, "0.9");
+    out += penDots(big, r * 0.04, main);
+  }
+  return out;
+}
+
+/** Fireworks bursting in a night sky over a city skyline, a harbor or wooded hills. */
+export const fireworks = defineKind("fireworks", "Fireworks", (g, w, h, note) => {
+  const unit = Math.min(w, h);
+  const skyHue = g.f(222, 262);
+  const skyId = g.id("sky");
+  const place = g.pick(["city", "harbor", "hills", "lake"] as const);
+  const water = place === "harbor" || place === "lake";
+  // Colors: a set of three that agree, or a mix of bright hues.
+  const set = g.pick(["mixed", "mixed", "trio", "gold", "near"] as const);
+  const startHue = g.f(0, 360);
+  const colors =
+    set === "trio"
+      ? [hex(g.f(350, 362), 85, 62), hex(0, 0, 96), hex(g.f(212, 226), 85, 66)]
+      : set === "gold"
+        ? [hex(g.f(40, 48), 90, 64), hex(48, 70, 90), hex(g.f(28, 36), 90, 62)]
+        : set === "near"
+          ? [0, 1, 2].map(k => hex(startHue + k * 35, 85, 64))
+          : [0, 1, 2, 3].map(k => hex(startHue + k * g.f(70, 110), 85, 64));
+  const glows = colors.map((c, k) => glow(g.id(`glow${k}`), c, 0.35));
+  const night = hex(skyHue, 45, 8);
+  let defs = lin(skyId, [night, hex(skyHue, 40, 16), hex(skyHue + 15, 35, 26)]) + glows.join("");
+  let out = fill(w, h, `url(#${skyId})`);
+
+  // The ground or waterline, and how high the skyline or hills reach above it.
+  const line = water ? h - unit * g.f(0.17, 0.23) : h - unit * g.f(0.02, 0.05);
+  const rise = unit * (place === "city" || place === "harbor" ? 0.2 : 0.14);
+  // A few faint stars.
+  const stars: Point[] = [];
+  for (let k = Math.round((w / unit) ** 0.6 * g.f(6, 10)); k > 0; k--) stars.push([g.f(0, w), g.f(0, line - rise)]);
+  out += penDots(stars, unit * 0.004, hex(skyHue, 40, 90), "0.6");
+
+  // The bursts, biggest first so they get the best places, then drawn far to near.
+  const count = Math.min(6, Math.round((w / unit) * g.f(1.3, 1.7) + 1.4));
+  type B = { x: number; y: number; r: number; style: Style; main: number; second: number };
+  const bursts: B[] = [];
+  const placed: [number, number, number][] = [];
+  const top = unit * 0.04;
+  const bottom = line - rise * 0.9;
+  const styles: Style[] = ["peony", "peony", "willow", "ring", "crossette", "crackle"];
+  for (let k = 0; k < count; k++) {
+    const big = k === 0 ? g.f(0.27, 0.33) : k < Math.max(3, count / 2) ? g.f(0.16, 0.24) : g.f(0.1, 0.15);
+    const r = Math.min(unit * big, (bottom - top) * 0.48);
+    const [x, y] = spread(g, placed, r * 0.8, r, w - r, top + r, Math.max(top + r, bottom - r), 14);
+    const main = g.i(0, colors.length - 1);
+    bursts.push({
+      x,
+      y,
+      r,
+      // Crackle reads best small: a big one is just a cloud of dots.
+      style: r > unit * 0.2 ? g.pick(styles.slice(0, -1)) : g.pick(styles),
+      main,
+      second: g.chance(0.6) ? (main + 1) % colors.length : main,
+    });
+  }
+  bursts.sort((a, b) => a.r - b.r);
+  // Long pictures have more bursts, each with a few fewer sparks.
+  const spare = Math.min(1, 1.1 * (unit / Math.max(w, h)) ** 0.3);
+  // Faint smoke drifting behind them.
+  let smoke = "";
+  for (const b of bursts.slice(-3)) {
+    const sx = Math.round(b.x + b.r * g.f(-0.6, 0.6));
+    const sy = Math.round(b.y + b.r * g.f(0.3, 0.8));
+    const sr = Math.round(b.r * g.f(0.6, 1));
+    const sh = Math.round(sr * 0.4);
+    smoke += `M${sx - sr} ${sy}a${sr} ${sh} 0 1 0 ${sr * 2} 0a${sr} ${sh} 0 1 0 ${-sr * 2} 0`;
+  }
+  let show = el("path", { d: smoke, fill: hex(skyHue, 20, 60), opacity: "0.08" });
+  for (const b of bursts) {
+    const far = b.r < unit * 0.15;
+    const color = colors[b.main];
+    // The glow behind it, fainter for far bursts so they don't turn to smudges.
+    show += el("circle", {
+      cx: Math.round(b.x),
+      cy: Math.round(b.y),
+      r: Math.round(b.r * (far ? 1.1 : 1.3)),
+      fill: `url(#${g.id(`glow${b.main}`)})`,
+      opacity: far ? "0.6" : false,
+    });
+    const inner = burst(g, b.style, b.r, color, colors[b.second], Math.min(1, 0.3 + b.r / (unit * 0.4)) * spare);
+    show += el(
+      "g",
+      { transform: `translate(${Math.round(b.x)} ${Math.round(b.y)})`, opacity: far ? "0.75" : false },
+      inner,
+    );
+  }
+  // A rocket or two still climbing, a faint trail below each.
+  let trail = "";
+  const heads: Point[] = [];
+  for (let k = g.i(1, 2); k > 0; k--) {
+    const x0 = g.f(0.1, 0.9) * w;
+    const x1 = x0 + unit * g.f(-0.06, 0.06);
+    const y1 = g.f(line - rise - unit * 0.25, line - rise - unit * 0.05);
+    const len = unit * g.f(0.25, 0.4);
+    trail += s`M${x0} ${y1 + len}Q${x0} ${y1 + len * 0.4} ${x1} ${y1}`;
+    heads.push([x1, y1]);
+  }
+  show += strokes(trail, hex(40, 80, 70), unit * 0.006, "0.5");
+  show += penDots(heads, unit * 0.008, hex(50, 100, 94));
+  const showId = g.id("show");
+  out += el("g", { id: showId }, show);
+
+  // The water, with the show mirrored in it and broken up by ripples.
+  if (water) {
+    const waterId = g.id("water");
+    const clipId = g.id("clip");
+    defs += lin(waterId, [hex(skyHue, 40, 18), hex(skyHue, 45, 8)]);
+    defs += el("clipPath", { id: clipId }, el("rect", { y: line, width: w, height: h - line }));
+    out += el("rect", { y: line, width: w, height: h - line, fill: `url(#${waterId})` });
+    const k = 0.45;
+    out += el(
+      "g",
+      { "clip-path": `url(#${clipId})`, opacity: "0.45" },
+      el("use", { href: `#${showId}`, transform: s`translate(0 ${line * (1 + k)})scale(1 -${k})` }),
+    );
+    // Each row is one dashed line, started at a different place so the dashes don't line up.
+    let ripples = "";
+    for (let y = line + unit * 0.012; y < h; y += unit * g.f(0.014, 0.026))
+      ripples += s`M${-unit * g.f(0, 0.4)} ${y}H${w}`;
+    const dash = [0.09, 0.05, 0.14, 0.04, 0.05, 0.07].map(v => Math.round(unit * v * g.f(0.7, 1.3))).join(" ");
+    out += el("path", {
+      d: ripples,
+      stroke: hex(skyHue, 40, 10),
+      "stroke-width": unit * 0.008,
+      "stroke-dasharray": dash,
+      opacity: "0.6",
+    });
+  }
+
+  // The skyline or hills, dark against the sky.
+  const dark = hex(skyHue, 30, 6);
+  let what: string;
+  if (place === "city" || place === "harbor") {
+    // Written as relative steps in whole pixels, to keep it short.
+    let cx = 0;
+    let cy = Math.round(line);
+    let d = `M0 ${cy}`;
+    const V = (y: number) => {
+      d += `v${Math.round(y) - cy}`;
+      cy = Math.round(y);
+    };
+    const H = (x: number) => {
+      d += `h${Math.round(x) - cx}`;
+      cx = Math.round(x);
+    };
+    const lit: Point[] = [];
+    for (let x = -g.f(0, unit * 0.05); x < w;) {
+      const bw = unit * g.f(0.05, 0.11);
+      const bh = rise * g.f(0.3, 1);
+      const y = line - bh;
+      V(y);
+      if (g.chance(0.15)) {
+        // A spire or a stepped top.
+        H(x + bw * 0.4);
+        V(y - bh * 0.25);
+        H(x + bw * 0.6);
+        V(y);
+      }
+      H(x + bw);
+      // Some lit windows in rows.
+      for (let wy = y + unit * 0.02; wy < line - unit * 0.015; wy += unit * 0.025)
+        for (let wx = x + bw * 0.25; wx < x + bw * 0.8; wx += bw * 0.25) if (g.chance(0.08)) lit.push([wx, wy]);
+      x += bw + (g.chance(0.2) ? unit * g.f(0.01, 0.03) : 0);
+      if (x < w && g.chance(0.2)) V(line - rise * 0.15);
+    }
+    d += s`V${water ? line : h}H0Z`;
+    out += el("path", { d, fill: dark });
+    out += penDots(lit, unit * 0.005, hex(42, 80, 72), "0.75");
+    what = water ? "over a harbor, reflected in the water" : "over a city skyline at night";
+  } else {
+    // A rolling hill, with a row of pines in front of it.
+    const far = hex(skyHue, 28, 11);
+    const ya = line - rise * g.f(0.4, 0.7);
+    const yb = line - rise * g.f(0.4, 0.7);
+    out += el("path", {
+      d: s`M0 ${ya}Q${w * g.f(0.3, 0.7)} ${line - rise * 1.1} ${w} ${yb}V${water ? line : h}H0Z`,
+      fill: far,
+    });
+    const pines = pen(true).M(0, line);
+    for (let x = 0; x < w;) {
+      const pw = unit * g.f(0.025, 0.045);
+      const ph = rise * g.f(0.3, 0.75);
+      pines.L(x + pw, line - ph).L(x + pw * 2, line - rise * 0.12);
+      x += pw * 2;
+    }
+    out += el("path", { d: pines.d + s`L${w} ${line}V${water ? line : h}H0Z`, fill: dark });
+    what = water ? "over a lake below a line of pines, reflected in the water" : "over wooded hills at night";
+  }
+
+  const main = bursts[bursts.length - 1];
+  const willow = bursts.some(b => b.style === "willow" && b.r > unit * 0.15);
+  note.alt(`${willow && g.chance(0.5) ? "A fireworks show with a drooping willow" : "Fireworks bursting"} ${what}`);
+  note.focus(main.x, main.y);
+  return compact(el("defs", {}, defs) + out);
+});
+
+/**
+ * One arm of a snowflake, pointing up from the center to (0, -10): its stroked lines and any filled
+ * plates. Six turned copies make the flake.
+ */
+function arm(g: Rand, style: "dendrite" | "fern" | "plate" | "stellar" | "simple"): [string, string] {
+  let lines = "M0 0V-10";
+  let plates = "";
+  const sin = Math.sin(Math.PI / 3);
+  const cos = Math.cos(Math.PI / 3);
+  // A pair of branches leaving the spine at y = -t, `len` long, angled out toward the tip.
+  const pair = (t: number, len: number) => {
+    lines += s`M${-len * sin} ${-t - len * cos}L0 ${-t}L${len * sin} ${-t - len * cos}`;
+  };
+  // A hexagon ring at radius r: one side per arm.
+  const ring = (r: number) => {
+    lines += s`M0 ${-r}L${r * sin} ${-r * cos}`;
+  };
+  if (style === "dendrite") {
+    const count = g.i(2, 3);
+    for (let k = 0; k < count; k++) {
+      const t = 3 + k * (5 / count) + g.f(-0.4, 0.4);
+      const len = (10 - t) * g.f(0.45, 0.6);
+      pair(t, len);
+      // Twigs on the bigger branches.
+      if (len > 2.6 && g.chance(0.7)) {
+        const m = len * 0.55;
+        for (const side of [-1, 1]) {
+          const bx = side * m * sin;
+          const by = -t - m * cos;
+          lines += s`M${bx + side * 0.9} ${by + 0.3}L${bx} ${by}l0 ${-1.1}`;
+        }
+      }
+    }
+    if (g.chance(0.5)) ring(g.f(1.8, 2.6));
+  } else if (style === "fern") {
+    for (let t = 2.2; t < 9.2; t += g.f(1, 1.4)) pair(t, (10 - t) * 0.35 + 0.4);
+  } else if (style === "plate") {
+    // A hexagonal plate, with the arm reaching on past it.
+    const p = g.f(3.5, 5);
+    plates += s`M0 0L0 ${-p}L${p * sin} ${-p * cos}Z`;
+    ring(p);
+    if (g.chance(0.6)) ring(p * 0.55);
+    pair(p + (10 - p) * 0.45, (10 - p) * 0.4);
+  } else if (style === "stellar") {
+    // A broad pointed arm, like a star's point, with notches near its end.
+    const wd = g.f(1, 1.6);
+    plates += s`M0 0L${wd} ${-3}L0 ${-9.6}L${-wd} ${-3}Z`;
+    pair(g.f(5.5, 7), g.f(1.4, 2.2));
+    if (g.chance(0.5)) ring(g.f(1.5, 2.2));
+  } else {
+    pair(g.f(5, 6.5), g.f(2, 3));
+    if (g.chance(0.6)) pair(8.2, 1.2);
+  }
+  // Now and then a little diamond at the tip.
+  if (style !== "stellar" && g.chance(0.35)) plates += "M0 -9L0.8 -10.2L0 -11.4L-0.8 -10.2Z";
+  return [lines, plates];
+}
+
+/** A scattering of six-fold snowflakes of different sizes and designs on a wintry sky. */
+export const snowflakes = defineKind("snowflakes", "Snowflakes", (g, w, h, note) => {
+  const unit = Math.min(w, h);
+  const mood = g.pick(["icy", "twilight", "pale"] as const);
+  const hue = g.f(198, 228);
+  const skyId = g.id("sky");
+  const stops =
+    mood === "icy"
+      ? [hex(hue, 50, g.f(62, 70)), hex(hue - 8, 45, 86)]
+      : mood === "twilight"
+        ? [hex(hue + g.f(15, 35), 40, 18), hex(hue, 40, 38)]
+        : [hex(hue, 35, 95), hex(hue, 40, 84)];
+  const ink = mood === "pale" ? hex(hue, 55, 58) : hex(hue, 70, 98);
+  let defs = lin(skyId, stops);
+  let out = fill(w, h, `url(#${skyId})`);
+
+  // A few designs, each one arm turned six times.
+  const styles = ["dendrite", "dendrite", "fern", "plate", "stellar", "simple"] as const;
+  const design = (name: string, thick: number) => {
+    const style = g.pick(styles);
+    const [lines, plates] = arm(g, style);
+    const armId = g.id(`${name}a`);
+    const trioId = g.id(`${name}t`);
+    // Three arms make a trio, and the trio turned a sixth of the way round makes the six.
+    const trio = el(
+      "g",
+      { id: trioId },
+      el(
+        "g",
+        { id: armId },
+        el("path", { d: lines, fill: "none" }),
+        plates ? el("path", { d: plates, "fill-opacity": style === "plate" ? "0.45" : false }) : "",
+      ),
+      el("use", { href: `#${armId}`, transform: "rotate(120)" }),
+      el("use", { href: `#${armId}`, transform: "rotate(240)" }),
+    );
+    defs += el(
+      "g",
+      { id: g.id(name), "stroke-width": thick },
+      trio,
+      el("use", { href: `#${trioId}`, transform: "rotate(60)" }),
+    );
+    return g.id(name);
+  };
+  const area = (w * h) / (unit * unit);
+  const front = Math.min(5, Math.round(1.5 + area * 0.7));
+  const mid = Math.round(3 * area ** 0.7 + 2);
+  const back = Math.round(5 * area ** 0.7 + 3);
+  const frontIds = Array.from({ length: front }, (_, k) => design(`f${k}`, g.f(0.6, 0.8)));
+  const midIds = [0, 1, 2].map(k => design(`m${k}`, g.f(0.8, 1)));
+  const backIds = [0, 1].map(k => design(`b${k}`, 1.3));
+
+  // Places the flakes, biggest first, each clear of the others and `edge` radii in from the sides.
+  const placed: [number, number, number][] = [];
+  const layer = (n: number, ids: string[], lo: number, hi: number, edge: number) => {
+    let uses = "";
+    const spots: Point[] = [];
+    for (let k = 0; k < n; k++) {
+      const r = unit * g.f(lo, hi);
+      const [x, y] = spread(g, placed, r * 1.08, r * edge, w - r * edge, r * edge, h - r * edge, 24);
+      spots.push([x, y]);
+      uses += el("use", {
+        href: `#${ids[k % ids.length]}`,
+        transform: `translate(${Math.round(x)} ${Math.round(y)})rotate(${g.i(0, 59)})` + s`scale(${r / 10.5})`,
+      });
+    }
+    return [uses, spots] as const;
+  };
+  const [frontUses, frontSpots] = layer(front, frontIds, 0.13, 0.2, 1.05);
+  const [midUses] = layer(mid, midIds, 0.06, 0.1, 0.8);
+  const [backUses] = layer(back, backIds, 0.025, 0.045, 0.5);
+  const paint = { fill: ink, stroke: ink, "stroke-linecap": "round", "stroke-linejoin": "round" };
+  out += el("g", { ...paint, opacity: mood === "pale" ? "0.4" : "0.5" }, backUses);
+  // Tiny falling snow between them.
+  const snow: Point[] = [];
+  for (let k = Math.round(area ** 0.5 * g.f(14, 20)); k > 0; k--) snow.push([g.f(0, w), g.f(0, h)]);
+  out += penDots(snow, unit * 0.005, ink, "0.55");
+  out += el("g", { ...paint, opacity: "0.8" }, midUses);
+  out += el("g", paint, frontUses);
+
+  note.alt(
+    mood === "twilight"
+      ? "Snowflakes of many shapes falling through a twilight sky"
+      : mood === "icy"
+        ? "Snowflakes of many shapes drifting on a wintry sky"
+        : "Delicate snowflake crystals scattered over a frosty background",
+  );
+  note.focus(frontSpots[0][0], frontSpots[0][1]);
+  return compact(el("defs", {}, defs) + out);
+});
+
+/** A closed polygon as path data. */
+const poly = (points: readonly Point[]): string => "M" + points.map(([x, y]) => s`${x} ${y}`).join("L") + "Z";
+
+/** A right half outline mirrored into a whole one, from the tip round to the base and back. */
+const mirrored = (half: readonly Point[]): Point[] => [
+  ...half,
+  ...half
+    .slice(1, -1)
+    .reverse()
+    .map(([x, y]): Point => [-x, y]),
+];
+
+/** Where a picture places one thing: translate, turn and scale, rounded to keep the markup short. */
+const place = (x: number, y: number, deg: number, scale: number): string =>
+  `translate(${Math.round(x)} ${Math.round(y)})rotate(${Math.round(deg)})scale(${Math.round(scale * 100) / 100})`;
+
+/**
+ * Scattered spots for things of the given radii, biggest first: each spot is the best of a few
+ * random tries, the one farthest from what's already there, so the scatter fills evenly.
+ */
+function scatter(g: Rand, w: number, h: number, radii: readonly number[], margin: number): Point[] {
+  const placed: [number, number, number][] = [];
+  return radii.map(r => {
+    let best: [number, number] = [w / 2, h / 2];
+    let score = -Infinity;
+    for (let k = 0; k < 14; k++) {
+      const x = g.f(Math.min(r * margin, w / 2), Math.max(w - r * margin, w / 2));
+      const y = g.f(Math.min(r * margin, h / 2), Math.max(h - r * margin, h / 2));
+      const room = Math.min(1e9, ...placed.map(([px, py, pr]) => Math.hypot(px - x, py - y) / (pr + r)));
+      if (room > score) {
+        score = room;
+        best = [x, y];
+      }
+    }
+    placed.push([best[0], best[1], r]);
+    return best;
+  });
+}
+
+/*
+ * Leaves are drawn about 100 units long, pointing up: the tip near y = -50, the blade's base near
+ * y = 30 and the end of the stem below it. Each has a blade (with its stem), a lit half and veins.
+ */
+
+type Leaf = { blade: string; half: string; veins: string };
+
+/** A maple leaf: five pointed, toothed lobes and veins fanning out from the stem. */
+function maple(): Leaf {
+  const half: Point[] = [
+    [0, -50],
+    [4, -39],
+    [9, -42],
+    [8, -29],
+    [11, -16],
+    [23, -27],
+    [25, -35],
+    [31, -30],
+    [46, -32],
+    [38, -21],
+    [43, -15],
+    [30, -7],
+    [20, 2],
+    [30, 9],
+    [37, 20],
+    [25, 17],
+    [17, 24],
+    [7, 26],
+    [0, 23],
+  ];
+  return {
+    blade: poly(mirrored(half)) + "M-1.2 22Q0 40 3 56L5 55Q2 40 1.6 22Z",
+    half: poly([...half, [1, 23]]),
+    veins:
+      "M2 54Q1 38 0 23L0 -46M0 23L40 -30M0 23L33 18M0 23L-40 -30M0 23L-33 18" +
+      "M0 -18L8 -33M0 -18L-8 -33M17 -8L24 -24M-17 -8L-24 -24",
+  };
+}
+
+/** An oak leaf: a long blade with rounded lobes down each side of the midrib. */
+function oak(): Leaf {
+  const half: Point[] = [
+    [0, -52],
+    [14, -47],
+    [8, -36],
+    [25, -32],
+    [11, -20],
+    [32, -15],
+    [12, -3],
+    [31, 6],
+    [11, 15],
+    [21, 26],
+    [5, 30],
+    [0, 33],
+  ];
+  const ring = mirrored(half);
+  return {
+    blade: smoothClosed(ring) + "M-1.2 30Q0 44 2 56L4 55Q2 44 1.6 30Z",
+    half: smoothClosed([...half, [0, 33]]),
+    veins:
+      "M3 55Q1 44 0 31L0 -44M0 -33L19 -38M0 -20L26 -27M0 -5L27 -11M0 10L26 6M0 -33L-19 -38M0 -20L-26 -27M0 -5L-27 -11M0 10L-26 6",
+  };
+}
+
+/** A birch or elm leaf: a toothed birchLeaf with a pointed tip and straight veins in pairs. */
+function birchLeaf(): Leaf {
+  const half: Point[] = [];
+  const steps = 16;
+  for (let k = 0; k <= steps; k++) {
+    const t = k / steps;
+    const y = -50 + t * 80;
+    // Widest a little below the middle, pointed at the tip and rounded at the base.
+    const width = 27 * Math.sin(Math.PI * t ** 0.85) ** 0.8;
+    half.push([width + (k % 2 && k < steps ? 2.2 : 0), y]);
+  }
+  half[0] = [0, -50];
+  half[steps] = [0, 30];
+  return {
+    blade: poly(mirrored(half)) + "M-1.2 28Q0 40 2.5 54L4.5 53Q2 40 1.6 28Z",
+    half: poly(half),
+    veins:
+      "M3 53Q1 40 0 29L0 -45" +
+      [-32, -20, -8, 4, 15]
+        .map(y => s`M0 ${y}L${y < -25 ? 12 : 20} ${y - 11}M0 ${y}L${y < -25 ? -12 : -20} ${y - 11}`)
+        .join(""),
+  };
+}
+
+/** A ginkgo leaf: a broad fan with a notch in the middle of its edge, and fine veins spreading from the stem. */
+function ginkgo(): Leaf {
+  const right = "L2 -31Q6 -37 15 -35Q36 -30 39 -6Q16 4 0 16";
+  let veins = "M3 56Q1 38 0 16";
+  for (const a of [-50, -36, -22, -9, 9, 22, 36, 50]) {
+    const rad = ((a - 90) * Math.PI) / 180;
+    veins += s`M0 16L${Math.cos(rad) * 44} ${16 + Math.sin(rad) * 44}`;
+  }
+  return {
+    blade: "M0 16Q-16 4 -39 -6Q-36 -30 -15 -35Q-6 -37 -2 -31L0 -25" + right + "ZM-1 14Q0 36 2 56L4 55Q2 36 1.4 14Z",
+    half: "M0 16L0 -25" + right + "Z",
+    veins,
+  };
+}
+
+const SPECIES = {
+  maple: { draw: maple, name: "maple", id: "m" },
+  oak: { draw: oak, name: "oak", id: "o" },
+  birch: { draw: birchLeaf, name: "birch", id: "r" },
+  ginkgo: { draw: ginkgo, name: "ginkgo", id: "k" },
+} as const;
+
+type Species = keyof typeof SPECIES;
+
+/** Fall colors as hue, saturation and lightness, by name. */
+const FALL: Record<string, [number, number, number]> = {
+  red: [4, 70, 44],
+  crimson: [352, 62, 36],
+  orange: [22, 82, 50],
+  amber: [34, 85, 50],
+  gold: [44, 85, 52],
+  yellow: [50, 82, 58],
+  rust: [16, 60, 36],
+  tan: [32, 45, 44],
+  brown: [24, 42, 30],
+  green: [78, 42, 40],
+};
+
+const MOODS: readonly (readonly string[])[] = [
+  ["red", "orange", "gold", "rust", "brown", "green"],
+  ["red", "crimson", "orange", "amber", "gold"],
+  ["gold", "yellow", "amber", "tan", "green", "orange"],
+  ["rust", "brown", "tan", "orange", "amber", "red"],
+];
+
+/** The surface the leaves have fallen on, and how to say it. */
+function ground(g: Rand, w: number, h: number, unit: number, id: string): [string, string, boolean] {
+  const kind = g.pick(["deck", "deck", "grass", "pavement", "soil"] as const);
+  if (kind === "deck") {
+    // Weathered boards, all one way, with gaps between and staggered butt joints.
+    const across = g.chance(0.6);
+    const hue = g.f(22, 38);
+    const sat = g.f(8, 26);
+    const light = g.f(46, 62);
+    const span = across ? h : w;
+    const long = across ? w : h;
+    const count = Math.max(3, Math.round(span / (unit * g.f(0.17, 0.23))));
+    const board = span / count;
+    let out = el("rect", { width: w, height: h, fill: hex(hue, sat, light) });
+    let gaps = "";
+    let grain = "";
+    const shades: Record<string, string> = {};
+    for (let k = 0; k < count; k++) {
+      const a = k * board;
+      // Each board a little lighter or darker than its neighbours.
+      const tone = hex(hue + g.f(-4, 4), sat + g.f(-4, 4), light + g.f(-6, 5));
+      shades[tone] =
+        (shades[tone] ?? "") + (across ? s`M0 ${a}h${w}v${board}h${-w}Z` : s`M${a} 0v${h}h${board}v${-h}Z`);
+      if (k) gaps += across ? s`M0 ${a}h${w}` : s`M${a} 0v${h}`;
+      // A joint somewhere along most boards.
+      if (g.chance(0.6)) {
+        const at = long * g.f(0.15, 0.85);
+        gaps += across ? s`M${at} ${a}v${board}` : s`M${a} ${at}h${board}`;
+      }
+      // A grain line.
+      for (let j = 0; j < 1; j++) {
+        const off = a + board * g.f(0.2, 0.8);
+        const start = long * g.f(-0.1, 0.5);
+        const len = long * g.f(0.3, 0.7);
+        grain += across ? s`M${start} ${off}h${len}` : s`M${off} ${start}v${len}`;
+      }
+    }
+    out += Object.entries(shades)
+      .map(([fill, d]) => el("path", { d, fill }))
+      .join("");
+    out += el("path", {
+      d: grain,
+      stroke: "#000",
+      "stroke-opacity": "0.1",
+      "stroke-width": Math.max(1, unit * 0.004),
+      fill: "none",
+    });
+    out += el("path", {
+      d: gaps,
+      stroke: hex(hue, sat, light * 0.35),
+      "stroke-width": Math.max(1.5, unit * 0.012),
+      fill: "none",
+    });
+    return [
+      out.replace(/-?\d+\.\d+/g, v => (Math.abs(+v) >= 2 ? String(Math.round(+v)) : v)),
+      "a weathered wooden deck",
+      false,
+    ];
+  }
+  // The other grounds are a flat color with a fine repeating texture.
+  const q = unit * 0.09;
+  let base: string;
+  let marks: string;
+  let where: string;
+  let dark = true;
+  if (kind === "grass") {
+    base = hex(g.f(85, 110), g.f(28, 42), g.f(32, 40));
+    const blades: string[] = [];
+    for (let k = 0; k < 9; k++) {
+      const x = g.f(0, q);
+      const y = g.f(0, q);
+      blades.push(s`M${x} ${y}l${g.f(-0.08, 0.08) * q} ${-q * g.f(0.18, 0.3)}`);
+    }
+    marks =
+      el("path", {
+        d: blades.slice(0, 5).join(""),
+        stroke: "#fff",
+        "stroke-opacity": "0.14",
+        "stroke-width": q * 0.035,
+        "stroke-linecap": "round",
+      }) +
+      el("path", {
+        d: blades.slice(5).join(""),
+        stroke: "#000",
+        "stroke-opacity": "0.14",
+        "stroke-width": q * 0.035,
+        "stroke-linecap": "round",
+      });
+    where = "the grass";
+    dark = false;
+  } else {
+    base =
+      kind === "pavement" ? hex(g.f(200, 230), g.f(4, 10), g.f(24, 32)) : hex(g.f(18, 30), g.f(20, 32), g.f(16, 22));
+    const specks: string[] = [];
+    for (let k = 0; k < 7; k++) specks.push(s`M${g.f(0, q)} ${g.f(0, q)}h0`);
+    marks =
+      el("path", {
+        d: specks.slice(0, 4).join(""),
+        stroke: "#fff",
+        "stroke-opacity": "0.12",
+        "stroke-width": q * 0.06,
+        "stroke-linecap": "round",
+      }) +
+      el("path", {
+        d: specks.slice(4).join(""),
+        stroke: "#000",
+        "stroke-opacity": "0.25",
+        "stroke-width": q * 0.08,
+        "stroke-linecap": "round",
+      });
+    where = kind === "pavement" ? "damp pavement" : "dark damp ground";
+  }
+  const pattern = el(
+    "pattern",
+    { id, width: q, height: q, patternUnits: "userSpaceOnUse", patternTransform: `rotate(${Math.round(g.f(0, 90))})` },
+    marks,
+  );
+  let out = el("defs", {}, pattern) + el("rect", { width: w, height: h, fill: base });
+  out += el("rect", { width: w, height: h, fill: `url(#${id})` });
+  // A soft wet sheen across damp ground.
+  if (dark) {
+    const sheen = el(
+      "linearGradient",
+      { id: id + "s", x1: 0, y1: 0, x2: 0.4, y2: 1 },
+      el("stop", { offset: 0, "stop-color": "#ffffff", "stop-opacity": "0.12" }),
+      el("stop", { offset: 1, "stop-color": "#ffffff", "stop-opacity": "0" }),
+    );
+    out = el("defs", {}, sheen) + out + el("rect", { width: w, height: h, fill: `url(#${id}s)` });
+  }
+  return [out.replace(/-?\d+\.\d+/g, v => (Math.abs(+v) >= 2 ? String(Math.round(+v)) : v)), where, dark];
+}
+
+/** Fallen autumn leaves of a few kinds, scattered and overlapping on a deck, grass or damp ground. */
+export const fallLeaves = defineKind("fall-leaves", "Fall leaves", (g, w, h, note) => {
+  const unit = Math.min(w, h);
+  const [floor, where, dark] = ground(g, w, h, unit, g.id("tex"));
+  let out = floor;
+
+  // Two or three kinds of leaf, one of them the most common.
+  const kinds = Object.keys(SPECIES) as Species[];
+  const order = kinds.map(k => [k, g.next()] as const).sort((a, b) => a[1] - b[1]);
+  const used = order.slice(0, g.i(2, 3)).map(([k]) => k);
+  const weights = used.map((_, k) => (k ? g.f(0.5, 1) : 2));
+
+  // Colors from one mood, each varied a little.
+  const mood = g.pick(MOODS);
+  const colors = mood.map(name => {
+    const [hue, sat, light] = FALL[name];
+    return hex(hue + g.f(-5, 5), sat + g.f(-8, 6), light + g.f(-5, 5));
+  });
+  const defs: string[] = [];
+  // A couple of blends, from one color at the tip to another at the stem.
+  const blends = [0, 1].map(k => {
+    const id = g.id(`b${k}`);
+    defs.push(lin(id, [g.pick(colors), g.pick(colors), hex(g.f(60, 85), g.f(40, 55), g.f(40, 48))]));
+    return `url(#${id})`;
+  });
+  // Some maple leaves have dark spots: a second maple with them drawn on.
+  const spotted = g.id("n");
+  if (used.includes("maple"))
+    defs.push(
+      el(
+        "g",
+        { id: spotted },
+        el("use", { href: `#${g.id("m")}` }),
+        el("path", {
+          d: "M-12 -14h0M9 -5h0M-5 4h0M15 -22h0M-20 2h0M3 -30h0",
+          stroke: "#3a2414",
+          "stroke-opacity": "0.45",
+          "stroke-width": 3.2,
+          "stroke-linecap": "round",
+        }),
+      ),
+    );
+  // Each kind's leaf drawn once, in whole units, for every leaf of that kind to reuse.
+  const whole = (d: string) => d.replace(/-?\d+\.\d+/g, v => String(Math.round(+v)));
+  for (const sp of used) {
+    const leaf = SPECIES[sp].draw();
+    defs.push(
+      el(
+        "g",
+        { id: g.id(SPECIES[sp].id) },
+        el("path", { d: whole(leaf.blade) }),
+        el("path", { d: whole(leaf.half), fill: "#fff", "fill-opacity": "0.12" }),
+        el("path", {
+          d: whole(leaf.veins),
+          fill: "none",
+          stroke: "#000",
+          "stroke-opacity": "0.2",
+          "stroke-width": 1.4,
+        }),
+      ),
+    );
+  }
+  // Soft shadows, cast by each layer of the pile onto the ground and the leaves below.
+  const shadowId = g.id("sh");
+  defs.push(
+    el(
+      "filter",
+      { id: shadowId, x: -0.1, y: -0.1, width: 1.2, height: 1.2 },
+      el("feDropShadow", {
+        dx: unit * 0.01,
+        dy: unit * 0.014,
+        stdDeviation: unit * 0.006,
+        "flood-color": "#000000",
+        "flood-opacity": dark ? "0.45" : "0.3",
+      }),
+    ),
+  );
+
+  // Enough leaves to cover most of the ground. Long frames get bigger leaves rather than
+  // proportionally more of them, to keep the markup small.
+  const pile = g.chance(0.5);
+  const ratio = (w * h) / (unit * unit);
+  const count = Math.round(ratio ** 0.3 * g.f(pile ? 17 : 11, pile ? 20 : 13));
+  const sizes = Array.from({ length: count }, () => unit * ratio ** 0.2 * g.f(0.32, 0.52)).sort((a, b) => b - a);
+  const spots = scatter(
+    g,
+    w,
+    h,
+    sizes.map(size => size * 0.4),
+    0.3,
+  );
+  const leaves: string[] = [];
+  const tally: Record<string, number> = {};
+  for (let k = 0; k < count; k++) {
+    // Pick a kind by weight.
+    let roll = g.f(
+      0,
+      weights.reduce((a, b) => a + b),
+    );
+    let at = 0;
+    while (roll > weights[at] && at < used.length - 1) roll -= weights[at++];
+    const sp = used[at];
+    tally[sp] = (tally[sp] ?? 0) + 1;
+    const id = sp === "maple" && g.chance(0.25) ? spotted : g.id(SPECIES[sp].id);
+    const [x, y] = spots[k];
+    const turn = g.f(0, 360);
+    // Ginkgo fans are smaller than the rest.
+    const scale = (sizes[k] / 100) * (sp === "ginkgo" ? 0.8 : 1);
+    const paint = g.chance(0.22) ? g.pick(blends) : g.pick(colors);
+    leaves.push(el("use", { href: `#${id}`, fill: paint, transform: place(x, y, turn, scale) }));
+  }
+  // Smallest drawn first, so the big ones lie on top, in three layers each casting a shadow.
+  leaves.reverse();
+  for (let k = 0; k < 3; k++)
+    out += el(
+      "g",
+      { filter: `url(#${shadowId})` },
+      ...leaves.slice(Math.round((k * count) / 3), Math.round(((k + 1) * count) / 3)),
+    );
+  out = el("defs", {}, ...defs) + out;
+
+  const names = Object.entries(tally)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 2)
+    .map(([sp]) => SPECIES[sp as Species].name);
+  const lead = andList(names);
+  note.alt(`${lead.charAt(0).toUpperCase() + lead.slice(1)} leaves ${pile ? "piled" : "fallen"} on ${where}`);
+  note.focus(spots[0][0], spots[0][1]);
+  return compact(out);
+});
+
+/** A heart 100 units across, centered on the origin. */
+const HEART =
+  "M0 44C-20 28 -50 8 -50 -16C-50 -34 -37 -44 -25 -44C-13 -44 -5 -36 0 -27C5 -36 13 -44 25 -44C37 -44 50 -34 50 -16C50 8 20 28 0 44Z";
+
+type HeartStyle = "solid" | "outline" | "puffy" | "pattern" | "candy";
+
+/** Hearts of many sizes and styles, solid, outlined, glossy, patterned and candy, scattered for Valentine's Day. */
+export const hearts = defineKind("hearts", "Hearts", (g, w, h, note) => {
+  const unit = Math.min(w, h);
+  // The background: blush, cream, a deep wine or a pale pastel.
+  const mood = g.pick(["blush", "blush", "cream", "wine", "pastel"] as const);
+  const back =
+    mood === "blush"
+      ? hex(g.f(345, 365), g.f(45, 70), g.f(89, 93))
+      : mood === "cream"
+        ? hex(g.f(30, 45), g.f(50, 70), g.f(91, 95))
+        : mood === "wine"
+          ? hex(g.f(335, 352), g.f(35, 50), g.f(17, 24))
+          : hex(g.pick([g.f(150, 200), g.f(250, 290), g.f(40, 55)]), g.f(30, 45), g.f(90, 94));
+  // A few colors that agree: reds, pinks and cream, or candy pastels.
+  const pastel = mood === "pastel" || g.chance(0.2);
+  const inks = pastel
+    ? [340, 50, 150, 270, 20, 195].map(hue => hex(hue + g.f(-8, 8), g.f(60, 75), g.f(78, 85)))
+    : [
+        hex(g.f(348, 358), g.f(68, 78), g.f(44, 50)),
+        hex(g.f(340, 350), g.f(60, 72), g.f(56, 62)),
+        hex(g.f(335, 345), g.f(65, 80), g.f(72, 78)),
+        hex(g.f(340, 355), g.f(70, 85), g.f(85, 90)),
+        mood === "cream" ? hex(g.f(348, 356), g.f(55, 65), g.f(32, 38)) : hex(g.f(30, 42), g.f(60, 75), g.f(90, 94)),
+      ];
+  const candyInks = [340, 50, 150, 270, 20, 195].map(hue => hex(hue + g.f(-6, 6), g.f(65, 78), g.f(80, 86)));
+  const defs: string[] = [];
+  let out = el("rect", { width: w, height: h, fill: back });
+
+  // Now and then a faint pattern on the background: dots or diagonal stripes.
+  const backPattern = g.pick(["none", "none", "dots", "stripes"] as const);
+  if (backPattern !== "none") {
+    const id = g.id("bg");
+    const q = unit * g.f(0.05, 0.08);
+    const ink = mood === "wine" ? "#ffffff" : hex(g.f(340, 360), 60, 50);
+    defs.push(
+      el(
+        "pattern",
+        {
+          id,
+          width: q,
+          height: q,
+          patternUnits: "userSpaceOnUse",
+          patternTransform: backPattern === "stripes" ? "rotate(45)" : undefined,
+        },
+        backPattern === "dots"
+          ? el("path", {
+              d: s`M${q / 4} ${q / 4}h0M${(q * 3) / 4} ${(q * 3) / 4}h0`,
+              stroke: ink,
+              "stroke-opacity": "0.1",
+              "stroke-width": q * 0.16,
+              "stroke-linecap": "round",
+            })
+          : el("rect", { width: q / 2, height: q, fill: ink, "fill-opacity": "0.06" }),
+      ),
+    );
+    out += el("rect", { width: w, height: h, fill: `url(#${id})` });
+  }
+
+  const heartId = g.id("h");
+  // One soft shadow for all the hearts, as if cut from paper and laid down.
+  const shadowId = g.id("hs");
+  defs.push(
+    el("path", { id: heartId, d: HEART }),
+    el(
+      "filter",
+      { id: shadowId, x: -0.1, y: -0.1, width: 1.2, height: 1.2 },
+      el("feDropShadow", {
+        dx: unit * 0.008,
+        dy: unit * 0.011,
+        stdDeviation: unit * 0.005,
+        "flood-color": "#000000",
+        "flood-opacity": mood === "wine" ? "0.35" : "0.14",
+      }),
+    ),
+  );
+  // Glossy hearts: soft shading over the fill and a highlight on the upper left.
+  const puffyId = g.id("p");
+  const shadeId = g.id("sh");
+  // Candy hearts: a raised rim round a flat, paler face.
+  const candyId = g.id("c");
+  const made = new Set<string>();
+  const need = (key: string) => {
+    if (made.has(key)) return;
+    made.add(key);
+    if (key === "puffy")
+      defs.push(
+        el(
+          "radialGradient",
+          { id: shadeId, cx: 0.38, cy: 0.3, r: 0.8 },
+          el("stop", { offset: 0, "stop-color": "#ffffff", "stop-opacity": "0.3" }),
+          el("stop", { offset: 0.45, "stop-color": "#ffffff", "stop-opacity": "0" }),
+          el("stop", { offset: 1, "stop-color": "#000000", "stop-opacity": "0.28" }),
+        ),
+        el(
+          "g",
+          { id: puffyId },
+          el("use", { href: `#${heartId}` }),
+          el("path", { d: HEART, fill: `url(#${shadeId})` }),
+          el("path", {
+            d: "M-38 -18C-40 -30 -32 -37 -24 -36C-30 -33 -34 -26 -34 -16ZM-14 -36h0",
+            fill: "#fff",
+            "fill-opacity": "0.7",
+            stroke: "#fff",
+            "stroke-opacity": "0.7",
+            "stroke-width": 5,
+            "stroke-linecap": "round",
+            "stroke-linejoin": "round",
+          }),
+        ),
+      );
+    if (key === "candy")
+      defs.push(
+        el(
+          "g",
+          { id: candyId },
+          el("use", { href: `#${heartId}` }),
+          el("use", { href: `#${heartId}`, fill: "#000", "fill-opacity": "0.08" }),
+          el("use", { href: `#${heartId}`, transform: "translate(-1 -3)scale(0.8)" }),
+          el("use", {
+            href: `#${heartId}`,
+            transform: "translate(-1 -3)scale(0.8)",
+            fill: "#fff",
+            "fill-opacity": "0.25",
+          }),
+        ),
+      );
+  };
+  // One or two patterned papers: stripes or dots in two of the colors.
+  let firstDotty = false;
+  const patterns = Array.from({ length: g.i(1, 2) }, (_, k) => {
+    const id = g.id(`pt${k}`);
+    const base = g.pick(inks);
+    let accent = g.pick(inks);
+    if (accent === base) accent = mood === "wine" || pastel ? "#ffffff" : inks[inks.length - 1];
+    if (accent === base) accent = "#ffffff";
+    const dotty = k ? !firstDotty : g.chance(0.5);
+    firstDotty = dotty;
+    const q = 16;
+    defs.push(
+      el(
+        "pattern",
+        {
+          id,
+          width: q,
+          height: q,
+          patternUnits: "userSpaceOnUse",
+          patternTransform: dotty ? undefined : "rotate(-35)",
+        },
+        el("rect", { width: q, height: q, fill: base }),
+        dotty
+          ? el("path", {
+              d: "M4 4h0M12 12h0",
+              stroke: accent,
+              "stroke-width": 5,
+              "stroke-linecap": "round",
+            })
+          : el("rect", { width: q / 2, height: q, fill: accent }),
+      ),
+    );
+    return `url(#${id})`;
+  });
+
+  // A string of little hearts sagging across the top, sometimes.
+  const garland = g.chance(0.3);
+  let top = 0;
+  if (garland) {
+    const y0 = h * 0.02 - unit * 0.02;
+    const sag = unit * g.f(0.12, 0.18);
+    const loops = Math.max(1, Math.round(w / (unit * 1.4)));
+    const span = w / loops;
+    let wire = "";
+    // The little hearts alternate between two colors, each color in one group.
+    const small = ["", ""];
+    const step = Math.round(span / (unit * 0.15) / 2) * 2 + 1;
+    for (let k = 0; k < loops; k++) {
+      const a: Point = [k * span, y0];
+      const c: Point = [(k + 0.5) * span, y0 + sag * 2];
+      const b: Point = [(k + 1) * span, y0];
+      wire += s`M${a[0]} ${a[1]}Q${c[0]} ${c[1]} ${b[0]} ${b[1]}`;
+      for (let j = 1; j < step; j++) {
+        const t = j / step;
+        const x = (1 - t) ** 2 * a[0] + 2 * t * (1 - t) * c[0] + t * t * b[0];
+        const y = (1 - t) ** 2 * a[1] + 2 * t * (1 - t) * c[1] + t * t * b[1];
+        // Each hangs just under the string, turned a little with its slope.
+        const slope = (Math.atan2(2 * (1 - t) * (c[1] - a[1]) + 2 * t * (b[1] - c[1]), span) * 180) / Math.PI;
+        small[(k * step + j) % 2] += el("use", {
+          href: `#${heartId}`,
+          transform: place(x, y + unit * 0.026, slope * 0.5, unit * 0.0006),
+        });
+      }
+      top = Math.max(top, y0 + sag + unit * 0.06);
+    }
+    out += el("path", {
+      d: wire,
+      fill: "none",
+      stroke: mood === "wine" ? "#ffffff" : "#000",
+      "stroke-opacity": "0.3",
+      "stroke-width": Math.max(1, unit * 0.005),
+    });
+    out += el("g", { fill: inks[0] }, small[0]) + el("g", { fill: inks[2] }, small[1]);
+  }
+
+  // The scattered hearts, biggest first so the small ones fill the gaps.
+  const count = Math.round(((w * (h - top)) / (unit * unit)) ** 0.55 * g.f(13, 17));
+  const sizes = Array.from({ length: count }, (_, k) => unit * (k < 2 ? g.f(0.26, 0.34) : g.f(0.09, 0.24))).sort(
+    (a, b) => b - a,
+  );
+  const placed: [number, number, number][] = [];
+  const styles: HeartStyle[] = [];
+  let shown = "";
+  for (const size of sizes) {
+    const r = size * 0.5;
+    let best: Point | undefined;
+    let score = 0.95;
+    for (let k = 0; k < 24; k++) {
+      const x = g.f(r * 1.05, w - r * 1.05);
+      const y = g.f(top + r * 1.05, h - r * 1.05);
+      const room = Math.min(9, ...placed.map(([px, py, pr]) => Math.hypot(px - x, py - y) / (pr + r)));
+      if (room > score) {
+        score = room;
+        best = [x, y];
+      }
+    }
+    if (!best) continue;
+    placed.push([best[0], best[1], r]);
+    const roll = g.next();
+    const style: HeartStyle =
+      roll < (pastel ? 0.4 : 0.15)
+        ? "candy"
+        : roll < 0.5
+          ? "solid"
+          : roll < 0.68
+            ? "outline"
+            : roll < 0.84 && size > unit * 0.14
+              ? "puffy"
+              : size > unit * 0.12
+                ? "pattern"
+                : "solid";
+    styles.push(style);
+    const turn = g.f(-28, 28);
+    const scale = size / 100;
+    const at = place(best[0], best[1], turn, scale);
+    const ink = g.pick(inks);
+    if (style === "solid") shown += el("use", { href: `#${heartId}`, fill: ink, transform: at });
+    else if (style === "outline")
+      shown += el("use", {
+        href: `#${heartId}`,
+        fill: "none",
+        stroke: ink,
+        "stroke-width": g.pick([6, 8, 10]),
+        transform: at,
+      });
+    else if (style === "puffy") {
+      need("puffy");
+      shown += el("use", { href: `#${puffyId}`, fill: inks[g.i(0, 1)], transform: at });
+    } else if (style === "pattern") shown += el("use", { href: `#${heartId}`, fill: g.pick(patterns), transform: at });
+    else {
+      need("candy");
+      shown += el("use", { href: `#${candyId}`, fill: g.pick(candyInks), transform: at });
+    }
+  }
+  out = el("defs", {}, ...defs) + out + el("g", { filter: `url(#${shadowId})` }, shown);
+
+  const candies = styles.filter(st => st === "candy").length;
+  const subject = candies > 2 ? "Candy hearts among hearts of many sizes" : "Hearts of many sizes and styles";
+  const where = garland
+    ? "under a little garland of hearts"
+    : backPattern !== "none"
+      ? `scattered across a softly ${backPattern === "dots" ? "dotted" : "striped"} background`
+      : `scattered across a ${mood === "wine" ? "deep" : "soft"} background`;
+  note.alt(`${subject} ${where}`);
+  note.focus(placed[0]?.[0] ?? w / 2, placed[0]?.[1] ?? h / 2);
   return compact(out);
 });

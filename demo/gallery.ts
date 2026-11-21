@@ -26,8 +26,9 @@ const NOTES: Record<keyof typeof categories, string> = {
   products: "Studio product shots, one item on a seamless backdrop, as in a shop.",
   music: "Instruments and records, drawn with the right parts.",
   sports: "Close-ups of gear: balls, gloves, rackets, helmets and boards hung on the wall.",
-  holidays: "Seasonal scenes: pumpkins, snowmen, a decorated tree, gifts and painted eggs.",
-  space: "Planets, nebulae, astronauts and the surface of a moon.",
+  holidays:
+    "Through the year: fireworks, hearts, painted eggs, fall leaves, pumpkins, snowflakes, snowmen, a decorated tree and gifts.",
+  space: "Planets, nebulae, galaxies, black holes, astronauts and the surface of a moon.",
   patterns: "Calm, even textures to sit behind text on cards and banners.",
   buildings: "Cottages, castles, bridges and townhouses, by day, dusk or night.",
   vehicles: "Side views on roads, rails, water and sky, by day, dusk or night.",
