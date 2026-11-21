@@ -42,6 +42,11 @@ export interface Notes {
   alt(text: string): void;
   /** The point of interest, in px, such as a face or the sun, for cropping and `object-position`. */
   focus(x: number, y: number): void;
+  /**
+   * The bounds of the subject's head (or face), in px: what an avatar of this picture frames.
+   * Only kinds with a face call it; `avatar` accepts only kinds that do.
+   */
+  frame(x: number, y: number, width: number, height: number): void;
 }
 
 /** Draws one picture's contents (everything inside `<svg>`) at the given size. */

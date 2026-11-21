@@ -98,6 +98,8 @@ export const cat = defineKind(
     const features = [muzzle && "a pale muzzle", slit ? "slit pupils" : "round pupils"];
     note.alt(`A ${tabby ? "tabby " : ""}cat's face with ${andList(features)}`);
     note.focus(cx, cy - ry * 0.05);
+    // Head and ears.
+    note.frame(cx - rx * 1.05, cy - ry * 1.5, rx * 2.1, ry * 2.55);
     return out;
   },
 );
@@ -362,6 +364,8 @@ export const owl = defineKind("owl", "Owl", (g, w, h, note) => {
   });
   note.alt(moon ? "An owl on a branch at dusk under the moon" : "An owl perched on a branch at dusk");
   note.focus(cx, bodyY - bodyH * 0.4);
+  // Ear tufts, face disc and the top of the chest.
+  note.frame(cx - bodyW, bodyY - bodyH * 1.15, bodyW * 2, bodyH * 1.4);
   return out;
 });
 
@@ -477,6 +481,8 @@ export const dog = defineKind("dog", "Dog", (g, w, h, note) => {
   ];
   note.alt(`A ${"spots" in coat ? "spotted " : ""}dog's face with ${andList(features)}`);
   note.focus(cx, cy - ry * 0.12);
+  // Head, ears and collar.
+  note.frame(cx - rx * 1.2, cy - ry * 1.4, rx * 2.4, ry * 2.6);
   return out;
 });
 
@@ -569,6 +575,8 @@ export const fox = defineKind("fox", "Fox", (g, w, h, note) => {
   out += el("circle", { cx, cy: cy + ry * 0.9, r: rx * 0.09, fill: palette.dark });
   note.alt("A fox's face with pale cheeks and dark-tipped ears");
   note.focus(cx, cy - ry * 0.12);
+  // Head and ears, down to the chin.
+  note.frame(cx - rx, cy - ry * 1.45, rx * 2, ry * 2.5);
   return out;
 });
 
@@ -659,6 +667,8 @@ export const penguin = defineKind("penguin", "Penguin", (g, w, h, note) => {
       : `A penguin on the ice near icebergs, facing ${side}`,
   );
   note.focus(cx + dir * bw * 0.42, by - bh * 0.66);
+  // Head and beak, with the top of the belly.
+  note.frame(cx - bw * 1.25, by - bh * 1.05, bw * 2.5, bh * 0.95);
   return out;
 });
 
@@ -878,6 +888,8 @@ export const frog = defineKind("frog", "Frog", (g, w, h, note) => {
     });
   note.alt(`A ${"spots" in colors ? "spotted " : ""}frog smiling on a lily pad${flower ? " beside a flower" : ""}`);
   note.focus(cx, by - bh * 0.6);
+  // Bulging eyes down to the front feet.
+  note.frame(cx - bw * 1.15, by - bh * 0.78 - bw * 0.3, bw * 2.3, bh * 1.78 + bw * 0.3);
   return out;
 });
 
@@ -983,6 +995,9 @@ export const rabbit = defineKind("rabbit", "Rabbit", (g, w, h, note) => {
   out += el("path", { d: whiskers, stroke: "#6b5d55", "stroke-width": rx * 0.02, opacity: "0.6" });
   note.alt(lop ? "A lop-eared rabbit in a meadow" : "A rabbit with tall ears in a meadow");
   note.focus(cx, cy - ry * 0.08);
+  // Head and ears: lop ears hang beside the face, tall ones stand above it.
+  if (lop) note.frame(cx - rx * 1.3, cy - ry * 1.05, rx * 2.6, ry * 2.1);
+  else note.frame(cx - rx * 1.05, cy - ry * 2, rx * 2.1, ry * 3.05);
   return out;
 });
 

@@ -189,6 +189,9 @@ export const portrait = defineKind(
         : `Portrait of a person with ${hairs[style]} and ${smile}`,
     );
     note.focus(cx, eyeY);
+    // Head and hair, from the top of a bun or curls down to the chin.
+    const hairTop = style === "bun" ? 1.55 : style === "curly" ? 1.4 : 1.3;
+    note.frame(cx - rx * 1.25, cy - ry * hairTop, rx * 2.5, ry * (hairTop + 1.15));
     return out;
   },
 );

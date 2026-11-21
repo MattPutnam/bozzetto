@@ -90,6 +90,20 @@ npx bozzetto --list
 
 Name kinds by id (`ice-cream`), export name (`iceCream`) or category (`animals`), in any mix, and give a kind options after a colon: `cat:tabby,pupils=round`. The options match `placeholders`, and repeating `--size`, `--palette`, `--mapping` or `--texture` gives a list to go through. With several pictures, `-o <folder>` writes one SVG per picture plus `manifest.json` with each picture's kind, seed, size, alt text, focus and color. `--format png` writes PNGs (with `@resvg/resvg-js` installed), `--format uri` prints data URIs, one per line, and `--format json` prints everything, markup included. See `bozzetto --help` for the full list.
 
+## Avatars
+
+`avatar` frames a face around its head, round by default. Give it a user's id as the seed and each user keeps the same avatar:
+
+```ts
+import { avatar, avatars, portrait } from "bozzetto";
+
+img.src = avatar({ seed: user.id, size: 48 }).src;
+avatar({ seed: user.id, kind: portrait.with({ glasses: true }), shape: "rounded" });
+avatars(20, { size: 64, palette: "pastel" }); // every face once before any repeats
+```
+
+The `faces` list holds the kinds that can be avatars: `portrait`, `cat`, `dog`, `fox`, `rabbit`, `owl`, `frog` and `penguin`. Shapes are `circle`, `rounded` and `square`, with transparent corners. React and Vue have an `<Avatar>` component, the web component takes an `avatar` attribute, and the command line has `--avatar`.
+
 ## React, Vue and web components
 
 ```tsx

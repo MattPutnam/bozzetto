@@ -18,7 +18,10 @@ import { bauhaus, cutouts, field, grid, orbits, squares } from "./art";
 import { portrait } from "./faces";
 import { cake, donut, egg, iceCream, pizza, sushi } from "./food";
 import { city, dunes, forest, hills, mountains, night, sea } from "./landscapes";
+import { makeAvatar, type AvatarsOptions } from "./avatar";
 import { makePlaceholders } from "./placeholder";
+import { seedToInt } from "./core";
+import type { Picture } from "./render";
 import { books, bottles, cactus, coffee, flowers, fruitBowl } from "./objects";
 
 // Kinds
@@ -54,6 +57,7 @@ export { MAPPINGS, stylize } from "./style";
 export type { Mapping, StyleOptions, Texture } from "./style";
 
 // Choosing kinds
+export type { AvatarOptions, AvatarShape, AvatarsOptions } from "./avatar";
 export type { KindChoice, OneOrMany, Order, PlaceholderOptions, PlaceholdersOptions } from "./placeholder";
 
 /**
@@ -76,4 +80,26 @@ export const kinds = [...landscapes, ...art, ...people, ...animals, ...food, ...
 /** The id of any built-in kind, such as `"owl"` or `"ice-cream"`. */
 export type KindId = (typeof kinds)[number]["id"];
 
-export const { resolveKind, placeholder, placeholders } = makePlaceholders(kinds);
+const chooser = makePlaceholders(kinds);
+export const { resolveKind, placeholder, placeholders } = chooser;
+
+/** Kinds with a face, which can be avatars. Unlike the categories above, it overlaps them. */
+export const faces = [portrait, cat, dog, fox, rabbit, owl, frog, penguin] as const;
+
+/**
+ * An avatar: a face kind framed in a square around its head, round by default. With no `kind`, the
+ * seed picks one of `faces`, so a user id gives each user their own avatar.
+ */
+export const avatar = makeAvatar(resolveKind, faces);
+
+/**
+ * `count` avatars. With a list of kinds (by default every face), each is used once, in a seeded
+ * order, before any repeats; avatar k uses seed `seed + k`, as in `placeholders`.
+ */
+export function avatars(count: number, options: AvatarsOptions = {}): Picture[] {
+  const { order, ...rest } = options;
+  const base = seedToInt(options.seed);
+  return chooser
+    .kindsFor(count, { kind: options.kind ?? faces, order, seed: options.seed })
+    .map((kind, k) => avatar({ ...rest, kind, seed: (base + k) >>> 0 }));
+}

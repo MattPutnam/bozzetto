@@ -28,20 +28,22 @@ npx bozzetto portrait:hair=curly,glasses -n 4 -o portraits/
 
 ## Options
 
-| Option                |                                                                 |
-| --------------------- | --------------------------------------------------------------- |
-| `-n`, `--count <n>`   | How many pictures. Default 1                                    |
-| `-s`, `--size <WxH>`  | Size, such as `400x300`. Repeat for a mix                       |
-| `--seed <seed>`       | A number or text. Picture _k_ uses seed + _k_                   |
-| `-p`, `--palette <p>` | An adjustment, palette name or palette code. Repeat for a mix   |
-| `--mapping <m>`       | `balanced`, `ramp` or `nearest`. Repeat for a mix               |
-| `--texture <t>`       | `grain` or `paper`. Repeat for a mix                            |
-| `--order <o>`         | `shuffle` (default), `cycle` or `random`                        |
-| `--numbered`          | Number the pictures in the corner                               |
-| `-f`, `--format <f>`  | `svg` (default), `png`, `uri` (one data URI per line) or `json` |
-| `--scale <n>`         | For `png`: pixels per SVG pixel, such as `2`                    |
-| `-o`, `--out <path>`  | A file for one picture, or a folder for several                 |
-| `--list`              | List the kinds, categories and palettes                         |
+| Option                |                                                                               |
+| --------------------- | ----------------------------------------------------------------------------- |
+| `-n`, `--count <n>`   | How many pictures. Default 1                                                  |
+| `-s`, `--size <WxH>`  | Size, such as `400x300`. Repeat for a mix                                     |
+| `--seed <seed>`       | A number or text. Picture _k_ uses seed + _k_                                 |
+| `-p`, `--palette <p>` | An adjustment, palette name or palette code. Repeat for a mix                 |
+| `--mapping <m>`       | `balanced`, `ramp` or `nearest`. Repeat for a mix                             |
+| `--texture <t>`       | `grain` or `paper`. Repeat for a mix                                          |
+| `--order <o>`         | `shuffle` (default), `cycle` or `random`                                      |
+| `--numbered`          | Number the pictures in the corner                                             |
+| `-f`, `--format <f>`  | `svg` (default), `png`, `uri` (one data URI per line) or `json`               |
+| `--scale <n>`         | For `png`: pixels per SVG pixel, such as `2`                                  |
+| `-o`, `--out <path>`  | A file for one picture, or a folder for several                               |
+| `--avatar`            | [Avatars](./avatars): `--size` is one number; any face unless kinds are given |
+| `--shape <s>`         | For avatars: `circle` (default), `rounded` or `square`                        |
+| `--list`              | List the kinds, categories and palettes                                       |
 
 ## Folders and the manifest
 

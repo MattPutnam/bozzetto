@@ -18,6 +18,9 @@ draw the SVG into the page instead of an image.
 React and Vue are optional peer dependencies: install whichever you use. The web component
 needs nothing.
 
+There's an `<Avatar>` component too, and an `avatar` attribute on the web component: see
+[Avatars](./avatars#in-components-and-on-the-command-line).
+
 ## React
 
 ```tsx

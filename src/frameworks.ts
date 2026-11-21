@@ -15,10 +15,20 @@ export function optionsKey(options: object): string {
   });
 }
 
-/** Styles that crop around the picture's focus and show its color while it loads. */
-export function focusStyle(picture: Picture): { objectPosition: string; backgroundColor: string } {
+/** How round an avatar's corners are, matching the shape `avatar` clips it to. */
+export const SHAPE_RADIUS = { circle: "50%", rounded: "22%", square: "0" } as const;
+
+/**
+ * Styles that crop around the picture's focus and show its color while it loads. For an avatar,
+ * the loading color is rounded to its shape, so its transparent corners stay transparent.
+ */
+export function focusStyle(
+  picture: Picture,
+  shape?: keyof typeof SHAPE_RADIUS,
+): { objectPosition: string; backgroundColor: string; borderRadius?: string } {
   return {
     objectPosition: `${Math.round(picture.focus.x * 100)}% ${Math.round(picture.focus.y * 100)}%`,
     backgroundColor: picture.color,
+    ...(shape && shape !== "square" ? { borderRadius: SHAPE_RADIUS[shape] } : {}),
   };
 }

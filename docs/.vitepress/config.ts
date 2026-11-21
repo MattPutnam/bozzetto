@@ -46,6 +46,7 @@ export default defineConfig({
             { text: "Kinds and categories", link: "/guide/kinds" },
             { text: "Filling a gallery", link: "/guide/galleries" },
             { text: "Alt text, focus and color", link: "/guide/pictures" },
+            { text: "Avatars", link: "/guide/avatars" },
           ],
         },
         {

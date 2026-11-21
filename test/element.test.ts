@@ -64,6 +64,14 @@ describe("<bozzetto-img>", () => {
     expect(inline.innerHTML.startsWith("<svg")).toBe(true);
   });
 
+  it("draws avatars", () => {
+    const element = make({ avatar: "", seed: "alice", size: "48", shape: "rounded" });
+    const img = image(element) as HTMLImageElement;
+    expect([img.width, img.height]).toEqual([48, 48]);
+    expect(element.picture?.svg).toMatch(/<clipPath id="[^"]+"><rect /);
+    expect(element.shadowRoot!.querySelector("style")!.textContent).toContain("border-radius: 22%");
+  });
+
   it("logs a clear error for an unknown kind", () => {
     const error = vi.spyOn(console, "error").mockImplementation(() => {});
     const element = make({ kind: "dragon" });

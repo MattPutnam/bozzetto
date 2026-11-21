@@ -140,5 +140,11 @@ export function makePlaceholders(all: readonly Kind[]) {
     );
   };
 
-  return { resolveKind, placeholder, placeholders };
+  /** The kinds `placeholders` would use for `count` pictures: the same order, for lists of other things. */
+  const kindsFor = (count: number, options: { kind?: KindChoice; order?: Order; seed?: number | string } = {}) => {
+    const kindAt = picker(pool(options.kind), options.order ?? "shuffle", seedToInt(options.seed), "kind");
+    return Array.from({ length: count }, (_, k) => kindAt(k));
+  };
+
+  return { resolveKind, kindsFor, placeholder, placeholders };
 }

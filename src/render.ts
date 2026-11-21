@@ -21,6 +21,11 @@ export interface Picture {
   readonly color: string;
   /** The value each of the kind's options took, whether fixed with `kind.with` or chosen by the seed. */
   readonly options: Readonly<Record<string, OptionValue>>;
+  /**
+   * The bounds of the subject's head, as fractions of the width and height, for kinds with a face
+   * (the ones `avatar` takes); undefined for others.
+   */
+  readonly frame?: { readonly x: number; readonly y: number; readonly width: number; readonly height: number };
 }
 
 /**
@@ -59,11 +64,18 @@ export function render(kind: Kind, options: RenderOptions = {}): Picture {
   const prefix = `bz${hash(`${kind.id}${fixed}:${seed}:${width}x${height}`).toString(36)}-`;
   let alt = kind.name;
   let focus = { x: 0.5, y: 0.5 };
+  let frame: Picture["frame"];
   const clamp = (v: number) => Math.round(Math.max(0, Math.min(1, v)) * 1000) / 1000;
   const chosen: Record<string, OptionValue> = {};
   let body = kind.draw(makeRand(seed, prefix, kind.fixed ?? {}, chosen), width, height, {
     alt: text => (alt = text),
     focus: (x, y) => (focus = { x: clamp(x / width), y: clamp(y / height) }),
+    frame: (x, y, w, h) => {
+      // Kept to the picture, so an avatar never frames beyond the drawing.
+      const left = clamp(x / width);
+      const top = clamp(y / height);
+      frame = { x: left, y: top, width: clamp((x + w) / width) - left, height: clamp((y + h) / height) - top };
+    },
   });
   if (options.label !== undefined && options.label !== "") {
     const fontSize = Math.min(width, height) * 0.093;
@@ -106,6 +118,7 @@ export function render(kind: Kind, options: RenderOptions = {}): Picture {
     focus,
     color: backgroundColor(svg, width, height),
     options: chosen,
+    ...(frame ? { frame } : {}),
   };
 }
 

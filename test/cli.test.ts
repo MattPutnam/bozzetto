@@ -115,6 +115,15 @@ describe("bozzetto", () => {
     }
   });
 
+  it("writes avatars", async () => {
+    const [one] = JSON.parse((await cli("--avatar", "--seed", "alice", "--size", "48", "-f", "json")).stdout);
+    expect([one.width, one.height]).toEqual([48, 48]);
+    expect(one.svg).toContain("<clipPath");
+    const folder = await cli("cat", "dog", "--avatar", "-n", "2", "--shape", "square", "-o", "avatars");
+    const manifest = JSON.parse(folder.files.get("avatars/manifest.json")!);
+    expect(manifest.map((p: { kind: string }) => p.kind).sort()).toEqual(["cat", "dog"]);
+  });
+
   it("lists kinds and palettes, and shows help and the version", async () => {
     expect((await cli("--list")).stdout).toContain("animals     cat, bird");
     expect((await cli("--help")).stdout).toContain("Usage");
@@ -131,6 +140,9 @@ describe("bozzetto", () => {
       [["--size", "big"], "isn't a size"],
       [["--palette", "plaid"], "neither a palette name"],
       [["--frobnicate"], "Unknown option"],
+      [["--shape", "circle"], "--shape is for --avatar"],
+      [["hills", "--avatar"], "hills can't be an avatar"],
+      [["--avatar", "-s", "48", "-s", "64"], "avatars take one --size"],
       [["--scale", "2"], "--scale is for --format png"],
       [["-f", "png", "--scale", "0"], "--scale must be a number more than 0"],
       [["-n", "2", "-f", "png"], "several PNGs need --out"],
