@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { avatar, faces, hills, kinds, night, render, toImageBlob } from "../src";
 import { toPng } from "../src/node";
-import { forResvg } from "../src/resvg-fix";
+import { forResvg } from "../src/node/resvg-fix";
 
 /** The width and height in a PNG's header. */
 function pngSize(bytes: Uint8Array): { width: number; height: number } {

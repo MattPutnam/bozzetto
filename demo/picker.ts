@@ -19,7 +19,7 @@ import {
   type Mapping,
   type Scheme,
 } from "../src";
-import { hexToLch, lchToHex, parseColor, toHex } from "../src/color";
+import { hexToLch, lchToHex, parseColor, toHex } from "../src/color/color";
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 

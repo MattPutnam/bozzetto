@@ -4,9 +4,9 @@ import { createSSRApp, h } from "vue";
 import { renderToString } from "vue/server-renderer";
 import { describe, expect, it } from "vitest";
 import { animals, cat, render } from "../src";
-import { optionsKey } from "../src/frameworks";
-import { Placeholder as ReactPlaceholder, usePlaceholders } from "../src/react";
-import { Placeholder as VuePlaceholder } from "../src/vue";
+import { optionsKey } from "../src/frameworks/shared";
+import { Placeholder as ReactPlaceholder, usePlaceholders } from "../src/frameworks/react";
+import { Placeholder as VuePlaceholder } from "../src/frameworks/vue";
 
 const owl = render(animals[3], { seed: 3, size: "320x240" });
 const attr = (html: string, name: string) => new RegExp(`${name}="([^"]*)"`).exec(html)?.[1];

@@ -3,7 +3,7 @@ outline: [2, 3]
 ---
 
 <script setup>
-import { Placeholder } from "../../src/vue";
+import { Placeholder } from "../../src/frameworks/vue";
 import { cat } from "../../src";
 </script>
 

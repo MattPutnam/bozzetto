@@ -2,7 +2,7 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { avatar, avatars, cat, faces, hills, kinds, render } from "../src";
-import { Avatar } from "../src/react";
+import { Avatar } from "../src/frameworks/react";
 
 const viewBox = (svg: string) => /viewBox="([^"]+)"/.exec(svg)![1].split(" ").map(Number);
 

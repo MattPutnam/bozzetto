@@ -2,8 +2,8 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { avatar, kinds, night, owl, render, stylize } from "../src";
-import { hexToLch } from "../src/color";
-import { Placeholder } from "../src/react";
+import { hexToLch } from "../src/color/color";
+import { Placeholder } from "../src/frameworks/react";
 
 const COLOR = /hsl\((-?\d+) (\d+)% (\d+)%\)|#[0-9a-f]{3,6}/g;
 /** The picture as the light version: classes and the style taken out. */

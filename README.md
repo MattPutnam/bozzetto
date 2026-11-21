@@ -269,6 +269,21 @@ npm run gallery   # regenerate media/gallery.svg
 npm run docs:dev  # the manual, with live examples (docs:build builds the whole site, as GitHub Pages does)
 ```
 
+The source is laid out by job:
+
+| Folder            |                                                                                                |
+| ----------------- | ---------------------------------------------------------------------------------------------- |
+| `src/kinds/`      | One folder per category and one file per kind, with helpers several kinds share in `shared.ts` |
+| `src/draw/`       | What kinds draw with: `defineKind`, the seeded `Rand`, SVG helpers, shapes and alt-text words  |
+| `src/color/`      | Color math, palettes, styling and dark mode                                                    |
+| `src/render/`     | Rendering a kind to a picture, choosing kinds, avatars and raster images                       |
+| `src/frameworks/` | The React, Vue and web components                                                              |
+| `src/node/`       | `bozzetto/node`: PNGs through resvg                                                            |
+| `src/cli/`        | The `bozzetto` command                                                                         |
+
+Every kind is marked pure, and `test/tree-shaking.test.ts` checks that an app importing one kind
+leaves the others out.
+
 ## License
 
 MIT

@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { animals, cat, owl, render } from "../src";
-import "../src/element";
+import "../src/frameworks/element";
 
 const make = (attributes: Record<string, string>) => {
   const element = document.createElement("bozzetto-img");

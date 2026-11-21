@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { animals, cat, owl, placeholders, render } from "../src";
-import { run } from "../src/cli";
+import { run } from "../src/cli/cli";
 
 /** Runs the command against an in-memory terminal and file system. PNG bytes are kept apart from text. */
 async function cli(...args: string[]) {

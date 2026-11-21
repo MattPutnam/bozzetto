@@ -1,5 +1,5 @@
 <script setup>
-import { Avatar } from "../../src/vue";
+import { Avatar } from "../../src/frameworks/vue";
 </script>
 
 # Avatars
