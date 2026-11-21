@@ -9,6 +9,8 @@ import "./style.css";
 export default {
   extends: DefaultTheme,
   enhanceApp({ app }) {
+    // The web component only works in a browser, so register it there.
+    if (!import.meta.env.SSR) void import("../../../src/element");
     app.component("Figure", Figure);
     app.component("KindGallery", KindGallery);
     app.component("KindOptions", KindOptions);

@@ -90,6 +90,23 @@ npx bozzetto --list
 
 Name kinds by id (`ice-cream`), export name (`iceCream`) or category (`animals`), in any mix, and give a kind options after a colon: `cat:tabby,pupils=round`. The options match `placeholders`, and repeating `--size`, `--palette`, `--mapping` or `--texture` gives a list to go through. With several pictures, `-o <folder>` writes one SVG per picture plus `manifest.json` with each picture's kind, seed, size, alt text, focus and color. `--format png` writes PNGs (with `@resvg/resvg-js` installed), `--format uri` prints data URIs, one per line, and `--format json` prints everything, markup included. See `bozzetto --help` for the full list.
 
+## React, Vue and web components
+
+```tsx
+import { Placeholder } from "bozzetto/react"; // or "bozzetto/vue"
+
+<Placeholder kind="owl" seed={3} size="320x240" palette="pastel" loading="lazy" />;
+```
+
+```html
+<script type="module">
+  import "bozzetto/element";
+</script>
+<bozzetto-img kind="cat:tabby,pupils=round" seed="2" size="240x240"></bozzetto-img>
+```
+
+Each renders an `<img>` with the picture's alt text and size, cropped around its focus, with its color showing while it loads. React and Vue also have `usePlaceholder` and `usePlaceholders`. React and Vue are optional peer dependencies; the web component needs nothing.
+
 ## PNG, WebP and JPEG
 
 In the browser, `toImageBlob(picture, { type, scale, quality })` draws a picture on a canvas and returns a PNG, WebP or JPEG `Blob`. In Node, `toPng` from `bozzetto/node` renders PNGs with [resvg](https://github.com/yisibl/resvg-js), an optional dependency:

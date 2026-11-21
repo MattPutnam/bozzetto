@@ -14,13 +14,13 @@ import {
   placeholders,
   seedToInt,
   type Kind,
-  type OptionValue,
   type Mapping,
   type Order,
   type Picture,
   type Size,
   type Texture,
 } from "./index";
+import { parseKinds } from "./names";
 import { toPng } from "./node";
 
 export interface Io {
@@ -33,20 +33,6 @@ export interface Io {
 const FORMATS = ["svg", "png", "uri", "json"] as const;
 const ORDERS: readonly Order[] = ["shuffle", "cycle", "random"];
 const TEXTURES: readonly Texture[] = ["grain", "paper"];
-
-const camel = (id: string) => id.replace(/-(\w)/g, (_, c: string) => c.toUpperCase());
-
-/** Every name a kind can be given by on the command line: its id, its export name, or a category. */
-function names(): Map<string, readonly Kind[]> {
-  const map = new Map<string, readonly Kind[]>();
-  for (const kind of kinds) {
-    map.set(kind.id.toLowerCase(), [kind]);
-    map.set(camel(kind.id).toLowerCase(), [kind]);
-  }
-  for (const [name, list] of Object.entries(categories)) map.set(name.toLowerCase(), list);
-  map.set("all", kinds);
-  return map;
-}
 
 const HELP = `bozzetto: seeded placeholder pictures as SVG or PNG
 
@@ -123,30 +109,6 @@ const describe = (picture: Picture, seed: number, file?: string) => ({
   ...(Object.keys(picture.options).length ? { options: picture.options } : {}),
 });
 
-/**
- * A kind with options from the command line: "cat:tabby,pupils=round". A bare name means true,
- * and values are read as the kind expects them (true and false, numbers, or words).
- */
-function withOptions(kind: Kind, text: string, token: string): Kind {
-  const values: Record<string, OptionValue> = {};
-  for (const part of text.split(",").filter(Boolean)) {
-    const [option, raw = "true"] = part.split("=");
-    const allowed = kind.options[option];
-    if (!allowed) {
-      const known = Object.keys(kind.options);
-      throw new UsageError(
-        `${kind.id} has no option "${option}" in "${token}". ${known.length ? `Its options are ${known.join(", ")}.` : "It has no options."}`,
-      );
-    }
-    const value = allowed.find(v => String(v) === raw);
-    if (value === undefined) {
-      throw new UsageError(`${kind.id}'s ${option} can be ${allowed.join(", ")}, not "${raw}".`);
-    }
-    values[option] = value;
-  }
-  return kind.with(values);
-}
-
 /** Runs the command with `args` (without the node and script paths). Resolves to the exit code. */
 export async function run(args: readonly string[], io: Io): Promise<number> {
   try {
@@ -190,15 +152,15 @@ async function main(args: readonly string[], io: Io): Promise<number> {
   if (o.version) return (io.stdout(`${VERSION}\n`), 0);
   if (o.list) return (io.stdout(listing()), 0);
 
-  const known = names();
-  const pool = positionals.flatMap(token => {
-    const [name, options] = token.split(/:(.*)/s);
-    const found = known.get(name.toLowerCase());
-    if (!found) throw new UsageError(`unknown kind "${name}". See bozzetto --list.`);
-    if (options === undefined) return found;
-    if (found.length !== 1) throw new UsageError(`options go on a single kind, not a category: "${token}".`);
-    return [withOptions(found[0], options, token)];
-  });
+  let pool: Kind[];
+  try {
+    pool = parseKinds(positionals);
+  } catch (error) {
+    const message = error instanceof Error ? error.message.replace(/^bozzetto: /, "") : String(error);
+    throw new UsageError(
+      message.startsWith("unknown kind") ? `${message.slice(0, -1)}. See bozzetto --list.` : message,
+    );
+  }
 
   const count = o.count === undefined ? 1 : Number(o.count);
   if (!Number.isInteger(count) || count < 1) throw new UsageError(`--count must be a whole number of at least 1.`);

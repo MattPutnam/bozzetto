@@ -19,6 +19,8 @@ export default defineConfig({
   lastUpdated: false,
   head: [["link", { rel: "icon", type: "image/svg+xml", href: "/bozzetto/logo.svg" }]],
   markdown: { theme: { light: "github-light", dark: "github-dark" } },
+  // <bozzetto-img> is a custom element, not a Vue component.
+  vue: { template: { compilerOptions: { isCustomElement: tag => tag === "bozzetto-img" } } },
   themeConfig: {
     logo: "/logo.svg",
     nav: [
@@ -59,6 +61,7 @@ export default defineConfig({
             { text: "Command line", link: "/guide/cli" },
             { text: "PNG, WebP and JPEG", link: "/guide/images" },
             { text: "Your own kinds", link: "/guide/custom-kinds" },
+            { text: "React, Vue and web components", link: "/guide/components" },
             { text: "Using it with…", link: "/guide/recipes" },
             { text: "API reference", link: "/reference/" },
             { text: "Gallery", link: `${site}/demo/`, target: "_self" },
