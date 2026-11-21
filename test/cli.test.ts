@@ -2,37 +2,45 @@ import { describe, expect, it } from "vitest";
 import { animals, cat, owl, placeholders, render } from "../src";
 import { run } from "../src/cli";
 
-/** Runs the command against an in-memory terminal and file system. */
-function cli(...args: string[]) {
-  const out = { stdout: "", stderr: "", files: new Map<string, string>(), folders: [] as string[] };
-  const code = run(args, {
-    stdout: text => (out.stdout += text),
+/** Runs the command against an in-memory terminal and file system. PNG bytes are kept apart from text. */
+async function cli(...args: string[]) {
+  const out = {
+    stdout: "",
+    stdoutBytes: undefined as Uint8Array | undefined,
+    stderr: "",
+    files: new Map<string, string>(),
+    binaries: new Map<string, Uint8Array>(),
+    folders: [] as string[],
+  };
+  const code = await run(args, {
+    stdout: contents => (typeof contents === "string" ? (out.stdout += contents) : (out.stdoutBytes = contents)),
     stderr: text => (out.stderr += text),
-    writeFile: (path, contents) => out.files.set(path, contents),
+    writeFile: (path, contents) =>
+      typeof contents === "string" ? out.files.set(path, contents) : out.binaries.set(path, contents),
     mkdir: path => out.folders.push(path),
   });
   return { code, ...out };
 }
 
 describe("bozzetto", () => {
-  it("writes one picture to standard output", () => {
-    const { code, stdout } = cli("owl", "--seed", "3", "--size", "320x240", "--palette", "riso");
+  it("writes one picture to standard output", async () => {
+    const { code, stdout } = await cli("owl", "--seed", "3", "--size", "320x240", "--palette", "riso");
     expect(code).toBe(0);
     expect(stdout).toBe(render(owl, { seed: 3, size: "320x240", palette: "riso" }).svg + "\n");
   });
 
-  it("accepts kind ids, export names and categories", () => {
-    expect(cli("ice-cream").code).toBe(0);
-    expect(cli("iceCream").code).toBe(0);
-    expect(cli("FruitBowl").code).toBe(0);
-    const ids = JSON.parse(cli("animals", "-n", String(animals.length), "-f", "json").stdout).map(
+  it("accepts kind ids, export names and categories", async () => {
+    expect((await cli("ice-cream")).code).toBe(0);
+    expect((await cli("iceCream")).code).toBe(0);
+    expect((await cli("FruitBowl")).code).toBe(0);
+    const ids = JSON.parse((await cli("animals", "-n", String(animals.length), "-f", "json")).stdout).map(
       (p: { kind: string }) => p.kind,
     );
     expect(new Set(ids)).toEqual(new Set(animals.map(k => k.id)));
   });
 
-  it("matches placeholders, with repeated flags as lists", () => {
-    const { stdout } = cli(
+  it("matches placeholders, with repeated flags as lists", async () => {
+    const { stdout } = await cli(
       "animals",
       "donut",
       "-n",
@@ -50,8 +58,8 @@ describe("bozzetto", () => {
     expect(stdout.trim().split("\n")).toEqual(expected.map(p => p.src));
   });
 
-  it("writes a folder of pictures with a manifest", () => {
-    const { code, files, folders, stderr } = cli("hills", "owl", "-n", "3", "--seed", "10", "-o", "out/");
+  it("writes a folder of pictures with a manifest", async () => {
+    const { code, files, folders, stderr } = await cli("hills", "owl", "-n", "3", "--seed", "10", "-o", "out/");
     expect(code).toBe(0);
     expect(folders).toEqual(["out"]);
     expect(stderr).toContain("Wrote 3 pictures");
@@ -64,8 +72,8 @@ describe("bozzetto", () => {
     }
   });
 
-  it("records the real seed for text seeds", () => {
-    const { files } = cli("hills", "-n", "2", "--seed", "user-42", "-o", "out");
+  it("records the real seed for text seeds", async () => {
+    const { files } = await cli("hills", "-n", "2", "--seed", "user-42", "-o", "out");
     const expected = placeholders(2, { kind: "hills", seed: "user-42" });
     const [first, second] = JSON.parse(files.get("out/manifest.json")!);
     expect(second.seed).toBe(first.seed + 1);
@@ -73,47 +81,64 @@ describe("bozzetto", () => {
     expect(files.get(`out/${second.file}`)).toBe(expected[1].svg + "\n");
   });
 
-  it("writes one picture to a file", () => {
-    const { files } = cli("owl", "-o", "owl.svg");
+  it("writes one picture to a file", async () => {
+    const { files } = await cli("owl", "-o", "owl.svg");
     expect(files.get("owl.svg")).toBe(render(owl).svg + "\n");
   });
 
-  it("prints JSON with alt text and markup", () => {
-    const [picture] = JSON.parse(cli("owl", "-f", "json").stdout);
+  it("prints JSON with alt text and markup", async () => {
+    const [picture] = JSON.parse((await cli("owl", "-f", "json")).stdout);
     expect(picture).toMatchObject({ kind: "owl", seed: 1, width: 400, height: 300, alt: render(owl).alt });
     expect(picture.svg).toBe(render(owl).svg);
   });
 
-  it("takes kind options after a colon", () => {
-    const [picture] = JSON.parse(cli("cat:tabby,pupils=round", "-f", "json").stdout);
+  it("takes kind options after a colon", async () => {
+    const [picture] = JSON.parse((await cli("cat:tabby,pupils=round", "-f", "json")).stdout);
     expect(picture.options).toMatchObject({ tabby: true, pupils: "round" });
     expect(picture.svg).toBe(render(cat.with({ tabby: true, pupils: "round" })).svg);
-    const [pizza] = JSON.parse(cli("pizza:slices=8,topping=margherita", "-f", "json").stdout);
+    const [pizza] = JSON.parse((await cli("pizza:slices=8,topping=margherita", "-f", "json")).stdout);
     expect(pizza.options).toMatchObject({ slices: 8, topping: "margherita" });
-    expect(cli("--list").stdout).toContain("pupils=slit|round");
+    expect((await cli("--list")).stdout).toContain("pupils=slit|round");
   });
 
-  it("lists kinds and palettes, and shows help and the version", () => {
-    expect(cli("--list").stdout).toContain("animals     cat, bird");
-    expect(cli("--help").stdout).toContain("Usage");
-    expect(cli("--version").stdout).toMatch(/^\d+\.\d+\.\d+\n$/);
+  it("writes PNGs: one to a file or standard output, several to a folder", async () => {
+    const isPng = (bytes?: Uint8Array) => !!bytes && bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e;
+    const one = await cli("owl", "-o", "owl.png");
+    expect(isPng(one.binaries.get("owl.png"))).toBe(true);
+    expect(isPng((await cli("owl", "--format", "png")).stdoutBytes)).toBe(true);
+    const folder = await cli("animals", "-n", "3", "--format", "png", "--scale", "2", "-o", "out");
+    const manifest = JSON.parse(folder.files.get("out/manifest.json")!);
+    for (const entry of manifest) {
+      expect(entry.file).toMatch(/\.png$/);
+      expect(isPng(folder.binaries.get(`out/${entry.file}`))).toBe(true);
+      expect([entry.width, entry.height]).toEqual([800, 600]);
+    }
   });
 
-  it("explains mistakes and exits with 1", () => {
+  it("lists kinds and palettes, and shows help and the version", async () => {
+    expect((await cli("--list")).stdout).toContain("animals     cat, bird");
+    expect((await cli("--help")).stdout).toContain("Usage");
+    expect((await cli("--version")).stdout).toMatch(/^\d+\.\d+\.\d+\n$/);
+  });
+
+  it("explains mistakes and exits with 1", async () => {
     for (const [args, message] of [
       [["dragon"], 'unknown kind "dragon"'],
       [["-n", "3"], "several pictures need --out"],
       [["-n", "0"], "--count must be"],
       [["--mapping", "bogus"], "--mapping must be one of"],
-      [["--format", "png"], "--format must be one of"],
+      [["--format", "gif"], "--format must be one of"],
       [["--size", "big"], "isn't a size"],
       [["--palette", "plaid"], "neither a palette name"],
       [["--frobnicate"], "Unknown option"],
+      [["--scale", "2"], "--scale is for --format png"],
+      [["-f", "png", "--scale", "0"], "--scale must be a number more than 0"],
+      [["-n", "2", "-f", "png"], "several PNGs need --out"],
       [["cat:wings"], 'cat has no option "wings"'],
       [["cat:pupils=plaid"], "cat's pupils can be slit, round"],
       [["animals:tabby"], "options go on a single kind"],
     ] as const) {
-      const { code, stderr } = cli(...args);
+      const { code, stderr } = await cli(...args);
       expect(code, args.join(" ")).toBe(1);
       expect(stderr, args.join(" ")).toContain(message);
     }

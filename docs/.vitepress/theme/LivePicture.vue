@@ -1,6 +1,16 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
-import { ADJUSTMENTS, MAPPINGS, PALETTES, kinds, render, type Mapping, type Size, type Texture } from "../../../src";
+import {
+  ADJUSTMENTS,
+  MAPPINGS,
+  PALETTES,
+  kinds,
+  render,
+  toImageBlob,
+  type Mapping,
+  type Size,
+  type Texture,
+} from "../../../src";
 
 /** A single picture with every option to play with, and the code that makes it. */
 const props = withDefaults(defineProps<{ kind?: string; seed?: number }>(), { kind: "owl", seed: 3 });
@@ -36,6 +46,18 @@ const picture = computed(() =>
     texture: texture.value || undefined,
   }),
 );
+
+/** Saves the picture as a PNG at twice its size, through the browser's own download. */
+const saved = ref("");
+async function savePng() {
+  const blob = await toImageBlob(picture.value, { scale: 2 });
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = `${kind.value}-${seed.value}.png`;
+  link.click();
+  setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+  saved.value = `Saved ${link.download}: ${picture.value.width * 2}×${picture.value.height * 2}, ${(blob.size / 1024).toFixed(1)} KB`;
+}
 
 const code = computed(() => {
   const values = Object.entries(fixedValues.value);
@@ -125,6 +147,10 @@ const code = computed(() => {
           <dt>size</dt>
           <dd>{{ (picture.src.length / 1024).toFixed(1) }} KB as a data URI</dd>
         </dl>
+        <p class="live-save">
+          <button class="bz-button" @click="savePng">Save PNG</button>
+          <span>{{ saved }}</span>
+        </p>
       </div>
     </div>
   </div>
@@ -191,6 +217,15 @@ const code = computed(() => {
 }
 .live-facts dd {
   margin: 0;
+}
+.live-save {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  margin: 12px 0 0;
+  font-size: 13px;
+  color: var(--vp-c-text-2);
 }
 .chip {
   display: inline-block;

@@ -1,5 +1,5 @@
 /**
- * The `bozzetto` command: placeholder pictures as SVG files, from the shell.
+ * The `bozzetto` command: placeholder pictures as SVG or PNG files, from the shell.
  * `run` does the work and takes its input and output as arguments, so it can be tested;
  * `bin.ts` connects it to the real process.
  */
@@ -21,15 +21,16 @@ import {
   type Size,
   type Texture,
 } from "./index";
+import { toPng } from "./node";
 
 export interface Io {
-  stdout(text: string): void;
+  stdout(contents: string | Uint8Array): void;
   stderr(text: string): void;
-  writeFile(path: string, contents: string): void;
+  writeFile(path: string, contents: string | Uint8Array): void;
   mkdir(path: string): void;
 }
 
-const FORMATS = ["svg", "uri", "json"] as const;
+const FORMATS = ["svg", "png", "uri", "json"] as const;
 const ORDERS: readonly Order[] = ["shuffle", "cycle", "random"];
 const TEXTURES: readonly Texture[] = ["grain", "paper"];
 
@@ -47,7 +48,7 @@ function names(): Map<string, readonly Kind[]> {
   return map;
 }
 
-const HELP = `bozzetto: seeded placeholder pictures as SVG
+const HELP = `bozzetto: seeded placeholder pictures as SVG or PNG
 
 Usage
   bozzetto [kinds...] [options]
@@ -67,9 +68,11 @@ Options
       --texture <name>   ${TEXTURES.join(" or ")}. Repeat for a mix.
       --order <name>     How repeated options are gone through: ${ORDERS.join(", ")}. Default shuffle.
       --numbered         Number the pictures 1, 2, 3… in the corner.
-  -f, --format <name>    svg (default), uri (data URIs, one per line) or json.
+  -f, --format <name>    svg (default), png, uri (data URIs, one per line) or json.
+                         An --out file ending in .png means png. PNG needs @resvg/resvg-js.
+      --scale <n>        For png: pixels per SVG pixel, such as 2 for high-density screens.
   -o, --out <path>       A file for one picture, or a folder for several. The folder gets
-                         one SVG per picture plus manifest.json with each picture's alt text,
+                         one file per picture plus manifest.json with each picture's alt text,
                          focus, size and color. Without it, pictures go to standard output.
       --list             List the kinds, categories and palettes.
   -h, --help             Show this help.
@@ -77,6 +80,7 @@ Options
 
 Examples
   bozzetto owl > owl.svg
+  bozzetto owl --seed 3 --scale 2 -o owl.png
   bozzetto portrait:hair=curly,glasses -n 4 -o portraits/
   bozzetto owl --seed 3 --size 320x240 --palette riso -o owl.svg
   bozzetto animals donut -n 24 -s 400x300 -s 300x400 -o fixtures/
@@ -143,10 +147,10 @@ function withOptions(kind: Kind, text: string, token: string): Kind {
   return kind.with(values);
 }
 
-/** Runs the command with `args` (without the node and script paths). Returns the exit code. */
-export function run(args: readonly string[], io: Io): number {
+/** Runs the command with `args` (without the node and script paths). Resolves to the exit code. */
+export async function run(args: readonly string[], io: Io): Promise<number> {
   try {
-    return main(args, io);
+    return await main(args, io);
   } catch (error) {
     const message = error instanceof Error ? error.message.replace(/^bozzetto: /, "") : String(error);
     io.stderr(`bozzetto: ${message}\n${error instanceof UsageError ? "Try bozzetto --help.\n" : ""}`);
@@ -154,7 +158,7 @@ export function run(args: readonly string[], io: Io): number {
   }
 }
 
-function main(args: readonly string[], io: Io): number {
+async function main(args: readonly string[], io: Io): Promise<number> {
   let parsed;
   try {
     parsed = parseArgs({
@@ -170,6 +174,7 @@ function main(args: readonly string[], io: Io): number {
         order: { type: "string" },
         numbered: { type: "boolean" },
         format: { type: "string", short: "f" },
+        scale: { type: "string" },
         out: { type: "string", short: "o" },
         list: { type: "boolean" },
         help: { type: "boolean", short: "h" },
@@ -198,7 +203,12 @@ function main(args: readonly string[], io: Io): number {
   const count = o.count === undefined ? 1 : Number(o.count);
   if (!Number.isInteger(count) || count < 1) throw new UsageError(`--count must be a whole number of at least 1.`);
   const seed = o.seed === undefined ? 1 : /^\d+$/.test(o.seed) ? Number(o.seed) : o.seed;
-  const format = oneOf(o.format ?? "svg", FORMATS, "--format");
+  const format = oneOf(o.format ?? (o.out?.toLowerCase().endsWith(".png") ? "png" : "svg"), FORMATS, "--format");
+  const scale = o.scale === undefined ? 1 : Number(o.scale);
+  if (!(scale > 0)) throw new UsageError(`--scale must be a number more than 0.`);
+  if (o.scale !== undefined && format !== "png") throw new UsageError(`--scale is for --format png.`);
+  /** A picture's file contents in the chosen format: SVG text, or PNG bytes. */
+  const fileOf = async (picture: Picture) => (format === "png" ? toPng(picture, { scale }) : picture.svg + "\n");
 
   const pictures = placeholders(count, {
     kind: pool.length ? pool : undefined,
@@ -214,22 +224,33 @@ function main(args: readonly string[], io: Io): number {
   const seedOf = (k: number) => (seedToInt(seed) + k) >>> 0;
 
   if (o.out !== undefined && (count > 1 || o.out.endsWith("/"))) {
-    // A folder: one SVG per picture, plus a manifest.
+    // A folder: one file per picture, plus a manifest.
+    if (format === "uri" || format === "json") throw new UsageError(`--out <folder> writes svg or png files.`);
     const folder = o.out.replace(/\/+$/, "");
     io.mkdir(folder);
-    const width = String(count).length;
-    const manifest = pictures.map((picture, k) => {
-      const file = `${String(k + 1).padStart(width, "0")}-${picture.kind}.svg`;
-      io.writeFile(`${folder}/${file}`, picture.svg + "\n");
-      return describe(picture, seedOf(k), file);
-    });
+    const digits = String(count).length;
+    const manifest = [];
+    for (const [k, picture] of pictures.entries()) {
+      const file = `${String(k + 1).padStart(digits, "0")}-${picture.kind}.${format}`;
+      io.writeFile(`${folder}/${file}`, await fileOf(picture));
+      const entry = describe(picture, seedOf(k), file);
+      // A PNG's size is its pixel size, scale included.
+      manifest.push(
+        format === "png"
+          ? { ...entry, width: Math.round(picture.width * scale), height: Math.round(picture.height * scale) }
+          : entry,
+      );
+    }
     io.writeFile(`${folder}/manifest.json`, JSON.stringify(manifest, null, 2) + "\n");
     io.stderr(`Wrote ${count} picture${count === 1 ? "" : "s"} and manifest.json to ${folder}/\n`);
     return 0;
   }
 
-  let text: string;
-  if (format === "json") {
+  let text: string | Uint8Array;
+  if (format === "png") {
+    if (count !== 1) throw new UsageError(`several PNGs need --out <folder>.`);
+    text = await fileOf(pictures[0]);
+  } else if (format === "json") {
     text = JSON.stringify(
       pictures.map((picture, k) => ({ ...describe(picture, seedOf(k)), svg: picture.svg })),
       null,
@@ -242,11 +263,12 @@ function main(args: readonly string[], io: Io): number {
   } else {
     throw new UsageError(`several pictures need --out <folder>, or --format uri or json.`);
   }
+  const contents = typeof text === "string" && !text.endsWith("\n") ? text + "\n" : text;
   if (o.out !== undefined) {
-    io.writeFile(o.out, text + "\n");
+    io.writeFile(o.out, contents);
     io.stderr(`Wrote ${o.out}\n`);
   } else {
-    io.stdout(text + "\n");
+    io.stdout(contents);
   }
   return 0;
 }

@@ -57,6 +57,7 @@ export default defineConfig({
           text: "More",
           items: [
             { text: "Command line", link: "/guide/cli" },
+            { text: "PNG, WebP and JPEG", link: "/guide/images" },
             { text: "Your own kinds", link: "/guide/custom-kinds" },
             { text: "Using it with…", link: "/guide/recipes" },
             { text: "API reference", link: "/reference/" },

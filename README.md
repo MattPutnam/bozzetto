@@ -88,7 +88,21 @@ npx bozzetto landscapes -n 5 --format json
 npx bozzetto --list
 ```
 
-Name kinds by id (`ice-cream`), export name (`iceCream`) or category (`animals`), in any mix, and give a kind options after a colon: `cat:tabby,pupils=round`. The options match `placeholders`, and repeating `--size`, `--palette`, `--mapping` or `--texture` gives a list to go through. With several pictures, `-o <folder>` writes one SVG per picture plus `manifest.json` with each picture's kind, seed, size, alt text, focus and color. `--format uri` prints data URIs, one per line, and `--format json` prints everything, markup included. See `bozzetto --help` for the full list.
+Name kinds by id (`ice-cream`), export name (`iceCream`) or category (`animals`), in any mix, and give a kind options after a colon: `cat:tabby,pupils=round`. The options match `placeholders`, and repeating `--size`, `--palette`, `--mapping` or `--texture` gives a list to go through. With several pictures, `-o <folder>` writes one SVG per picture plus `manifest.json` with each picture's kind, seed, size, alt text, focus and color. `--format png` writes PNGs (with `@resvg/resvg-js` installed), `--format uri` prints data URIs, one per line, and `--format json` prints everything, markup included. See `bozzetto --help` for the full list.
+
+## PNG, WebP and JPEG
+
+In the browser, `toImageBlob(picture, { type, scale, quality })` draws a picture on a canvas and returns a PNG, WebP or JPEG `Blob`. In Node, `toPng` from `bozzetto/node` renders PNGs with [resvg](https://github.com/yisibl/resvg-js), an optional dependency:
+
+```ts
+import { toPng } from "bozzetto/node"; // npm install @resvg/resvg-js
+
+await writeFile("owl.png", await toPng(render(owl, { seed: 3 }), { scale: 2 }));
+```
+
+The command line writes PNGs with `--format png` (or an output file ending in `.png`) and `--scale`.
+
+## Kinds
 
 Categories are plain arrays of kinds. Use them anywhere a list of kinds is accepted, alone or mixed with single kinds, as in `[animals, donut]`.
 

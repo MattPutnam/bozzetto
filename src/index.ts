@@ -34,6 +34,8 @@ export { defineKind, seedToInt } from "./core";
 export type { Draw, Kind, Notes, OptionSpec, OptionValue, OptionValues, Rand } from "./core";
 export { render, resolveSize, toDataUri, toSvg } from "./render";
 export type { Picture, RenderOptions, Size } from "./render";
+export { toImageBlob } from "./raster";
+export type { ImageOptions } from "./raster";
 
 // Colors
 export {
