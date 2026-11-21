@@ -6,7 +6,7 @@ A _bozzetto_ is a painter's small preliminary sketch, made before the real work.
 
 **[Read the manual](https://mattputnam.github.io/bozzetto/)**, see [every kind](https://mattputnam.github.io/bozzetto/guide/kinds), or [make a palette](https://mattputnam.github.io/bozzetto/demo/picker.html).
 
-![Two seeds of every kind](media/gallery.svg)
+![One picture of every kind](media/gallery.svg)
 
 - **Deterministic.** The same seed gives the same picture, everywhere. Seeds can be numbers or strings, such as a user id.
 - **Small.** Most pictures are 2–8 KB as a data URI, and none needs a network request.
