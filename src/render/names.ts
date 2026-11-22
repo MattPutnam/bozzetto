@@ -4,6 +4,7 @@
  * (`cat:tabby,pupils=round`, where a bare option name means true).
  */
 import { categories, kinds, type Kind, type OptionValue } from "../index";
+import { own } from "../draw/core";
 
 const camel = (id: string) => id.replace(/-(\w)/g, (_, c: string) => c.toUpperCase());
 
@@ -27,7 +28,7 @@ function withOptions(kind: Kind, text: string, token: string): Kind {
   const values: Record<string, OptionValue> = {};
   for (const part of text.split(",").filter(Boolean)) {
     const [option, raw = "true"] = part.split("=");
-    const allowed = kind.options[option];
+    const allowed = own(kind.options, option) ? kind.options[option] : undefined;
     if (!allowed) {
       const known = Object.keys(kind.options);
       throw new Error(

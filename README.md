@@ -139,7 +139,7 @@ The command line writes PNGs with `--format png` (or an output file ending in `.
 
 ## Kinds
 
-Categories are plain arrays of kinds. Use them anywhere a list of kinds is accepted, alone or mixed with single kinds, as in `[animals, donut]`.
+Categories are plain arrays of kinds. Use them anywhere a list of kinds is accepted, alone or mixed with single kinds, as in `[animals, donut]`. A kind listed twice comes up twice as often, so `[animals, owl]` favors the owl.
 
 | Category     | Kinds                                                                                                                                                                                                                                                                                                                                                                                    |
 | ------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

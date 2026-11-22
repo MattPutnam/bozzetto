@@ -18,6 +18,8 @@ placeholders(12, { kind: [animals, donut] }); // every animal, plus the donut
 placeholders(6, { kind: ["owl", "ice-cream"] }); // kinds can be named by id, too
 ```
 
+A kind listed twice comes up twice as often: `[animals, owl]` is every animal, with the owl favored.
+
 `kinds` lists every kind, and `categories` maps each category's name to its kinds. `faces` lists
 the kinds with a face, which can be [avatars](./avatars).
 

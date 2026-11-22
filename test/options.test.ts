@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { cat, defineKind, hills, kinds, placeholders, portrait, render } from "../src";
+import { parseKinds } from "../src/render/names";
 
 const SEEDS = Array.from({ length: 40 }, (_, k) => k * 7919 + 1);
 const withOptions = kinds.filter(k => Object.keys(k.options).length > 0);
@@ -133,5 +134,12 @@ describe("kind options", () => {
     });
     expect(render(flag.with({ stripes: 3 })).alt).toBe("A flag with 3 stripes");
     expect(render(flag.with({ stripes: 3 })).options).toEqual({ stripes: 3 });
+  });
+});
+
+describe("option names", () => {
+  it("don't come from an object's prototype", () => {
+    expect(() => cat.with({ constructor: 1 } as never)).toThrow(/has no option "constructor"/);
+    expect(() => parseKinds("cat:constructor")).toThrow(/has no option "constructor"/);
   });
 });

@@ -5,7 +5,7 @@
  */
 
 import { el, hash } from "../draw/core";
-import { lchToHex, oklabToLch, rgbToOklab } from "./color";
+import { lchToHex, oklabToLch, parseColor, rgbToOklab, toHex } from "./color";
 import { ADJUSTMENTS, resolvePalette, type Adjustment, type PaletteSpec } from "./palettes";
 
 export { ADJUSTMENTS, PALETTES } from "./palettes";
@@ -70,25 +70,15 @@ type RGB = [number, number, number];
 
 const COLOR = /hsl\((\d+(?:\.\d+)?) (\d+(?:\.\d+)?)% (\d+(?:\.\d+)?)%\)|#(?:[0-9a-fA-F]{6}|[0-9a-fA-F]{3})\b/g;
 
-function parse(text: string): RGB {
-  if (text.startsWith("#")) {
-    const hex = text.length === 4 ? [...text.slice(1)].map(c => c + c).join("") : text.slice(1);
-    return [0, 2, 4].map(k => parseInt(hex.slice(k, k + 2), 16)) as RGB;
-  }
-  const [h, sat, l] = text.slice(4, -1).replace(/%/g, "").split(" ").map(Number);
-  return hslToRgb(h, sat, l);
-}
+/** A color the COLOR pattern matched: always readable, since the pattern only finds valid colors. */
+const parse = (text: string): RGB => parseColor(text)!;
 
-function hslToRgb(h: number, sat: number, l: number): RGB {
-  const S = sat / 100;
-  const L = l / 100;
-  const a = S * Math.min(L, 1 - L);
-  const f = (n: number) => {
-    const k = (n + h / 30) % 12;
-    return 255 * (L - a * Math.max(-1, Math.min(k - 3, 9 - k, 1)));
-  };
-  return [f(0), f(8), f(4)];
-}
+/**
+ * Every color in the markup's tags and style sheets, not in its text, so a label such as "#100"
+ * stays as written.
+ */
+const PAINTED = /<style[^>]*>[\s\S]*?<\/style>|<[^>]*>/g;
+const colorsIn = (svg: string): string[] => (svg.match(PAINTED) ?? []).flatMap(chunk => chunk.match(COLOR) ?? []);
 
 function rgbToHsl([r, g, b]: RGB): RGB {
   r /= 255;
@@ -114,15 +104,6 @@ function lightness([r, g, b]: RGB): number {
   return Y <= 216 / 24389 ? (Y * 24389) / 27 : 116 * Math.cbrt(Y) - 16;
 }
 
-const hex = (c: RGB) =>
-  "#" +
-  c
-    .map(v =>
-      Math.round(Math.max(0, Math.min(255, v)))
-        .toString(16)
-        .padStart(2, "0"),
-    )
-    .join("");
 // The hue is wrapped into 0–359: adjustments can push it below 0 (dusk shifts warm hues down), and
 // although CSS accepts any angle, recoloring again (for dark mode, say) only reads 0–359.
 const hslText = (h: number, sat: number, l: number) =>
@@ -131,13 +112,14 @@ const hslText = (h: number, sat: number, l: number) =>
 /** Sorted by lightness, then sampled at t in 0–1 with linear interpolation. */
 function ramp(colors: readonly string[]): (t: number) => string {
   const stops = colors.map(parse).sort((a, b) => lightness(a) - lightness(b));
+  if (stops.length === 1) return () => toHex(stops[0]);
   return t => {
     const x = Math.max(0, Math.min(1, t)) * (stops.length - 1);
     const k = Math.min(Math.floor(x), stops.length - 2);
     const f = x - k;
     const a = stops[k];
     const b = stops[k + 1];
-    return hex([a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f, a[2] + (b[2] - a[2]) * f]);
+    return toHex([a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f, a[2] + (b[2] - a[2]) * f]);
   };
 }
 
@@ -157,7 +139,7 @@ function nearest(colors: readonly string[]): (c: RGB) => string {
         best = o;
       }
     }
-    return hex(best);
+    return toHex(best);
   };
 }
 
@@ -171,7 +153,7 @@ function balanced(svg: string, colors: readonly string[]): (c: RGB) => string {
   const swatchLs = swatches.map(s => s.lab[0]);
   const paletteLo = Math.min(...swatchLs);
   const paletteHi = Math.max(...swatchLs);
-  const pictureLs = (svg.match(COLOR) ?? []).map(m => rgbToOklab(parse(m))[0]);
+  const pictureLs = colorsIn(svg).map(m => rgbToOklab(parse(m))[0]);
   const lo = Math.min(...pictureLs);
   const span = Math.max(...pictureLs) - lo || 1;
   return c => {
@@ -201,7 +183,7 @@ export function stylize(svg: string, options: StyleOptions = {}): string {
   const masks: string[] = [];
   let body = svg.replace(/<mask[\s\S]*?<\/mask>/g, m => `\uE000${masks.push(m) - 1}\uE000`);
   const recolor = recolorer(body, options);
-  if (recolor) body = body.replace(COLOR, m => recolor(parse(m)));
+  if (recolor) body = body.replace(PAINTED, chunk => chunk.replace(COLOR, m => recolor(parse(m))));
   body = body.replace(/\uE000(\d+)\uE000/g, (_, k) => masks[Number(k)]);
   return options.texture ? addTexture(body, options.texture) : body;
 }
@@ -215,7 +197,7 @@ function recolorer(svg: string, o: StyleOptions): ((c: RGB) => string) | undefin
   if (o.mapping === "nearest") return nearest(colors);
   if (o.mapping !== "ramp") return balanced(svg, colors);
   // Ramp: stretch the picture's own lightness range across the whole palette.
-  const ls = (svg.match(COLOR) ?? []).map(m => lightness(parse(m)));
+  const ls = colorsIn(svg).map(m => lightness(parse(m)));
   const lo = Math.min(...ls);
   const span = Math.max(...ls) - lo || 1;
   const at = ramp(colors);
@@ -278,5 +260,5 @@ function addTexture(svg: string, texture: Texture): string {
     opacity: texture === "grain" ? "0.22" : "0.45",
     style: texture === "grain" ? "mix-blend-mode:overlay" : "mix-blend-mode:multiply",
   });
-  return svg.replace(/<\/svg>$/, `${filter}${layer}</svg>`);
+  return svg.replace(/<\/svg>(\s*)$/, `${filter}${layer}</svg>$1`);
 }

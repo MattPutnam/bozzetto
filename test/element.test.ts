@@ -72,4 +72,19 @@ describe("<bozzetto-img>", () => {
     expect(element.shadowRoot!.childNodes).toHaveLength(0);
     error.mockRestore();
   });
+
+  it("forgets its picture when a redraw fails", () => {
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+    const element = make({ kind: "owl" });
+    expect(element.picture?.kind).toBe("owl");
+    element.setAttribute("kind", "dragon");
+    expect(element.picture).toBeUndefined();
+    error.mockRestore();
+  });
+
+  it('reads dark="true" as on and dark="false" as off', () => {
+    expect(make({ kind: "owl", dark: "true" }).picture?.svg).toContain("prefers-color-scheme: dark");
+    const off = make({ kind: "owl", dark: "false" }).picture;
+    expect(off?.svg).toBe(render(owl).svg);
+  });
 });

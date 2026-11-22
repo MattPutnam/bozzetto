@@ -7,7 +7,8 @@ import type { PaletteSpec } from "../color/palettes";
 
 /**
  * What to draw: a kind, a kind's id, or a list of them. Lists can nest, so categories mix with
- * single kinds: `[animals, donut]` is every animal plus the donut. A string is a built-in kind's id
+ * single kinds: `[animals, donut]` is every animal plus the donut. A kind listed twice comes up twice
+ * as often: `[animals, owl]` favors the owl. A string is a built-in kind's id
  * (`"ice-cream"`), not an export or category name: pass the category itself (`animals`).
  *
  * @category Choosing kinds
@@ -91,8 +92,15 @@ function mix32(h: number): number {
 function kindPicker(kinds: readonly Kind[], order: Order, seed: number): (k: number) => Kind {
   if (kinds.length === 1) return () => kinds[0];
   if (order === "cycle") return k => kinds[k % kinds.length];
-  // A kind's key is its id plus any options fixed with `with`, so `cat` and `cat.with(…)` differ.
-  const keys = kinds.map(kind => hash(Object.keys(kind.fixed).length ? kind.id + JSON.stringify(kind.fixed) : kind.id));
+  // A kind's key is its id plus any options fixed with `with`, so `cat` and `cat.with(…)` differ. A
+  // kind listed again gets a key of its own for each repeat, so `[cat, cat, dog]` picks cat twice as often.
+  const copies = new Map<string, number>();
+  const keys = kinds.map(kind => {
+    const key = Object.keys(kind.fixed).length ? kind.id + JSON.stringify(kind.fixed) : kind.id;
+    const copy = copies.get(key) ?? 0;
+    copies.set(key, copy + 1);
+    return hash(copy ? `${key}#${copy}` : key);
+  });
   const best = (salt: number): number => {
     let top = 0;
     let topScore = -1;

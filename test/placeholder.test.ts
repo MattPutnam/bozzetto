@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   animals,
+  cat,
   categories,
   donut,
   hills,
@@ -220,5 +221,32 @@ describe("choosing kinds as the list grows", () => {
       .map(p => p.kind)
       .filter(id => id !== "new-kind");
     expect(after.slice(0, 30)).toEqual(before);
+  });
+});
+
+describe("edge cases", () => {
+  it("finds the background color at sizes that aren't whole numbers", () => {
+    for (const kind of kinds) {
+      const picture = render(kind, { size: "400.04x300.02" });
+      const full = /<rect (?:x="0" y="0" )?width="400" height="300" fill="(#[0-9a-f]{6}|hsl\([^)]*\))"/.exec(
+        picture.svg,
+      );
+      if (full?.[1].startsWith("#")) expect(picture.color, kind.id).toBe(full[1]);
+    }
+  });
+
+  it("leaves a picture plain when dark mode is off", () => {
+    const plain = render(owl).svg;
+    expect(render(owl, { dark: false }).svg).toBe(plain);
+    expect(render(owl, { darkSelector: ".dark" }).svg).toBe(plain);
+    expect(render(owl, { mapping: "ramp" }).svg).toBe(plain);
+    expect(placeholders(3, { dark: false })).toEqual(placeholders(3));
+  });
+
+  it("picks a kind listed twice twice as often", () => {
+    const picks = Array.from({ length: 3000 }, (_, seed) => resolveKind([cat, cat, donut], seed).id);
+    const share = picks.filter(id => id === "cat").length / picks.length;
+    expect(share).toBeGreaterThan(0.6);
+    expect(share).toBeLessThan(0.73);
   });
 });

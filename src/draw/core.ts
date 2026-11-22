@@ -106,6 +106,9 @@ export interface Kind<I extends string = string, O extends OptionSpec = OptionSp
   with(values: OptionValues<O>): Kind<I, O>;
 }
 
+/** Whether `key` is `record`'s own key, so names such as "constructor" aren't found on its prototype. */
+export const own = (record: object, key: string): boolean => Object.prototype.hasOwnProperty.call(record, key);
+
 function makeKind<I extends string, O extends OptionSpec>(
   id: I,
   name: string,
@@ -122,7 +125,7 @@ function makeKind<I extends string, O extends OptionSpec>(
     with(values) {
       for (const [option, value] of Object.entries(values)) {
         if (value === undefined) continue;
-        const allowed = options[option];
+        const allowed = own(options, option) ? options[option] : undefined;
         if (!allowed) {
           const known = Object.keys(options);
           throw new Error(

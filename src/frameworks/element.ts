@@ -13,7 +13,8 @@
  * - `seed`, `size` ("WxH"), `palette` (a name or palette code), `mapping`, `texture`, `label`.
  * - `alt`: replaces the picture's own alt text.
  * - `inline`: draw the SVG markup instead of an image.
- * - `dark`: build in a dark-mode version: empty for the `dim` adjustment, or a palette name or code.
+ * - `dark`: build in a dark-mode version: empty (or "true") for the `dim` adjustment, or a palette
+ *   name or code; "false" turns it off.
  * - `avatar`: draw an avatar, a face framed around its head (any face kind unless `kind` says),
  *   with `shape` ("circle", "rounded" or "square") and `size` as one number, such as "48".
  *
@@ -40,6 +41,10 @@ const ATTRIBUTES = [
   "shape",
   "dark",
 ] as const;
+
+/** The `dark` attribute: on when present (or "true"), off for "false", otherwise a palette. */
+const darkOf = (value: string | undefined): boolean | string | undefined =>
+  value === undefined || value === "false" ? undefined : value === "" || value === "true" ? true : value;
 
 // Lets the module load where there's no DOM (server rendering), though the element only works in a browser.
 const Base = (typeof HTMLElement === "undefined" ? class {} : HTMLElement) as typeof HTMLElement;
@@ -77,7 +82,7 @@ export class BozzettoImg extends Base {
         palette: attr("palette"),
         mapping: attr("mapping") as Mapping | undefined,
         texture: attr("texture") as Texture | undefined,
-        dark: this.hasAttribute("dark") ? attr("dark") || true : undefined,
+        dark: darkOf(attr("dark")),
       };
       this.#picture = this.hasAttribute("avatar")
         ? avatar({
@@ -88,6 +93,7 @@ export class BozzettoImg extends Base {
           })
         : placeholder({ ...common, size: attr("size") as Size | undefined, label: attr("label") });
     } catch (error) {
+      this.#picture = undefined;
       root.textContent = "";
       console.error(`<bozzetto-img>: ${error instanceof Error ? error.message.replace(/^bozzetto: /, "") : error}`);
       return;

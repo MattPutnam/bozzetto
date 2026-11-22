@@ -6,7 +6,7 @@
  * so a palette picker can regenerate as controls change, lock swatches, and share a palette as
  * a short code.
  */
-import { makeRand, seedToInt } from "../draw/core";
+import { makeRand, own, seedToInt } from "../draw/core";
 import { hexToLch, lchToHex, lightnessOf, parseColor, toHex, type LCH } from "./color";
 
 /**
@@ -227,8 +227,7 @@ export function decodePalette(code: string): string[] | undefined {
  */
 export function resolvePalette(spec: PaletteSpec): string[] {
   if (typeof spec === "string") {
-    const named = PALETTES[spec];
-    if (named) return [...named];
+    if (own(PALETTES, spec)) return [...PALETTES[spec]];
     if ((ADJUSTMENTS as readonly string[]).includes(spec))
       throw new Error(`bozzetto: "${spec}" is an adjustment of a picture's own colors, so it has no colors to list.`);
     const decoded = decodePalette(spec);

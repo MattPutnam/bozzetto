@@ -1,6 +1,6 @@
 /** Turning a kind into a finished picture: size, seed, label, and the colors and texture to style it with. */
 import { parseColor, toHex } from "../color/color";
-import { el, hash, makeRand, seedToInt, type Kind, type OptionValue } from "../draw/core";
+import { el, hash, makeRand, n, seedToInt, type Kind, type OptionValue } from "../draw/core";
 import { withDarkMode } from "../color/dark";
 import { stylize, type StyleOptions } from "../color/style";
 
@@ -91,7 +91,16 @@ export function render(kind: Kind, options: RenderOptions = {}): Picture {
   // options, palettes, textures or dark colors) can share a page without borrowing each other's
   // gradients. Plain pictures leave styling out, so their ids don't depend on it.
   const fixed = Object.keys(kind.fixed ?? {}).length ? `:${JSON.stringify(kind.fixed)}` : "";
-  const styled = [options.palette, options.mapping, options.texture, options.dark, options.darkSelector];
+  // Only what changes the picture counts: `dark: false` or a selector without `dark` leaves it plain.
+  const darkPalette = options.dark === true ? "dim" : options.dark || undefined;
+  const darkOn = darkPalette !== undefined;
+  const styled = [
+    options.palette,
+    options.palette !== undefined || darkOn ? options.mapping : undefined,
+    options.texture,
+    darkOn ? options.dark : undefined,
+    darkOn ? options.darkSelector : undefined,
+  ];
   const style = styled.some(v => v !== undefined) ? `:${JSON.stringify(styled)}` : "";
   const prefix = `bz${hash(`${kind.id}${fixed}${style}:${seed}:${width}x${height}`).toString(36)}-`;
   let alt = kind.name;
@@ -141,8 +150,7 @@ export function render(kind: Kind, options: RenderOptions = {}): Picture {
   );
   if (options.palette !== undefined || options.texture !== undefined) svg = stylize(svg, options);
   let darkColor: string | undefined;
-  if (options.dark !== undefined && options.dark !== false) {
-    const darkPalette = options.dark === true ? "dim" : options.dark;
+  if (darkPalette !== undefined) {
     const dark = stylize(svg, { palette: darkPalette, mapping: options.mapping });
     darkColor = backgroundColor(dark, width, height);
     svg = withDarkMode(svg, dark, options.darkSelector);
@@ -185,7 +193,11 @@ export function toDataUri(kind: Kind, options: RenderOptions = {}): string {
  * A gradient counts as the average of its stops.
  */
 function backgroundColor(svg: string, width: number, height: number): string {
-  const full = new RegExp(`<rect (?:x="0" y="0" )?width="${width}" height="${height}" fill="([^"]+)"`).exec(svg);
+  // Shapes write their sizes rounded with `n`, so the full-size rect has the rounded width and height.
+  const size = (v: number) => String(n(v)).replace(".", "\\.");
+  const full = new RegExp(`<rect (?:x="0" y="0" )?width="${size(width)}" height="${size(height)}" fill="([^"]+)"`).exec(
+    svg,
+  );
   const paint = full?.[1] ?? /fill="(#[0-9a-f]{3,6}|hsl\([^)]*\)|rgb\([^)]*\))"/i.exec(svg)?.[1] ?? "#cccccc";
   const gradient = /^url\(#([^)]+)\)$/.exec(paint);
   if (gradient) {

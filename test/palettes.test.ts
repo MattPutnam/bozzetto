@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { hills, toSvg } from "../src";
+import { hills, owl, render, toSvg } from "../src";
 import { hexToLch, lchToHex, parseColor, toHex } from "../src/color/color";
 import { stylize } from "../src/color/style";
 import {
@@ -125,5 +125,30 @@ describe("balanced mapping", () => {
     const used = new Set(out.match(/#[0-9a-f]{6}\b/g));
     for (const c of used) expect(palette).toContain(c);
     expect(used.size).toBeGreaterThanOrEqual(3);
+  });
+});
+
+describe("styling edge cases", () => {
+  it("ramps a one-color palette to that one color", () => {
+    const svg = stylize(toSvg(hills), { palette: ["#264653"], mapping: "ramp" });
+    const fills = [...svg.matchAll(/fill="(#[0-9a-f]{6}|hsl\([^)]*\))"/g)].map(m => m[1]);
+    expect(fills.length).toBeGreaterThan(0);
+    expect(new Set(fills)).toEqual(new Set(["#264653"]));
+  });
+
+  it("leaves text that looks like a color as written", () => {
+    for (const palette of ["pastel", "sunset"]) {
+      expect(render(owl, { label: "#100", palette }).svg).toContain(">#100</text>");
+    }
+  });
+
+  it("adds texture to markup that ends in a newline", () => {
+    const svg = stylize(`${toSvg(hills)}\n`, { texture: "grain" });
+    expect(svg).toContain("feTurbulence");
+    expect(svg.endsWith("</svg>\n")).toBe(true);
+  });
+
+  it("doesn't take names from an object's prototype for palettes", () => {
+    expect(() => resolvePalette("constructor")).toThrow(/neither a palette name/);
   });
 });
