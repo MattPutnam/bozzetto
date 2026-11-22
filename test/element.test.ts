@@ -62,6 +62,14 @@ describe("<bozzetto-img>", () => {
     expect([img.width, img.height]).toEqual([48, 48]);
     expect(element.picture?.svg).toMatch(/<clipPath id="[^"]+"><rect /);
     expect(element.shadowRoot!.querySelector("style")!.textContent).toContain("border-radius: 22%");
+    expect(make({ avatar: "", seed: "alice", size: "48x48" }).picture?.width).toBe(48);
+  });
+
+  it("refuses an avatar size that isn't square", () => {
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+    expect(make({ avatar: "", size: "48x64" }).picture).toBeUndefined();
+    expect(error).toHaveBeenCalledWith(expect.stringContaining('one number of px, such as 48, not "48x64"'));
+    error.mockRestore();
   });
 
   it("builds in dark mode with the dark attribute", () => {

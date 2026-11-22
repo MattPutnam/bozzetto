@@ -43,6 +43,18 @@ function withOptions(kind: Kind, text: string, token: string): Kind {
   return kind.with(values);
 }
 
+/**
+ * An avatar's size written as text: one number of px ("48"), or a square size ("48x48"). Throws on
+ * anything else, including a size that isn't square.
+ */
+export function parseAvatarSize(text: string): number {
+  const match = /^\s*(\d+(?:\.\d+)?)\s*(?:x\s*(\d+(?:\.\d+)?)\s*)?$/i.exec(text);
+  const size = Number(match?.[1]);
+  if (!match || !(size > 0) || (match[2] !== undefined && Number(match[2]) !== size))
+    throw new Error(`bozzetto: an avatar's size is one number of px, such as 48, not "${text}".`);
+  return size;
+}
+
 /** The kinds one written name stands for: one kind, or a category's kinds. */
 export function parseKind(token: string): readonly Kind[] {
   const [name, options] = token.trim().split(/:(.*)/s);

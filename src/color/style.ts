@@ -266,5 +266,9 @@ function addTexture(svg: string, texture: Texture): string {
     opacity: texture === "grain" ? "0.22" : "0.45",
     style: texture === "grain" ? "mix-blend-mode:overlay" : "mix-blend-mode:multiply",
   });
+  // An avatar keeps its picture in a group clipped to its shape; the texture goes in there too, so
+  // its transparent corners stay transparent.
+  if (/^<svg[^>]*><defs><clipPath id="bzav/.test(svg))
+    return svg.replace(/<\/g><\/svg>(\s*)$/, `${filter}${layer}</g></svg>$1`);
   return svg.replace(/<\/svg>(\s*)$/, `${filter}${layer}</svg>$1`);
 }

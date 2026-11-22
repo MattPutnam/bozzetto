@@ -23,7 +23,7 @@ import {
   type Texture,
 } from "../index";
 import { seedFromText } from "../draw/core";
-import { parseKinds } from "../render/names";
+import { parseAvatarSize, parseKinds } from "../render/names";
 import { toPng } from "../node";
 
 export interface Io {
@@ -120,7 +120,7 @@ const describe = (picture: Picture, seed: number, file?: string) => ({
 
 const SHAPES = ["circle", "rounded", "square"] as const;
 
-/** Avatars for the command line: `--size` is one number ("48", or "48x48" read as 48). */
+/** Avatars for the command line: `--size` is one number ("48", or a square size such as "48x48"). */
 function avatarsFor(
   count: number,
   pool: Kind[],
@@ -133,8 +133,12 @@ function avatarsFor(
     return values?.[0];
   };
   const size = one(o.size, "--size");
-  const sizePx = size === undefined ? undefined : Number.parseFloat(size);
-  if (sizePx !== undefined && !(sizePx > 0)) throw new UsageError(`--size for avatars is a number of px, such as 48.`);
+  let sizePx: number | undefined;
+  try {
+    sizePx = size === undefined ? undefined : parseAvatarSize(size);
+  } catch {
+    throw new UsageError(`--size for avatars is one number of px, such as 48, not "${size}".`);
+  }
   const mapping = one(o.mapping, "--mapping");
   const texture = one(o.texture, "--texture");
   return avatars(count, {
@@ -225,6 +229,7 @@ async function main(args: readonly string[], io: Io): Promise<number> {
   const fileOf = async (picture: Picture) => (format === "png" ? toPng(picture, { scale }) : picture.svg + "\n");
 
   if (o.shape !== undefined && !o.avatar) throw new UsageError(`--shape is for --avatar.`);
+  if (o.numbered && o.avatar) throw new UsageError(`--numbered is for pictures, not --avatar.`);
   const dark = o["dark-palette"] ?? (o.dark ? true : undefined);
   const pictures = o.avatar
     ? avatarsFor(count, pool, o, seed, dark)

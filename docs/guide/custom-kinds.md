@@ -73,6 +73,6 @@ option really does change only that option.
 
 ## Colors that palettes can change
 
-Palettes recolor `#rgb`, `#rrggbb` and space-separated `hsl(200 50% 60%)` colors in the markup
-(the form the `hsl` helper writes), so write colors in those forms. Comma-separated `hsl()`,
+Palettes recolor `#rgb`, `#rrggbb` and space-separated `hsl(200 50% 60%)` colors in the markup,
+so write colors in those forms. Comma-separated `hsl()`,
 `rgb()` and named colors such as `red` are left as they are. Masks are left alone, since their black and white define a shape.

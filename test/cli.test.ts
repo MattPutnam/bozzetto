@@ -168,6 +168,8 @@ describe("bozzetto", () => {
       [["cat:wings"], 'cat has no option "wings"'],
       [["cat:pupils=plaid"], "cat's pupils can be slit, round"],
       [["animals:tabby"], "options go on a single kind"],
+      [["--avatar", "--numbered"], "--numbered is for pictures, not --avatar"],
+      [["--avatar", "-s", "48x64"], '--size for avatars is one number of px, such as 48, not "48x64"'],
       [["-n", "2", "-o", "x.png"], "names a file, but 2 pictures need a folder"],
       [["-o", "pic.svg", "-f", "png"], "is a .svg file, but --format is png"],
       [["-o", "pic.png", "-f", "svg"], "is a .png file, but --format is svg"],

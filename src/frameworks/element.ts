@@ -26,7 +26,7 @@
 import { avatar, placeholder, type AvatarShape, type Mapping, type Picture, type Size, type Texture } from "../index";
 import { seedFromText } from "../draw/core";
 import { focusStyle } from "./shared";
-import { parseKinds } from "../render/names";
+import { parseAvatarSize, parseKinds } from "../render/names";
 
 const ATTRIBUTES = [
   "kind",
@@ -89,7 +89,7 @@ export class BozzettoImg extends Base {
         ? avatar({
             ...common,
             // An avatar is square: "48" or "48x48" both mean 48.
-            size: attr("size") === undefined ? undefined : Number.parseFloat(attr("size")!),
+            size: attr("size") === undefined ? undefined : parseAvatarSize(attr("size")!),
             shape: attr("shape") as AvatarShape | undefined,
           })
         : placeholder({ ...common, size: attr("size") as Size | undefined, label: attr("label") });

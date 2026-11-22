@@ -101,6 +101,10 @@ describe("avatar inputs", () => {
     const [x, y, w, h] = /viewBox="([^"]+)"/.exec(a.svg)![1].split(" ");
     const layer = /<rect[^>]*\sfilter="[^"]*"[^>]*>/.exec(stylize(a.svg, { texture: "grain" }))![0];
     expect(layer).toContain(`x="${x}" y="${y}" width="${w}" height="${h}"`);
+    // Inside the shape's clip, so the transparent corners stay transparent.
+    const textured = stylize(a.svg, { texture: "grain" });
+    expect(textured.indexOf(layer)).toBeGreaterThan(textured.indexOf('clip-path="url(#bzav'));
+    expect(textured.endsWith("</g></svg>")).toBe(true);
   });
 });
 
