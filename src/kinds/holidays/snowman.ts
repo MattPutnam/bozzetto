@@ -1,7 +1,11 @@
 import { defineKind, el, fill, hsl, lin, type Point, pts, s } from "../../draw/core";
 import { compact, curve, dots } from "./shared";
 
-/** A snowman in a snowy yard: three snowballs, a hat and scarf, a carrot nose and stick arms. */
+/**
+ * A snowman in a snowy yard: three snowballs, a hat and scarf, a carrot nose and stick arms.
+ *
+ * @category Holidays
+ */
 export const snowman = /* @__PURE__ */ defineKind(
   "snowman",
   "Snowman",

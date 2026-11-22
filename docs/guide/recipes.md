@@ -10,8 +10,8 @@ component (or `<bozzetto-img>` element) with alt text, size and focus-based crop
 
 ## Inline SVG
 
-`picture.svg` can go straight into the page. Every picture's element ids are unique, so any
-number can share a page:
+`picture.svg` can go straight into the page. Every picture's element ids are unique to it (its
+kind, seed, size and styling), so any number can share a page:
 
 ```ts
 container.innerHTML = render(owl, { seed: 3 }).svg;
@@ -28,8 +28,10 @@ element.style.backgroundImage = `url("${render(hills, { size: "1200x400" }).src}
 Text seeds are hashed, so a user id gives each user their own picture, the same on every visit:
 
 ```ts
-const avatar = placeholder({ kind: [animals, people], seed: user.id, size: "96x96" });
+const cover = placeholder({ kind: [landscapes, art], seed: user.id, size: "960x240" });
 ```
+
+For a face framed around its head, use [`avatar`](./avatars).
 
 ## Server rendering
 

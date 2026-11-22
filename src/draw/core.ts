@@ -2,7 +2,11 @@
  * The machinery every picture shares: what a kind is, a seeded random source, and small SVG helpers.
  */
 
-/** The random source a kind draws with. Every value comes from the seed. */
+/**
+ * The random source a kind draws with. Every value comes from the seed.
+ *
+ * @category Your own kinds
+ */
 export interface Rand {
   /** A float in [0, 1). */
   next(): number;
@@ -33,10 +37,12 @@ export interface Rand {
 /**
  * What a kind can say about the picture it drew. Both are optional: without them a picture's
  * alt text is the kind's name and its focus is the center.
+ *
+ * @category Your own kinds
  */
 export interface Notes {
   /**
-   * A short description for screen readers, such as "An owl on a branch under a crescent moon".
+   * A short description for screen readers, such as "An owl perched on a branch at dusk".
    * Start with a capital, leave off the final period, and don't name colors: palettes change them.
    */
   alt(text: string): void;
@@ -49,22 +55,45 @@ export interface Notes {
   frame(x: number, y: number, width: number, height: number): void;
 }
 
-/** Draws one picture's contents (everything inside `<svg>`) at the given size. */
+/**
+ * Draws one picture's contents (everything inside `<svg>`) at the given size.
+ *
+ * @category Your own kinds
+ */
 export type Draw = (r: Rand, width: number, height: number, note: Notes) => string;
 
-/** A value an option can take. */
+/**
+ * A value an option can take.
+ *
+ * @category Your own kinds
+ */
 export type OptionValue = string | number | boolean;
 
-/** A kind's options, each with the values it allows: `{ pupils: ["slit", "round"], tabby: [true, false] }`. */
+/**
+ * A kind's options, each with the values it allows: `{ pupils: ["slit", "round"], tabby: [true, false] }`.
+ *
+ * @category Your own kinds
+ */
 export type OptionSpec = Readonly<Record<string, readonly OptionValue[]>>;
 
-/** Fixed values for some of a kind's options. Options left out are still chosen by the seed. */
+/**
+ * Fixed values for some of a kind's options. Options left out are still chosen by the seed.
+ *
+ * @category Your own kinds
+ */
 export type OptionValues<O extends OptionSpec> = { readonly [K in keyof O]?: O[K][number] };
 
-/** One kind of picture: hills, an owl, a color field. */
+/**
+ * One kind of picture: hills, an owl, a color field.
+ *
+ * @category Your own kinds
+ */
 export interface Kind<I extends string = string, O extends OptionSpec = OptionSpec> {
+  /** The kind's id, such as `"ice-cream"`: lowercase, with hyphens. */
   readonly id: I;
+  /** A display name, such as `"Ice cream"`; also the alt text of a picture that doesn't set its own. */
   readonly name: string;
+  /** Draws the picture's SVG contents. */
   readonly draw: Draw;
   /** The options this kind offers, and the values each allows. Empty for kinds without options. */
   readonly options: O;
@@ -106,7 +135,14 @@ function makeKind<I extends string, O extends OptionSpec>(
           );
         }
       }
-      return makeKind(id, name, options, draw, { ...fixed, ...values });
+      // Kept in option order, so the same options fixed in any order make the same kind (its ids and picks).
+      const merged: Record<string, unknown> = { ...fixed, ...values };
+      const ordered = Object.fromEntries(
+        Object.keys(options)
+          .filter(option => merged[option] !== undefined)
+          .map(option => [option, merged[option]]),
+      );
+      return makeKind(id, name, options, draw, ordered as OptionValues<O>);
     },
   };
 }
@@ -114,6 +150,8 @@ function makeKind<I extends string, O extends OptionSpec>(
 /**
  * A kind: an id, a display name, and a function that draws it. Kinds with options list them before
  * the draw function: `defineKind("cat", "Cat", { pupils: ["slit", "round"] }, draw)`.
+ *
+ * @category Your own kinds
  */
 export function defineKind<const I extends string>(id: I, name: string, draw: Draw): Kind<I, Record<never, never>>;
 export function defineKind<const I extends string, const O extends OptionSpec>(
@@ -138,7 +176,12 @@ export function hash(text: string): number {
   return h >>> 0;
 }
 
-/** The integer a seed stands for. */
+/**
+ * The integer a seed stands for, as an unsigned 32-bit number. A number is rounded down; a string,
+ * such as a user id, is hashed. Default 1.
+ *
+ * @category Your own kinds
+ */
 export function seedToInt(seed: number | string = 1): number {
   return typeof seed === "string" ? hash(seed) : Math.floor(seed) >>> 0;
 }

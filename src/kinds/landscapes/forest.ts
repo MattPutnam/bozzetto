@@ -1,7 +1,11 @@
 import { defineKind, el, fill, hsl, lin, type Point } from "../../draw/core";
 import { pine } from "./shared";
 
-/** A pale back row of pines and a dark, scattered front row. */
+/**
+ * A pale back row of pines and a dark, scattered front row.
+ *
+ * @category Landscapes
+ */
 export const forest = /* @__PURE__ */ defineKind("forest", "Pine forest", (g, w, h, note) => {
   const hue = g.f(90, 165);
   const skyHue = g.f(180, 235);

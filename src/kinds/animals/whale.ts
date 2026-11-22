@@ -1,6 +1,10 @@
 import { defineKind, el, facing, fill, hsl, lin, mix, s } from "../../draw/core";
 
-/** A whale at the surface, half under the water, blowing a spout. */
+/**
+ * A whale at the surface, half under the water, blowing a spout.
+ *
+ * @category Animals
+ */
 export const whale = /* @__PURE__ */ defineKind("whale", "Whale", (g, w, h, note) => {
   const skyHue = g.f(185, 225);
   const sky = g.id("sky");

@@ -70,7 +70,11 @@ function dolphinFigure(g: Rand, L: number, body: string): string {
   return out;
 }
 
-/** A dolphin leaping from the sea in an arc, or swimming underwater; sometimes two together. */
+/**
+ * A dolphin leaping from the sea in an arc, or swimming underwater; sometimes two together.
+ *
+ * @category Animals
+ */
 export const dolphin = /* @__PURE__ */ defineKind(
   "dolphin",
   "Dolphin",

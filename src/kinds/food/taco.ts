@@ -7,7 +7,11 @@ const SHELLS = ["#f2c14e", "#e9a93f", "#f3e1b6"];
 
 const MEATS = ["#7a4a2e", "#a0643c", "#c98b4d", "#5b3a2a"];
 
-/** A plate of tacos, seen from the side, each filled with meat, lettuce and toppings. */
+/**
+ * A plate of tacos, seen from the side, each filled with meat, lettuce and toppings.
+ *
+ * @category Food
+ */
 export const taco = /* @__PURE__ */ defineKind("taco", "Tacos", (g, w, h, note) => {
   const unit = Math.min(w, h);
   let out = table(g, w, h, h * 0.6, hsl(g.f(0, 360), 30, 86), hsl(g.f(20, 40), 35, 62));

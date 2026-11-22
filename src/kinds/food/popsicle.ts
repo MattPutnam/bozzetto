@@ -4,7 +4,11 @@ import { SPRINKLES } from "./shared";
 
 const POPS = ["#f25c78", "#f28b66", "#f6d365", "#7bd389", "#8fd3f4", "#c9a7eb", "#f49ac1"];
 
-/** One to three ice pops lying on a table, seen from above: plain, striped or dipped in chocolate. */
+/**
+ * One to three ice pops lying on a table, seen from above: plain, striped or dipped in chocolate.
+ *
+ * @category Food
+ */
 export const popsicle = /* @__PURE__ */ defineKind("popsicle", "Popsicle", (g, w, h, note) => {
   const unit = Math.min(w, h);
   const bg = hsl(g.f(0, 360), g.f(35, 55), g.f(82, 90));
@@ -40,10 +44,10 @@ export const popsicle = /* @__PURE__ */ defineKind("popsicle", "Popsicle", (g, w
     const style = g.pick(["plain", "stripes", "dipped"]);
     styles.add(style);
     const color = g.pick(POPS);
-    const shape = g.id("pop");
+    const shape = g.id(`pop${k}`);
     let defs = el("clipPath", { id: shape }, el("path", { d: body }));
     const bite = g.chance(0.3);
-    const cut = bite ? g.id("bite") : "";
+    const cut = bite ? g.id(`bite${k}`) : "";
     if (bite) {
       // The bite: three overlapping scallops taken out of the top corner
       bitten = true;

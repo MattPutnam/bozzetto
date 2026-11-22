@@ -1,6 +1,10 @@
 import { defineKind, el, fill, hsl, lin, s } from "../../draw/core";
 
-/** Layered sand ridges under a pale sun. */
+/**
+ * Layered sand ridges under a pale sun.
+ *
+ * @category Landscapes
+ */
 export const dunes = /* @__PURE__ */ defineKind("dunes", "Desert dunes", (g, w, h, note) => {
   const sand = g.f(16, 40);
   const skyHue = g.f(185, 220);

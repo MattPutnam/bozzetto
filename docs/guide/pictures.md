@@ -1,12 +1,14 @@
 # Alt text, focus and color
 
-`render`, `placeholder` and `placeholders` return **pictures**, with what a gallery needs to lay
+`render`, `placeholder`, `placeholders`, `avatar` and `avatars` return **pictures**, with what a gallery needs to lay
 them out and describe them:
 
 | Field             |                                                                                               |
 | ----------------- | --------------------------------------------------------------------------------------------- |
 | `src`             | A `data:image/svg+xml` URI, for `<img src>` or CSS `url()`                                    |
 | `svg`             | The SVG markup, for inlining. Element ids are unique to the picture, so many can share a page |
+| `darkColor`       | With the `dark` option: the main background color in dark mode                                |
+| `frame`           | For kinds with a face: the head's bounds, as fractions of the width and height                |
 | `width`, `height` | The size in px                                                                                |
 | `kind`            | The id of the kind that drew it, such as `"owl"`                                              |
 | `alt`             | A short description for screen readers                                                        |

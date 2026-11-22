@@ -29,7 +29,11 @@ function smoothRing(ring: readonly Point[]): string {
   return d + "Z";
 }
 
-/** A spiral galaxy: a glowing core and soft arms with dust lanes and star-forming knots, at a tilt. */
+/**
+ * A spiral galaxy: a glowing core and soft arms with dust lanes and star-forming knots, at a tilt.
+ *
+ * @category Space
+ */
 export const galaxy = /* @__PURE__ */ defineKind("galaxy", "Galaxy", (g, w, h, note) => {
   const unit = Math.min(w, h);
   const skyHue = g.f(225, 275);

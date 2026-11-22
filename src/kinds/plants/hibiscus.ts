@@ -12,7 +12,11 @@ const HIBISCUS: readonly (readonly [number, number, number])[] = [
   [8, 80, 64],
 ];
 
-/** A hibiscus close up: five broad petals around a long column of stamens, among glossy leaves. */
+/**
+ * A hibiscus close up: five broad petals around a long column of stamens, among glossy leaves.
+ *
+ * @category Plants
+ */
 export const hibiscus = /* @__PURE__ */ defineKind("hibiscus", "Hibiscus", (g, w, h, note) => {
   const unit = Math.min(w, h);
   const look = g.pick(["garden", "garden", "sky", "warm"] as const);

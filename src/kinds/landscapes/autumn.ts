@@ -11,7 +11,11 @@ const AUTUMN: readonly (readonly [number, number, number])[] = [
   [0, 60, 40],
 ];
 
-/** A grove of trees in autumn colors, with leaves falling and gathered under them. */
+/**
+ * A grove of trees in autumn colors, with leaves falling and gathered under them.
+ *
+ * @category Landscapes
+ */
 export const autumn = /* @__PURE__ */ defineKind("autumn", "Autumn trees", (g, w, h, note) => {
   const time = g.pick(["day", "golden", "overcast"] as const);
   const unit = Math.min(w, h);

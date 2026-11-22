@@ -12,7 +12,11 @@ const POPPIES: readonly (readonly [number, number, number])[] = [
   [12, 75, 66],
 ];
 
-/** A poppy close up: four crinkled papery petals around a seed pod ringed with stamens. */
+/**
+ * A poppy close up: four crinkled papery petals around a seed pod ringed with stamens.
+ *
+ * @category Plants
+ */
 export const poppy = /* @__PURE__ */ defineKind("poppy", "Poppy", (g, w, h, note) => {
   const unit = Math.min(w, h);
   const look = g.pick(["garden", "garden", "sky", "warm"] as const);

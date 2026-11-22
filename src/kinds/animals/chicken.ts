@@ -151,7 +151,11 @@ function chick(x: number, gy: number, r: number, pecking: boolean): string {
   return out;
 }
 
-/** A hen or a rooster in a farmyard by a fence, sometimes with chicks and a barn. */
+/**
+ * A hen or a rooster in a farmyard by a fence, sometimes with chicks and a barn.
+ *
+ * @category Animals
+ */
 export const chicken = /* @__PURE__ */ defineKind("chicken", "Chicken", (g, w, h, note) => {
   const unit = Math.min(w, h);
   const rooster = g.chance(0.35);

@@ -1,7 +1,11 @@
 import { defineKind, el, fill, s } from "../../draw/core";
 import { capitalize, numberWord } from "../../draw/words";
 
-/** Rainbow arches of nested bands standing on the ground, in mid-century colors. */
+/**
+ * Rainbow arches of nested bands standing on the ground, in mid-century colors.
+ *
+ * @category Art
+ */
 export const arches = /* @__PURE__ */ defineKind("arches", "Rainbow arches", (g, w, h, note) => {
   const unit = Math.min(w, h);
   const palette = g.pick([

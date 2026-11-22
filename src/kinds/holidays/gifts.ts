@@ -37,7 +37,11 @@ function wallLights(g: Rand, w: number, h: number, unit: number): string {
   return out;
 }
 
-/** A pile of wrapped presents with ribbons and bows, in different sizes and papers. */
+/**
+ * A pile of wrapped presents with ribbons and bows, in different sizes and papers.
+ *
+ * @category Holidays
+ */
 export const gifts = /* @__PURE__ */ defineKind("gifts", "Wrapped gifts", (g, w, h, note) => {
   const unit = Math.min(w, h);
   const wallHue = g.f(0, 360);

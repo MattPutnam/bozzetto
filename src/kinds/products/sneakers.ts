@@ -110,7 +110,11 @@ function sneaker(x0: number, base: number, L: number, c: ShoeColors, high: boole
   return out;
 }
 
-/** A sneaker in side view, or a pair of them, one just behind the other. */
+/**
+ * A sneaker in side view, or a pair of them, one just behind the other.
+ *
+ * @category Products
+ */
 export const sneakers = /* @__PURE__ */ defineKind("sneakers", "Sneakers", (g, w, h, note) => {
   const unit = Math.min(w, h);
   const pair = g.chance(0.45);

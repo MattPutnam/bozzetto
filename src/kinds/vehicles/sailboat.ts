@@ -1,7 +1,11 @@
 import { defineKind, el, facing, hsl, lin, mix, s } from "../../draw/core";
 import { local, PAINTS, shade, skyAt, timeOfDay, veil, when } from "./shared";
 
-/** A sailboat on open water, with a mainsail and a jib. */
+/**
+ * A sailboat on open water, with a mainsail and a jib.
+ *
+ * @category Vehicles
+ */
 export const sailboat = /* @__PURE__ */ defineKind("sailboat", "Sailboat", (g, w, h, note) => {
   const unit = Math.min(w, h);
   const time = timeOfDay(g);

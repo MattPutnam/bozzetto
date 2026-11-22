@@ -1,7 +1,11 @@
 import { defineKind, el, mix, type Point, pts } from "../../draw/core";
 import { contact, studio } from "./shared";
 
-/** A faceted glass perfume bottle with its cap, sometimes standing in front of its box. */
+/**
+ * A faceted glass perfume bottle with its cap, sometimes standing in front of its box.
+ *
+ * @category Products
+ */
 export const perfume = /* @__PURE__ */ defineKind("perfume", "Perfume", (g, w, h, note) => {
   const unit = Math.min(w, h);
   const shape = g.pick(["octagon", "square", "tall", "hexagon"]);

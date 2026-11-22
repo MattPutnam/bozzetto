@@ -2,7 +2,11 @@ import { defineKind, el, fill, hsl, lin, type Point, pts, s } from "../../draw/c
 import { smoothClosed } from "../../draw/shapes";
 import { cabin, curve, pine, PINE, PINE_SNOW, snowyPine, starDots, tight } from "./shared";
 
-/** The northern lights rippling over a still lake or snowy hills on a starry night. */
+/**
+ * The northern lights rippling over a still lake or snowy hills on a starry night.
+ *
+ * @category Landscapes
+ */
 export const aurora = /* @__PURE__ */ defineKind("aurora", "Northern lights", (g, w, h, note) => {
   const unit = Math.min(w, h);
   const hue = g.f(215, 240);

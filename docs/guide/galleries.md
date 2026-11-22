@@ -10,7 +10,8 @@
 
 `kind`, `size`, `palette`, `mapping` and `texture` each take a single value or a list of values
 to go through, picture by picture. Each option goes through its own list, so three sizes and two
-palettes mix freely.
+palettes mix freely. `undefined` in a `palette` or `texture` list leaves those pictures as they
+are: `[undefined, "pastel"]` alternates original and pastel colors.
 
 A list made only of colors counts as **one** palette: `["#264653", "#e76f51"]` is one palette,
 while `["pastel", "riso"]` is two, and `["pastel", ["#264653", "#e76f51"]]` is two as well.
@@ -20,13 +21,13 @@ while `["pastel", "riso"]` is two, and `["pastel", ["#264653", "#e76f51"]]` is t
 `order` says how lists are gone through:
 
 - **`shuffle`** (the default): every value once, in a seeded order, then again in a new order.
-  `kind: animals` with eleven pictures gives every animal exactly once.
+  With `kind: animals`, no animal repeats until every animal has appeared.
 - **`cycle`**: every value once, in the order given, and around again.
 - **`random`**: an independent seeded pick each time, so values can repeat or be skipped.
 
 <<< @/examples/galleries.ts#each
 
-<Figure name="galleries-each" alt="Eleven animals and a donut, each once" />
+<Figure name="galleries-each" alt="Twelve different animals" />
 
 <<< @/examples/galleries.ts#cycle
 

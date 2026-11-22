@@ -8,4 +8,10 @@ import { greenhouse } from "./greenhouse";
 
 export { cottage, windmill, castle, bridge, rowHouses, greenhouse };
 
+/**
+ * Every kind in the buildings category: cottages, castles, bridges and townhouses, by day, dusk or
+ * night.
+ *
+ * @category Categories
+ */
 export const buildings = [cottage, windmill, castle, bridge, rowHouses, greenhouse] as const;

@@ -1,7 +1,11 @@
 import { defineKind, el, fill, hex, mix } from "../../draw/core";
 import { capitalize, numberWord } from "../../draw/words";
 
-/** Two or three soft-edged blocks on a dark ground, after the color-field painters. */
+/**
+ * Two or three soft-edged blocks on a dark ground, after the color-field painters.
+ *
+ * @category Art
+ */
 export const field = /* @__PURE__ */ defineKind("field", "Color field", (g, w, h, note) => {
   const unit = Math.min(w, h);
   const hue = g.f(0, 360);

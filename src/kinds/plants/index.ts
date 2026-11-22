@@ -12,4 +12,9 @@ import { lotus } from "./lotus";
 
 export { cactus, houseplant, succulents, sunflower, rose, tulip, daisy, poppy, hibiscus, lotus };
 
+/**
+ * Every kind in the plants category: potted plants, and close-ups of real flowers.
+ *
+ * @category Categories
+ */
 export const plants = [cactus, houseplant, succulents, sunflower, rose, tulip, daisy, poppy, hibiscus, lotus] as const;

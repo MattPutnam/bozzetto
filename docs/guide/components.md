@@ -12,8 +12,8 @@ import { cat } from "../../src";
 Each of these renders a picture as an `<img>` with its alt text, width and height. Styled with
 `object-fit: cover`, the image crops around the picture's focus, and it shows the picture's color
 while it loads. They take the same options as `placeholder`: `kind`, `seed`, `size`, `palette`,
-`mapping`, `texture`, `label`, `dark` and `darkSelector`, plus `alt` to replace the picture's alt text and `inline` to
-draw the SVG into the page instead of an image.
+`mapping`, `texture`, `label`, `dark` and `darkSelector` (React and Vue only), plus `alt` to
+replace the picture's alt text and `inline` to draw the SVG into the page instead of an image.
 
 React and Vue are optional peer dependencies: install whichever you use. The web component
 needs nothing.
@@ -36,6 +36,7 @@ you pictures for your own markup. They draw again only when the options' content
 inline options object is fine:
 
 ```tsx
+import { animals } from "bozzetto";
 import { usePlaceholders } from "bozzetto/react";
 
 function Gallery() {
@@ -45,6 +46,10 @@ function Gallery() {
 ```
 
 `usePlaceholder(options)` does the same for one picture.
+
+In React and Vue, `kind` takes what `placeholder` does: a kind, a list or category such as
+`animals`, or a kind's id as a string (`"ice-cream"`). `seed` is used as given, so `seed="3"` is
+text, hashed, and draws a different picture from `seed={3}`.
 
 ## Vue
 
@@ -71,8 +76,11 @@ Attributes such as `class` fall through to the `<img>`. `usePlaceholder` and `us
 take options as plain values, refs or getters, and return computed pictures:
 
 ```ts
+import { ref } from "vue";
+import { animals } from "bozzetto";
 import { usePlaceholders } from "bozzetto/vue";
 
+const palette = ref("pastel");
 const count = ref(12);
 const photos = usePlaceholders(count, () => ({ kind: animals, palette: palette.value }));
 ```
@@ -92,7 +100,7 @@ Importing `bozzetto/element` registers it:
 <bozzetto-img
   kind="animals donut"
   seed="user-42"
-  style="width: 96px; height: 96px; border-radius: 50%"
+  style="width: 96px; height: 96px; border-radius: 50%; overflow: hidden"
 ></bozzetto-img>
 ```
 
@@ -105,8 +113,9 @@ Drawn live on this page:
 </div>
 
 Attributes are text, so `kind` is written like on the [command line](./cli#kinds): ids, export
-names or categories separated by spaces, with options after a colon. The element changes picture
-when an attribute changes.
+names or categories separated by spaces, with options after a colon. A `seed` of only digits is a
+number, as on the command line. The element changes picture when an attribute changes. It has no
+`darkSelector`, and its avatars have no `margin`: use React or Vue, or the functions, for those.
 
 The element is an inline block the picture's size until you size it with CSS; then the picture
 fills it, cropped around its focus. Style the image itself with `::part(image)`, and read the

@@ -1,7 +1,11 @@
 import { defineKind, el, fill, hsl, lin, s } from "../../draw/core";
 import { extents, radial, starCount } from "./shared";
 
-/** A black hole: a dark shadow in a thin bright ring, its glowing disc passing in front and bent up over the top. */
+/**
+ * A black hole: a dark shadow in a thin bright ring, its glowing disc passing in front and bent up over the top.
+ *
+ * @category Space
+ */
 export const blackHole = /* @__PURE__ */ defineKind("black-hole", "Black hole", (g, w, h, note) => {
   const unit = Math.min(w, h);
   const skyHue = g.f(225, 275);

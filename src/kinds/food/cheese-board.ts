@@ -10,7 +10,11 @@ const CHEESES: [string, string][] = [
   ["#f7e3a1", "#c0392b"],
 ];
 
-/** A cheese board from above: cheeses, crackers, grapes and more on a wooden or slate board. */
+/**
+ * A cheese board from above: cheeses, crackers, grapes and more on a wooden or slate board.
+ *
+ * @category Food
+ */
 export const cheeseBoard = /* @__PURE__ */ defineKind("cheese-board", "Cheese board", (g, w, h, note) => {
   const unit = Math.min(w, h);
   let out = fill(w, h, g.pick(["#e9dccb", "#d9cbb5", "#dfe7e2", "#f1e6d2", "#c89a64", "#a87444", "#e3e6ea"]));

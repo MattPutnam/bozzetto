@@ -1,6 +1,10 @@
 import { defineKind, el, fill } from "../../draw/core";
 
-/** Hard-edged stripes of varied widths, tilted across the frame. */
+/**
+ * Hard-edged stripes of varied widths, tilted across the frame.
+ *
+ * @category Art
+ */
 export const stripes = /* @__PURE__ */ defineKind("stripes", "Hard-edge stripes", (g, w, h, note) => {
   const unit = Math.min(w, h);
   const palette = g.pick([

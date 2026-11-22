@@ -7,7 +7,11 @@ const FROSTING = ["#fbf4e8", "#f7c6d0", "#c9a7eb", "#b8e0b0", "#6b3e2e", "#8fd3f
 
 const WRAPPERS = ["#f49ac1", "#8fd3f4", "#f6d365", "#7bd389", "#c9a7eb", "#f28b66", "#fbf4e8"];
 
-/** One to three cupcakes on a table, with swirled frosting and sprinkles or a cherry. */
+/**
+ * One to three cupcakes on a table, with swirled frosting and sprinkles or a cherry.
+ *
+ * @category Food
+ */
 export const cupcake = /* @__PURE__ */ defineKind("cupcake", "Cupcake", (g, w, h, note) => {
   const unit = Math.min(w, h);
   let out = table(g, w, h, h * 0.6, hsl(g.f(0, 360), 30, 86), hsl(g.f(20, 40), 35, 62));

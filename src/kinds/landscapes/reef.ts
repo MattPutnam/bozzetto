@@ -185,7 +185,11 @@ function anemone(g: Rand, x: number, y: number, ah: number, c: Hsl): string {
   return out;
 }
 
-/** A coral reef on a sandy floor: corals of several kinds, an anemone, small fish and light from above. */
+/**
+ * A coral reef on a sandy floor: corals of several kinds, an anemone, small fish and light from above.
+ *
+ * @category Landscapes
+ */
 export const reef = /* @__PURE__ */ defineKind("reef", "Coral reef", (g, w, h, note) => {
   const unit = Math.min(w, h);
   const hue = g.f(180, 200);

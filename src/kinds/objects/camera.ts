@@ -13,7 +13,11 @@ function lens(cx: number, cy: number, r: number, trim: string): string {
   );
 }
 
-/** A vintage camera on a table: a rangefinder, a twin-lens reflex or a film SLR. */
+/**
+ * A vintage camera on a table: a rangefinder, a twin-lens reflex or a film SLR.
+ *
+ * @category Objects
+ */
 export const camera = /* @__PURE__ */ defineKind("camera", "Vintage camera", (g, w, h, note) => {
   const unit = Math.min(w, h);
   const top = h * g.f(0.66, 0.74);

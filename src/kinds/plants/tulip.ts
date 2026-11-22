@@ -26,7 +26,11 @@ const TULIPS: readonly (readonly [number, number, number])[] = [
   [320, 55, 50],
 ];
 
-/** Tulips seen from the side: a cup of six tepals on a long stem, with long leaves. */
+/**
+ * Tulips seen from the side: a cup of six tepals on a long stem, with long leaves.
+ *
+ * @category Plants
+ */
 export const tulip = /* @__PURE__ */ defineKind("tulip", "Tulip", (g, w, h, note) => {
   const unit = Math.min(w, h);
   const look = g.pick(["garden", "sky", "warm", "garden"] as const);

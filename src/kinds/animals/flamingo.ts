@@ -101,7 +101,11 @@ const flamingoHead = (x: number, sy: number, B: number, reach: number): Point =>
   sy - B * 2.7 - B * 2.45 * reach,
 ];
 
-/** A flamingo wading in a shallow lagoon, sometimes on one leg, sometimes with others behind. */
+/**
+ * A flamingo wading in a shallow lagoon, sometimes on one leg, sometimes with others behind.
+ *
+ * @category Animals
+ */
 export const flamingo = /* @__PURE__ */ defineKind(
   "flamingo",
   "Flamingo",

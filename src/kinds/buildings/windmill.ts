@@ -36,7 +36,11 @@ function sails(g: Rand, hx: number, hy: number, len: number, angle: number, fram
 
 const TULIPS = ["#e8505b", "#f9d56e", "#f3a6c8", "#f08a5d", "#b48ede", "#f4f1ea", "#d6453d"];
 
-/** A traditional windmill with four sails, among tulip fields or beside a canal. */
+/**
+ * A traditional windmill with four sails, among tulip fields or beside a canal.
+ *
+ * @category Buildings
+ */
 export const windmill = /* @__PURE__ */ defineKind(
   "windmill",
   "Windmill",

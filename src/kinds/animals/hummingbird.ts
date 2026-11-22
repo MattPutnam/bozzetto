@@ -17,7 +17,11 @@ function trumpet(x: number, y: number, a: number, len: number, r: number, petal:
   );
 }
 
-/** A hummingbird hovering to sip from a tubular flower, its wings a blur. */
+/**
+ * A hummingbird hovering to sip from a tubular flower, its wings a blur.
+ *
+ * @category Animals
+ */
 export const hummingbird = /* @__PURE__ */ defineKind("hummingbird", "Hummingbird", (g, w, h, note) => {
   const unit = Math.min(w, h);
   const dir = g.pick([1, -1]);

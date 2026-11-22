@@ -1,7 +1,11 @@
 import { defineKind, el, fill, hsl } from "../../draw/core";
 import { figure, headBox, person, traits } from "./shared";
 
-/** Three people, head and shoulders, close together like a team photo. The middle one stands in front. */
+/**
+ * Three people, head and shoulders, close together like a team photo. The middle one stands in front.
+ *
+ * @category People
+ */
 export const group = /* @__PURE__ */ defineKind("group", "Group of three", (g, w, h, note) => {
   const unit = Math.min(w, h);
   const rx = unit * g.f(0.11, 0.125);

@@ -1,7 +1,11 @@
 import { defineKind, el, fill, type Point } from "../../draw/core";
 import { curve } from "./shared";
 
-/** Contour lines around a few hills and hollows, like a topographic map. */
+/**
+ * Contour lines around a few hills and hollows, like a topographic map.
+ *
+ * @category Patterns
+ */
 export const topography = /* @__PURE__ */ defineKind("topography", "Topographic map", (g, w, h, note) => {
   const unit = Math.min(w, h);
   const scheme = g.pick([

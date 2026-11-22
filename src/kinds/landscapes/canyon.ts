@@ -1,7 +1,11 @@
 import { defineKind, el, fill, hsl, lin, type Point, pts, s } from "../../draw/core";
 import { AT, daySky, lerp, TIMES } from "./shared";
 
-/** A desert canyon seen from its floor: stepped walls banded with rock, overlapping as they recede, and a river or a dry wash between. */
+/**
+ * A desert canyon seen from its floor: stepped walls banded with rock, overlapping as they recede, and a river or a dry wash between.
+ *
+ * @category Landscapes
+ */
 export const canyon = /* @__PURE__ */ defineKind("canyon", "Desert canyon", (g, w, h, note) => {
   const time = g.pick(TIMES);
   const sky = daySky(g, time);

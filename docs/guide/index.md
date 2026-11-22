@@ -1,7 +1,8 @@
 # What is Bozzetto?
 
 Bozzetto draws placeholder pictures: small SVG images of landscapes, modern-art homages,
-people, animals, food and still lifes, for galleries, cards, avatars and mockups while the real
+people, animals, food, still lifes, plants, buildings, vehicles, products, music, sports, holidays,
+space and patterns, for galleries, cards, avatars and mockups while the real
 pictures aren't ready. A _bozzetto_ is a painter's small preliminary sketch, made before the real
 work.
 

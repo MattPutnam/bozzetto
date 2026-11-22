@@ -1,7 +1,11 @@
 import { defineKind, el, facing, fill, hsl, lin, pts, s } from "../../draw/core";
 import { glowDef } from "./shared";
 
-/** A city street in the rain: lit windows over a wet road that mirrors them, street lamps glowing. */
+/**
+ * A city street in the rain: lit windows over a wet road that mirrors them, street lamps glowing.
+ *
+ * @category Landscapes
+ */
 export const rainyStreet = /* @__PURE__ */ defineKind("rainy-street", "Rainy street", (g, w, h, note) => {
   const night = g.chance(0.55);
   const unit = Math.min(w, h);

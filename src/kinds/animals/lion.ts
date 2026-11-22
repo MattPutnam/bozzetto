@@ -9,7 +9,11 @@ const LIONS = [
   { fur: "#cf9f6c", mane: "#4d2e1f", light: "#efdabb" },
 ] as const;
 
-/** A lion with a shaggy mane, or a lioness, sitting up on the savanna. */
+/**
+ * A lion with a shaggy mane, or a lioness, sitting up on the savanna.
+ *
+ * @category Animals
+ */
 export const lion = /* @__PURE__ */ defineKind("lion", "Lion", { mane: [true, false] }, (g, w, h, note) => {
   const coat = g.pick(LIONS);
   const mane = g.option("mane", g.chance(0.65));

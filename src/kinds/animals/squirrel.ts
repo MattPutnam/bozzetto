@@ -10,7 +10,11 @@ const SQUIRRELS = [
   { fur: "#b9743e", belly: "#e8b77c" },
 ] as const;
 
-/** A squirrel sitting up on a branch or the ground, its bushy tail curled over its back, holding a nut. */
+/**
+ * A squirrel sitting up on a branch or the ground, its bushy tail curled over its back, holding a nut.
+ *
+ * @category Animals
+ */
 export const squirrel = /* @__PURE__ */ defineKind("squirrel", "Squirrel", (g, w, h, note) => {
   const coat = g.pick(SQUIRRELS);
   const dir = g.pick([-1, 1]);

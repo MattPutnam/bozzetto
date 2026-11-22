@@ -29,7 +29,11 @@ const pane = (u: Local, x: number, y: number, pw: number, ph: number, glass: str
     "stroke-width": u.k(Math.min(pw, ph) * 0.09),
   });
 
-/** A small country cottage with a smoking chimney, a garden path and flowers or a fence. */
+/**
+ * A small country cottage with a smoking chimney, a garden path and flowers or a fence.
+ *
+ * @category Buildings
+ */
 export const cottage = /* @__PURE__ */ defineKind(
   "cottage",
   "Country cottage",

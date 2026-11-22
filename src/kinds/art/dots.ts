@@ -1,6 +1,10 @@
 import { defineKind, el, fill, type Point, s } from "../../draw/core";
 
-/** A field of dots: an even polka-dot grid, a halftone screen, or a loose scatter. */
+/**
+ * A field of dots: an even polka-dot grid, a halftone screen, or a loose scatter.
+ *
+ * @category Art
+ */
 export const dots = /* @__PURE__ */ defineKind(
   "dots",
   "Dots",

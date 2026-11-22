@@ -1,7 +1,11 @@
 import { defineKind, el, facing, hsl, type Point, s } from "../../draw/core";
 import { baseFor, shade, softContact, sweepStudio } from "./shared";
 
-/** An open laptop at three-quarters, a wallpaper on its screen. */
+/**
+ * An open laptop at three-quarters, a wallpaper on its screen.
+ *
+ * @category Products
+ */
 export const laptop = /* @__PURE__ */ defineKind("laptop", "Laptop", (g, w, h, note) => {
   const unit = Math.min(w, h);
   const dir = g.chance(0.5) ? 1 : -1;

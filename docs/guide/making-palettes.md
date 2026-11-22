@@ -25,7 +25,7 @@ interactively, with previews, and gives you the code.
 | `seed`     | `1`         | Varies small details, and the hue when there's no base                      |
 | `locked`   | none        | Colors to keep exactly, by position, such as `[null, "#123456"]`            |
 
-Colors come back dark to light.
+Colors come back dark to light, apart from any locked colors, which stay where you put them.
 
 ## Schemes
 
@@ -42,12 +42,17 @@ A scheme picks hues by their places on the color wheel:
 
 ## Contrast and vibrance
 
+`contrast` spreads the colors from dark to light: low contrast keeps them close in lightness, for a
+soft palette, and high contrast runs from near-black to near-white. `vibrance` sets how colorful
+they are, from grey to as vivid as the screen allows.
+
 <Figure name="making-contrast" alt="Analogous palettes at four contrasts, each at low and high vibrance" />
 
 ## Locking colors
 
 `locked` keeps chosen colors in place. The other colors don't change when you lock one, so you
-can build a palette up a color at a time:
+can build a palette up a color at a time. (The one exception: locking the slot that holds `base`
+moves `base` to the nearest free slot.)
 
 <<< @/examples/making.ts#locked
 
@@ -55,7 +60,8 @@ can build a palette up a color at a time:
 
 ## A random palette
 
-`randomPalette(seed)` picks everything from a seed: scheme, hue, contrast and vibrance.
+`randomPalette(seed)` picks everything from a seed: scheme, hue, contrast and vibrance. Pass
+options as a second argument to set any of them yourself, as in `randomPalette(7, { count: 3 })`.
 
 <Figure name="making-random" alt="Five random palettes" />
 

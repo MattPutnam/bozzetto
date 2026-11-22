@@ -1,7 +1,11 @@
 import { defineKind, el, facing, hsl, pts, s } from "../../draw/core";
 import { flower, PETALS, sky } from "./shared";
 
-/** A bumblebee buzzing over flowers in a meadow, a dotted trail behind it. */
+/**
+ * A bumblebee buzzing over flowers in a meadow, a dotted trail behind it.
+ *
+ * @category Animals
+ */
 export const bee = /* @__PURE__ */ defineKind("bee", "Bee", (g, w, h, note) => {
   const unit = Math.min(w, h);
   const dir = g.pick([1, -1]);

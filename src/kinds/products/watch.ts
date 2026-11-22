@@ -13,7 +13,11 @@ function timeWords(hour: number, minute: number): string {
     : `${MINUTES[(60 - minute) / 5]} to ${numberWord((hour % 12) + 1)}`;
 }
 
-/** An analog wristwatch standing face-on, its strap looping back behind it. */
+/**
+ * An analog wristwatch standing face-on, its strap looping back behind it.
+ *
+ * @category Products
+ */
 export const watch = /* @__PURE__ */ defineKind("watch", "Wristwatch", (g, w, h, note) => {
   const unit = Math.min(w, h);
   const total = unit * g.f(0.62, 0.68);

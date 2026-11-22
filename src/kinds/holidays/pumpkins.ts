@@ -73,7 +73,11 @@ function pumpkin(
   return out;
 }
 
-/** A few pumpkins in a patch or on a hay bale, some carved with friendly faces, lit at dusk. */
+/**
+ * A few pumpkins in a patch or on a hay bale, some carved with friendly faces, lit at dusk.
+ *
+ * @category Holidays
+ */
 export const pumpkins = /* @__PURE__ */ defineKind("pumpkins", "Pumpkins", (g, w, h, note) => {
   const unit = Math.min(w, h);
   const dusk = g.chance(0.45);

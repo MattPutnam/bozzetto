@@ -1,6 +1,10 @@
 import { defineKind, el, fill, hsl, lin, s } from "../../draw/core";
 
-/** Stars, a full or crescent moon, and dark hills. */
+/**
+ * Stars, a full or crescent moon, and dark hills.
+ *
+ * @category Landscapes
+ */
 export const night = /* @__PURE__ */ defineKind(
   "night",
   "Night sky",

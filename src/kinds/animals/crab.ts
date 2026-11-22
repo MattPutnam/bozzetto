@@ -10,7 +10,11 @@ const CRABS = [
   { shell: "#8a5aa8", name: "purple" },
 ] as const;
 
-/** A crab on the sand at the water's edge, claws raised. */
+/**
+ * A crab on the sand at the water's edge, claws raised.
+ *
+ * @category Animals
+ */
 export const crab = /* @__PURE__ */ defineKind("crab", "Crab", (g, w, h, note) => {
   const unit = Math.min(w, h);
   const colors = g.pick(CRABS);

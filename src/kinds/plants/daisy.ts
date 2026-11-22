@@ -2,7 +2,11 @@ import { defineKind, el } from "../../draw/core";
 import { numberWord } from "../../draw/words";
 import { at, backdrop, flatRays, flatSpiral, hexHsl, leaf, leafEl, onFace, SETTING, stem, type View } from "./shared";
 
-/** Oxeye daisies close up: many thin rays around a domed disc, sometimes a few together. */
+/**
+ * Oxeye daisies close up: many thin rays around a domed disc, sometimes a few together.
+ *
+ * @category Plants
+ */
 export const daisy = /* @__PURE__ */ defineKind("daisy", "Daisy", (g, w, h, note) => {
   const unit = Math.min(w, h);
   const look = g.pick(["garden", "garden", "sky", "dusk"] as const);

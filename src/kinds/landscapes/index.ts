@@ -55,6 +55,12 @@ export {
   aquarium,
 };
 
+/**
+ * Every kind in the landscapes category: gradient skies and layered silhouettes, by sea, mountain,
+ * forest and city.
+ *
+ * @category Categories
+ */
 export const landscapes = [
   hills,
   mountains,

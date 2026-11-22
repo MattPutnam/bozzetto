@@ -1,7 +1,11 @@
 import { defineKind, el, s } from "../../draw/core";
 import { numberWord } from "../../draw/words";
 
-/** A grid of tiles, each holding a circle, half circle, quarter circle or triangle. */
+/**
+ * A grid of tiles, each holding a circle, half circle, quarter circle or triangle.
+ *
+ * @category Art
+ */
 export const bauhaus = /* @__PURE__ */ defineKind("bauhaus", "Bauhaus tiles", (g, w, h, note) => {
   const palette = g.pick([
     ["#e63946", "#f1c453", "#1d3557", "#f1faee"],

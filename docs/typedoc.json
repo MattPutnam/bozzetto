@@ -1,6 +1,12 @@
 {
   "$schema": "https://typedoc-plugin-markdown.org/schema.json",
-  "entryPoints": ["../src/index.ts"],
+  "entryPoints": [
+    "../src/index.ts",
+    "../src/node/index.ts",
+    "../src/frameworks/react.ts",
+    "../src/frameworks/vue.ts",
+    "../src/frameworks/element.ts"
+  ],
   "tsconfig": "./tsconfig.typedoc.json",
   "out": "./reference/api",
   "plugin": ["typedoc-plugin-markdown", "typedoc-vitepress-theme"],
@@ -16,8 +22,12 @@
   "interfacePropertiesFormat": "list",
   "typeDeclarationFormat": "list",
   "sanitizeComments": true,
-  "validation": { "invalidLink": false, "notExported": false },
+  "validation": {
+    "invalidLink": false,
+    "notExported": false
+  },
   "logLevel": "Warn",
   "name": "bozzetto",
-  "disableSources": true
+  "disableSources": true,
+  "categoryOrder": ["Drawing", "Choosing kinds", "Avatars", "Color", "Your own kinds", "Categories", "*"]
 }

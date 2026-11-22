@@ -11,7 +11,11 @@ const FIELDS: readonly (readonly [number, number, number])[] = [
   [60, 60, 50],
 ];
 
-/** Patchwork fields over rolling farmland, with hedgerows and a barn. */
+/**
+ * Patchwork fields over rolling farmland, with hedgerows and a barn.
+ *
+ * @category Landscapes
+ */
 export const farm = /* @__PURE__ */ defineKind("farm", "Farmland", (g, w, h, note) => {
   const time = g.chance(0.6) ? "day" : g.pick(TIMES);
   const sky = daySky(g, time);

@@ -1,7 +1,11 @@
 import { defineKind, el, fill, hsl, lin, s } from "../../draw/core";
 import { smallFish, whole } from "./shared";
 
-/** A home aquarium on a cabinet or table: gravel, plants, an ornament, bubbles and a few fish under a lit lid. */
+/**
+ * A home aquarium on a cabinet or table: gravel, plants, an ornament, bubbles and a few fish under a lit lid.
+ *
+ * @category Landscapes
+ */
 export const aquarium = /* @__PURE__ */ defineKind("aquarium", "Aquarium", (g, w, h, note) => {
   const unit = Math.min(w, h);
   const wallHue = g.f(0, 360);

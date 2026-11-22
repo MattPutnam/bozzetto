@@ -18,7 +18,11 @@ const TOPPINGS: Record<string, [number, number, string]> = {
   olive: [4, 6, "olives"],
 };
 
-/** A bowl of salad from above: leaves heaped inside with toppings over them, and sometimes servers. */
+/**
+ * A bowl of salad from above: leaves heaped inside with toppings over them, and sometimes servers.
+ *
+ * @category Food
+ */
 export const salad = /* @__PURE__ */ defineKind("salad", "Salad", (g, w, h, note) => {
   const unit = Math.min(w, h);
   const wide = w >= h;

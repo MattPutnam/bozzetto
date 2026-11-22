@@ -339,7 +339,11 @@ function goalieMask(g: Rand): string {
   return out;
 }
 
-/** A hockey stick, a puck and a helmet or goalie mask on the ice, a rubber mat or a bench. */
+/**
+ * A hockey stick, a puck and a helmet or goalie mask on the ice, a rubber mat or a bench.
+ *
+ * @category Sports
+ */
 export const hockey = /* @__PURE__ */ defineKind(
   "hockey",
   "Hockey",

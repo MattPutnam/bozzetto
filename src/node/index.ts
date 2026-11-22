@@ -2,9 +2,13 @@
  * `bozzetto/node`: pictures as PNG files in Node (and Bun), rendered by `@resvg/resvg-js`.
  * resvg is an optional peer dependency: install it to use `toPng`.
  *
- *     import { owl, render } from "bozzetto";
- *     import { toPng } from "bozzetto/node";
- *     await writeFile("owl.png", await toPng(render(owl, { seed: 3 }), { scale: 2 }));
+ * ```ts
+ * import { owl, render } from "bozzetto";
+ * import { toPng } from "bozzetto/node";
+ * await writeFile("owl.png", await toPng(render(owl, { seed: 3 }), { scale: 2 }));
+ * ```
+ *
+ * @module bozzetto/node
  */
 import { sizeOf } from "../render/raster";
 import { forResvg } from "./resvg-fix";

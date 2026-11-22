@@ -32,7 +32,11 @@ function bamboo(
   return out + el("path", { d, fill: leaf });
 }
 
-/** A giant panda sitting in a bamboo grove, holding a stalk of bamboo. */
+/**
+ * A giant panda sitting in a bamboo grove, holding a stalk of bamboo.
+ *
+ * @category Animals
+ */
 export const panda = /* @__PURE__ */ defineKind("panda", "Panda", (g, w, h, note) => {
   const white = g.pick(["#f6f4ee", "#f1eee5", "#faf8f2"]);
   const black = g.pick(["#1f1d1f", "#2a2628", "#2b2622"]);

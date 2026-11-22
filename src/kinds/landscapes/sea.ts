@@ -1,6 +1,10 @@
 import { defineKind, el, fill, hsl, lin, s } from "../../draw/core";
 
-/** A low sun over the sea, with its reflection broken into streaks. */
+/**
+ * A low sun over the sea, with its reflection broken into streaks.
+ *
+ * @category Landscapes
+ */
 export const sea = /* @__PURE__ */ defineKind("sea", "Sunset sea", (g, w, h, note) => {
   const hue = g.f(-15, 45);
   const horizon = h * g.f(0.55, 0.68);

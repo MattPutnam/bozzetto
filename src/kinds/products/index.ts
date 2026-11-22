@@ -13,6 +13,12 @@ import { controller } from "./controller";
 
 export { sneakers, watch, backpack, sunglasses, handbag, perfume, headphones, phone, laptop, speaker, controller };
 
+/**
+ * Every kind in the products category: studio shots of one item on a seamless backdrop, as in a
+ * shop.
+ *
+ * @category Categories
+ */
 export const products = [
   sneakers,
   watch,

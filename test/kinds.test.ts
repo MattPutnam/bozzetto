@@ -77,8 +77,23 @@ describe("default mapping", () => {
 describe("toSvg with style options", () => {
   it("matches styling the plain picture", () => {
     const plain = toSvg(hills, { seed: 5 });
-    expect(toSvg(hills, { seed: 5, palette: "riso", texture: "grain" })).toBe(
-      stylize(plain, { palette: "riso", texture: "grain" }),
+    const unprefixed = (svg: string) => svg.replace(/\bbz[a-z0-9]+-/g, "bz-").replace(/\btx[a-z0-9]+/g, "tx");
+    expect(unprefixed(toSvg(hills, { seed: 5, palette: "riso", texture: "grain" }))).toBe(
+      unprefixed(stylize(plain, { palette: "riso", texture: "grain" })),
     );
+  });
+
+  it("gives differently styled copies of one picture their own ids, so they can share a page", () => {
+    const ids = (svg: string) => [...svg.matchAll(/ id="([^"]+)"/g)].map(m => m[1]);
+    const styles = [
+      {},
+      { palette: "pastel" },
+      { palette: "riso" },
+      { texture: "grain" },
+      { texture: "paper" },
+      { dark: true },
+    ] as const;
+    const all = styles.flatMap(style => ids(toSvg(hills, { seed: 5, ...style })));
+    expect(new Set(all).size).toBe(all.length);
   });
 });

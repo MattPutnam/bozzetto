@@ -12,7 +12,11 @@ const COOKIES: Record<string, [string, string]> = {
   iced: ["#f0cf98", "iced"],
 };
 
-/** Cookies on a plate or a baking tray, seen from above. */
+/**
+ * Cookies on a plate or a baking tray, seen from above.
+ *
+ * @category Food
+ */
 export const cookies = /* @__PURE__ */ defineKind("cookies", "Cookies", (g, w, h, note) => {
   const unit = Math.min(w, h);
   const cx = w / 2;

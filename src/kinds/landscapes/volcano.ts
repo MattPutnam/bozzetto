@@ -1,7 +1,11 @@
 import { defineKind, el, fill, hsl, lin, type Point, pts, qpt, s } from "../../draw/core";
 import { lerp } from "./shared";
 
-/** A volcano trailing smoke by day, or glowing with lava at dusk or night. */
+/**
+ * A volcano trailing smoke by day, or glowing with lava at dusk or night.
+ *
+ * @category Landscapes
+ */
 export const volcano = /* @__PURE__ */ defineKind("volcano", "Volcano", (g, w, h, note) => {
   const time = g.pick(["day", "dusk", "night"] as const);
   const glowing = time !== "day";

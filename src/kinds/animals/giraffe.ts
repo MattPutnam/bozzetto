@@ -8,7 +8,11 @@ const GIRAFFES = [
   { base: "#e8c690", spot: "#8a4f2e" },
 ] as const;
 
-/** A giraffe on the savanna, side on, sometimes browsing an acacia. */
+/**
+ * A giraffe on the savanna, side on, sometimes browsing an acacia.
+ *
+ * @category Animals
+ */
 export const giraffe = /* @__PURE__ */ defineKind("giraffe", "Giraffe", (g, w, h, note) => {
   const coat = g.pick(GIRAFFES);
   const far = mix(coat.base, "#000000", 0.15);

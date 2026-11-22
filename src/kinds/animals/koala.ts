@@ -1,7 +1,11 @@
 import { defineKind, el, fill, hsl, lin, mix, type Point, qpt, s } from "../../draw/core";
 import { fluff, leafShape, limb, tube } from "./shared";
 
-/** A koala hugging the trunk of a gum tree, sometimes with a joey on its back. */
+/**
+ * A koala hugging the trunk of a gum tree, sometimes with a joey on its back.
+ *
+ * @category Animals
+ */
 export const koala = /* @__PURE__ */ defineKind("koala", "Koala", (g, w, h, note) => {
   const fur = g.pick(["#9a9ca3", "#8c8f96", "#a8a7a8", "#958f8a"]);
   const light = mix(fur, "#ffffff", 0.65);

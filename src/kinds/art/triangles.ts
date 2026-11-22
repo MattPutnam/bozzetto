@@ -1,7 +1,11 @@
 import { defineKind, el, fill, s } from "../../draw/core";
 import { numberWord } from "../../draw/words";
 
-/** A tiling of triangles in a few colors, shading from one side of the frame to the other. */
+/**
+ * A tiling of triangles in a few colors, shading from one side of the frame to the other.
+ *
+ * @category Art
+ */
 export const triangles = /* @__PURE__ */ defineKind("triangles", "Triangle tiling", (g, w, h, note) => {
   const unit = Math.min(w, h);
   const palette = g.pick([

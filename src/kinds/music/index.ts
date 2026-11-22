@@ -8,4 +8,9 @@ import { notes } from "./notes";
 
 export { guitar, piano, drums, record, cds, notes };
 
+/**
+ * Every kind in the music category: instruments, records, CDs and drum kits, and scattered notes.
+ *
+ * @category Categories
+ */
 export const music = [guitar, piano, drums, record, cds, notes] as const;

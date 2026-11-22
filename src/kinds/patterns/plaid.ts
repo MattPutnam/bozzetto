@@ -1,6 +1,10 @@
 import { defineKind, el, fill, mix } from "../../draw/core";
 
-/** A tartan plaid: a mirrored run of stripes in several widths and colors, crossing itself. */
+/**
+ * A tartan plaid: a mirrored run of stripes in several widths and colors, crossing itself.
+ *
+ * @category Patterns
+ */
 export const plaid = /* @__PURE__ */ defineKind("plaid", "Plaid", (g, w, h, note) => {
   const unit = Math.min(w, h);
   const palette = g.pick([

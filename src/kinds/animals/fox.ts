@@ -7,7 +7,11 @@ const FOXES = [
   { fur: "#dcb07a", dark: "#5a3a22", light: "#fbf3e3", bg: [40, 45, 84] },
 ] as const;
 
-/** An angular fox face with pale cheeks and dark-tipped ears. */
+/**
+ * An angular fox face with pale cheeks and dark-tipped ears.
+ *
+ * @category Animals
+ */
 export const fox = /* @__PURE__ */ defineKind("fox", "Fox", (g, w, h, note) => {
   const palette = g.pick(FOXES);
   const size = Math.min(w, h);

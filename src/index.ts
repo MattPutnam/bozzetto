@@ -4,19 +4,30 @@
  * Every kind of picture is its own export, like icons in an icon library. Import a kind and render it,
  * and your bundle only carries the kinds you use:
  *
- *     import { owl, toDataUri } from "bozzetto";
- *     img.src = toDataUri(owl, { seed: 3, palette: "pastel" });
+ * ```ts
+ * import { owl, toDataUri } from "bozzetto";
+ * img.src = toDataUri(owl, { seed: 3, palette: "pastel" });
+ * ```
  *
  * Or let `placeholder` and `placeholders` choose from a list, a category, or every kind
  * (these pull in every kind):
  *
- *     import { animals, donut, placeholders } from "bozzetto";
- *     const photos = placeholders(12, { kind: [animals, donut], size: ["400x300", "300x400"] });
+ * ```ts
+ * import { animals, donut, placeholders } from "bozzetto";
+ * const photos = placeholders(12, { kind: [animals, donut], size: ["400x300", "300x400"] });
+ * ```
+ *
+ * @module bozzetto
  */
-import { seedToInt } from "./draw/core";
+import { seedToInt, type Kind } from "./draw/core";
 import { faces, kinds } from "./kinds";
 import { makeAvatar, type AvatarOptions, type AvatarsOptions } from "./render/avatar";
-import { makePlaceholders } from "./render/placeholder";
+import {
+  makePlaceholders,
+  type KindChoice,
+  type PlaceholderOptions,
+  type PlaceholdersOptions,
+} from "./render/placeholder";
 import type { Picture } from "./render/render";
 
 // Kinds and categories
@@ -56,24 +67,51 @@ type Chooser = ReturnType<typeof makePlaceholders>;
 let chooser: Chooser | undefined;
 const choose = (): Chooser => (chooser ??= makePlaceholders(kinds));
 
-/** The kind a choice and seed pick: a kind, an id, or a list or category to choose from by seed. */
-export const resolveKind: Chooser["resolveKind"] = (choice, seed) => choose().resolveKind(choice, seed);
-/** One picture of a kind chosen from `kind` (every kind by default). */
-export const placeholder: Chooser["placeholder"] = options => choose().placeholder(options);
-/** `count` pictures, going through the kinds in `kind` by `order`, picture k with seed `seed + k`. */
-export const placeholders: Chooser["placeholders"] = (count, options) => choose().placeholders(count, options);
+/**
+ * The kind a choice and seed pick: a kind, an id, or a list or category to choose from by seed.
+ * With no choice, the seed picks from every kind.
+ *
+ * @category Choosing kinds
+ */
+export function resolveKind(choice?: KindChoice, seed?: number | string): Kind {
+  return choose().resolveKind(choice, seed);
+}
+
+/**
+ * One picture of a kind chosen by the seed from `kind` (every kind by default).
+ *
+ * @category Choosing kinds
+ */
+export function placeholder(options?: PlaceholderOptions): Picture {
+  return choose().placeholder(options);
+}
+
+/**
+ * `count` pictures, going through the kinds in `kind` by `order`, picture k with seed `seed + k`.
+ *
+ * @category Choosing kinds
+ */
+export function placeholders(count: number, options?: PlaceholdersOptions): Picture[] {
+  return choose().placeholders(count, options);
+}
 
 let makeOne: ((options?: AvatarOptions) => Picture) | undefined;
 
 /**
  * An avatar: a face kind framed in a square around its head, round by default. With no `kind`, the
  * seed picks one of `faces`, so a user id gives each user their own avatar.
+ *
+ * @category Avatars
  */
-export const avatar = (options?: AvatarOptions): Picture => (makeOne ??= makeAvatar(resolveKind, faces))(options);
+export function avatar(options?: AvatarOptions): Picture {
+  return (makeOne ??= makeAvatar(resolveKind, faces))(options);
+}
 
 /**
- * `count` avatars. With a list of kinds (by default every face), each is used once, in a seeded
- * order, before any repeats; avatar k uses seed `seed + k`, as in `placeholders`.
+ * `count` avatars. With a list of kinds (by default every face) and the default `shuffle` order,
+ * each is used once, in a seeded order, before any repeats; avatar k uses seed `seed + k`, as in `placeholders`.
+ *
+ * @category Avatars
  */
 export function avatars(count: number, options: AvatarsOptions = {}): Picture[] {
   const { order, ...rest } = options;

@@ -1,7 +1,11 @@
 import { defineKind, el, hsl, mix, pts, s } from "../../draw/core";
 import { blob, table } from "../../draw/shapes";
 
-/** An upholstered armchair, sometimes with a cushion, and sometimes beside a side table. */
+/**
+ * An upholstered armchair, sometimes with a cushion, and sometimes beside a side table.
+ *
+ * @category Objects
+ */
 export const armchair = /* @__PURE__ */ defineKind("armchair", "Armchair", (g, w, h, note) => {
   const unit = Math.min(w, h);
   const top = h * g.f(0.8, 0.86);

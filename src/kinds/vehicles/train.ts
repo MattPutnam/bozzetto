@@ -1,7 +1,11 @@
 import { defineKind, el, facing, hsl, mix, s } from "../../draw/core";
 import { hill, local, shade, skyAt, timeOfDay, tree, veil, when } from "./shared";
 
-/** A steam locomotive pulling one or two carriages along a track. */
+/**
+ * A steam locomotive pulling one or two carriages along a track.
+ *
+ * @category Vehicles
+ */
 export const train = /* @__PURE__ */ defineKind("train", "Steam train", (g, w, h, note) => {
   const unit = Math.min(w, h);
   const time = timeOfDay(g);

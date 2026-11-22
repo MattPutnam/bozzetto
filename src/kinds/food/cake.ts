@@ -6,7 +6,11 @@ const SPONGE = ["#f3d9a4", "#7b4a35", "#f7e7c6", "#e9b872"];
 
 const CREAM = ["#fbf4e8", "#f7c6d0", "#f6d365", "#6b3e2e"];
 
-/** A layered slice of cake on a plate, with a berry on top. */
+/**
+ * A layered slice of cake on a plate, with a berry on top.
+ *
+ * @category Food
+ */
 export const cake = /* @__PURE__ */ defineKind("cake", "Slice of cake", (g, w, h, note) => {
   const unit = Math.min(w, h);
   const sponge = g.pick(SPONGE);

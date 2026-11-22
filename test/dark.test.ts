@@ -6,8 +6,10 @@ import { hexToLch } from "../src/color/color";
 import { Placeholder } from "../src/frameworks/react";
 
 const COLOR = /hsl\((-?\d+) (\d+)% (\d+)%\)|#[0-9a-f]{3,6}/g;
+/** Element ids and class names with their picture-unique prefixes taken out, to compare markup. */
+const unprefixed = (svg: string) => svg.replace(/\bbz[a-z0-9]+-/g, "bz-").replace(/\btx[a-z0-9]+/g, "tx");
 /** The picture as the light version: classes and the style taken out. */
-const lightOnly = (svg: string) => svg.replace(/<style>.*?<\/style>/, "").replace(/ class="[^"]*"/g, "");
+const lightOnly = (svg: string) => unprefixed(svg.replace(/<style>.*?<\/style>/, "").replace(/ class="[^"]*"/g, ""));
 /** The color each dark rule gives each class. */
 const darkRules = (svg: string) => {
   const css = /<style>@media \(prefers-color-scheme: dark\)\{(.*?)\}\}/.exec(svg)![1] + "}";
@@ -18,7 +20,7 @@ describe("dark", () => {
   it("leaves the light picture as it was", () => {
     for (const kind of kinds) {
       const plain = render(kind, { seed: 5 }).svg;
-      expect(lightOnly(render(kind, { seed: 5, dark: true }).svg), kind.id).toBe(plain);
+      expect(lightOnly(render(kind, { seed: 5, dark: true }).svg), kind.id).toBe(unprefixed(plain));
     }
   });
 
@@ -62,7 +64,9 @@ describe("dark", () => {
     expect(svg).not.toContain("prefers-color-scheme");
     // The same dark colors, under the selector.
     const selectorRules = /<style>(.*?)<\/style>/.exec(svg)![1].replaceAll("[data-theme=dark] ", "");
-    expect(`@media (prefers-color-scheme: dark){${selectorRules}}`).toBe(/<style>(.*?)<\/style>/.exec(plain)![1]);
+    expect(unprefixed(`@media (prefers-color-scheme: dark){${selectorRules}}`)).toBe(
+      unprefixed(/<style>(.*?)<\/style>/.exec(plain)![1]),
+    );
   });
 
   it("leaves masks alone and uses class names unique to the picture", () => {

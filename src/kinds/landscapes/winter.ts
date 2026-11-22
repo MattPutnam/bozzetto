@@ -1,7 +1,11 @@
 import { defineKind, el, fill, hsl, lin, type Point, pts, s } from "../../draw/core";
 import { cabin, curve, PINE, PINE_SNOW, snowyPine } from "./shared";
 
-/** Snowy hills with a cabin or two among snow-laden pines. */
+/**
+ * Snowy hills with a cabin or two among snow-laden pines.
+ *
+ * @category Landscapes
+ */
 export const winter = /* @__PURE__ */ defineKind("winter", "Winter hills", (g, w, h, note) => {
   const time = g.pick(["day", "overcast", "evening"] as const);
   const unit = Math.min(w, h);

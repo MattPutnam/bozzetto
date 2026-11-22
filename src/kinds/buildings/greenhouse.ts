@@ -1,7 +1,11 @@
 import { defineKind, el, hsl, type Point, s } from "../../draw/core";
 import { blossoms, dots, FLOWERS, hill, LIT, local, shade, skyAt, timeOfDay, tone, veil, when } from "./shared";
 
-/** A glass greenhouse full of plants, in a garden with beds and a path. */
+/**
+ * A glass greenhouse full of plants, in a garden with beds and a path.
+ *
+ * @category Buildings
+ */
 export const greenhouse = /* @__PURE__ */ defineKind(
   "greenhouse",
   "Greenhouse",

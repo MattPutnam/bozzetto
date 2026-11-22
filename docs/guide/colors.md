@@ -25,7 +25,7 @@ A **palette** replaces a picture's colors with a fixed set. The built-in ones ar
 ## Your own colors
 
 Give a list of colors (hex, `rgb()` or `hsl()`), or the same colors as a palette code such as
-`"1d3557-457b9d-a8dadc-f1faee-e63946"`:
+`"1d3557-457b9d-a8dadc-f1faee-e63946"` (a code needs two or more colors):
 
 <<< @/examples/colors.ts#custom
 
@@ -36,7 +36,8 @@ To come up with colors, see [Making a palette](./making-palettes), or try the
 
 ## Mapping
 
-`mapping` says how a palette's colors are matched to a picture's:
+`mapping` says how a palette's colors are matched to a picture's. Adjustments change a picture's
+own colors, so they ignore it.
 
 - **`balanced`** (the default) uses only your exact colors. It keeps the picture's light and dark
   where they were, and picks among similar lightnesses by hue, so a sky and a hill stay different.

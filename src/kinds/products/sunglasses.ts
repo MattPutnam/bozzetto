@@ -1,7 +1,11 @@
 import { defineKind, el, facing, mix, s } from "../../draw/core";
 import { contact, studio } from "./shared";
 
-/** A pair of folded sunglasses standing face-on, in aviator, round or wayfarer style. */
+/**
+ * A pair of folded sunglasses standing face-on, in aviator, round or wayfarer style.
+ *
+ * @category Products
+ */
 export const sunglasses = /* @__PURE__ */ defineKind("sunglasses", "Sunglasses", (g, w, h, note) => {
   const unit = Math.min(w, h);
   const style = g.pick(["aviator", "round", "wayfarer"]);

@@ -26,7 +26,11 @@ const ROSES: readonly (readonly [number, number, number])[] = [
   [16, 75, 68],
 ];
 
-/** A rose in bloom, seen from above or at three-quarters, with leaves and sometimes a bud. */
+/**
+ * A rose in bloom, seen from above or at three-quarters, with leaves and sometimes a bud.
+ *
+ * @category Plants
+ */
 export const rose = /* @__PURE__ */ defineKind("rose", "Rose", (g, w, h, note) => {
   const unit = Math.min(w, h);
   const look = g.pick(["garden", "garden", "warm", "dusk"] as const);

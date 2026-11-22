@@ -35,7 +35,11 @@ const CONTROLLER: readonly (readonly Point[])[] = [
   ],
 ];
 
-/** A game controller lying flat on the studio floor, seen from above. */
+/**
+ * A game controller lying flat on the studio floor, seen from above.
+ *
+ * @category Products
+ */
 export const controller = /* @__PURE__ */ defineKind("controller", "Game controller", (g, w, h, note) => {
   const unit = Math.min(w, h);
   const body = g.pick([

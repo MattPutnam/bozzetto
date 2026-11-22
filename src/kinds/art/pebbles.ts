@@ -2,7 +2,11 @@ import { defineKind, el, fill, s } from "../../draw/core";
 import { blob as softBlob } from "../../draw/shapes";
 import { capitalize, numberWord } from "../../draw/words";
 
-/** Smooth rounded stones laid out on a plain ground, after the biomorphic sculptors. */
+/**
+ * Smooth rounded stones laid out on a plain ground, after the biomorphic sculptors.
+ *
+ * @category Art
+ */
 export const pebbles = /* @__PURE__ */ defineKind("pebbles", "Pebbles", (g, w, h, note) => {
   const unit = Math.min(w, h);
   const scheme = g.pick([

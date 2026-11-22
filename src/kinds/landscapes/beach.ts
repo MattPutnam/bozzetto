@@ -1,7 +1,11 @@
 import { defineKind, el, hsl, type Point, pts, s } from "../../draw/core";
 import { AT, curve, daySky, palm, seaAndSky, TIMES } from "./shared";
 
-/** A sandy beach with a striped umbrella, a leaning palm, or shells at the water's edge. */
+/**
+ * A sandy beach with a striped umbrella, a leaning palm, or shells at the water's edge.
+ *
+ * @category Landscapes
+ */
 export const beach = /* @__PURE__ */ defineKind(
   "beach",
   "Beach",

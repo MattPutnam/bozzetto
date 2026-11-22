@@ -317,7 +317,11 @@ const GRIP_WORDS: Record<Grip, string> = {
   rails: " with stripes along its edges",
 };
 
-/** One skateboard shown twice on a wall, as if from both sides: grip tape and bolts, then the graphic and trucks. */
+/**
+ * One skateboard shown twice on a wall, as if from both sides: grip tape and bolts, then the graphic and trucks.
+ *
+ * @category Sports
+ */
 export const skateboard = /* @__PURE__ */ defineKind("skateboard", "Skateboard", { wall: WALLS }, (g, w, h, note) => {
   const unit = Math.min(w, h);
   const wallType = g.option("wall", g.pick(WALLS));

@@ -1,7 +1,11 @@
 import { defineKind, el, hsl, type Point, s } from "../../draw/core";
 import { BAR, dots, GLASS, LIT, shade, skyAt, timeOfDay, tone, UNLIT, veil, when } from "./shared";
 
-/** A terrace of narrow townhouses side by side, of varied heights, with doors up front steps. */
+/**
+ * A terrace of narrow townhouses side by side, of varied heights, with doors up front steps.
+ *
+ * @category Buildings
+ */
 export const rowHouses = /* @__PURE__ */ defineKind("row-houses", "Row houses", (g, w, h, note) => {
   const unit = Math.min(w, h);
   const time = timeOfDay(g);

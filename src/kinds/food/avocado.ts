@@ -1,7 +1,11 @@
 import { defineKind, el, fill, hsl, mix, type Point, s } from "../../draw/core";
 import { smoothClosed } from "../../draw/shapes";
 
-/** An avocado cut in half on a board, one half still holding the pit. */
+/**
+ * An avocado cut in half on a board, one half still holding the pit.
+ *
+ * @category Food
+ */
 export const avocado = /* @__PURE__ */ defineKind("avocado", "Avocado", (g, w, h, note) => {
   const unit = Math.min(w, h);
   const cx = w / 2;

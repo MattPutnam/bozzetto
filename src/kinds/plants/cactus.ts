@@ -1,7 +1,11 @@
 import { defineKind, el, hex, hsl, mix, pts, s } from "../../draw/core";
 import { blob, table } from "../../draw/shapes";
 
-/** A cactus in a pot: a tall one with arms, a ribbed barrel, prickly pear paddles, or round balls. */
+/**
+ * A cactus in a pot: a tall one with arms, a ribbed barrel, prickly pear paddles, or round balls.
+ *
+ * @category Plants
+ */
 export const cactus = /* @__PURE__ */ defineKind("cactus", "Potted cactus", (g, w, h, note) => {
   const unit = Math.min(w, h);
   const top = h * g.f(0.78, 0.84);

@@ -2,7 +2,11 @@ import { defineKind, el, hsl, mix, s } from "../../draw/core";
 import { blob, table } from "../../draw/shapes";
 import { numberWord } from "../../draw/words";
 
-/** A vase of round flowers on a table. */
+/**
+ * A vase of round flowers on a table.
+ *
+ * @category Objects
+ */
 export const flowers = /* @__PURE__ */ defineKind("flowers", "Vase of flowers", (g, w, h, note) => {
   const unit = Math.min(w, h);
   const top = h * g.f(0.74, 0.8);

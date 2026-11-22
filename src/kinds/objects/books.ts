@@ -2,7 +2,11 @@ import { defineKind, el, hsl, pts, s } from "../../draw/core";
 import { blob } from "../../draw/shapes";
 import { numberWord } from "../../draw/words";
 
-/** Books standing and leaning on a shelf, sometimes with a small plant. */
+/**
+ * Books standing and leaning on a shelf, sometimes with a small plant.
+ *
+ * @category Objects
+ */
 export const books = /* @__PURE__ */ defineKind("books", "Bookshelf", (g, w, h, note) => {
   const unit = Math.min(w, h);
   const shelfY = h * g.f(0.74, 0.8);

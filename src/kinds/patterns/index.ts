@@ -8,4 +8,10 @@ import { gradient } from "./gradient";
 
 export { terrazzo, marble, gingham, plaid, topography, gradient };
 
+/**
+ * Every kind in the patterns category: calm, even textures to sit behind text on cards and
+ * banners.
+ *
+ * @category Categories
+ */
 export const patterns = [terrazzo, marble, gingham, plaid, topography, gradient] as const;

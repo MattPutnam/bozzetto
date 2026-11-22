@@ -1,7 +1,11 @@
 import { defineKind, el, hsl, s } from "../../draw/core";
 import { baseFor, shade, softContact, sweepStudio, tint } from "./shared";
 
-/** A fabric-covered speaker: a portable cylinder, a smart speaker or a wide portable box. */
+/**
+ * A fabric-covered speaker: a portable cylinder, a smart speaker or a wide portable box.
+ *
+ * @category Products
+ */
 export const speaker = /* @__PURE__ */ defineKind("speaker", "Speaker", (g, w, h, note) => {
   const unit = Math.min(w, h);
   const shape = g.pick(["cylinder", "smart", "box"] as const);

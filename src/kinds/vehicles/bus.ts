@@ -1,7 +1,11 @@
 import { defineKind, el, facing, hsl, mix } from "../../draw/core";
 import { CHROME, local, PAINTS, shade, skyAt, timeOfDay, TIRE, veil, when } from "./shared";
 
-/** A bus at the curb of a city street: a city bus, a school bus or a double-decker. */
+/**
+ * A bus at the curb of a city street: a city bus, a school bus or a double-decker.
+ *
+ * @category Vehicles
+ */
 export const bus = /* @__PURE__ */ defineKind(
   "bus",
   "Bus",

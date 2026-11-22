@@ -1,7 +1,11 @@
 import { defineKind, el, fill, hsl, lin, mix, s } from "../../draw/core";
 import { local, shade, skyAt, veil, when } from "./shared";
 
-/** A retro rocket: lifting off its pad, or flying through space. */
+/**
+ * A retro rocket: lifting off its pad, or flying through space.
+ *
+ * @category Vehicles
+ */
 export const rocket = /* @__PURE__ */ defineKind(
   "rocket",
   "Rocket",

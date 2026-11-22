@@ -1,7 +1,11 @@
 import { defineKind, el, hsl, s } from "../../draw/core";
 import { AT, daySky, palm, seaAndSky, TIMES } from "./shared";
 
-/** A small tropical island with palms, alone in open sea. */
+/**
+ * A small tropical island with palms, alone in open sea.
+ *
+ * @category Landscapes
+ */
 export const island = /* @__PURE__ */ defineKind("island", "Tropical island", (g, w, h, note) => {
   const time = g.chance(0.6) ? "day" : g.pick(TIMES);
   const sky = daySky(g, time);

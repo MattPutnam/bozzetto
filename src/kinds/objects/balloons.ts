@@ -2,7 +2,11 @@ import { defineKind, el, hsl, pts, s } from "../../draw/core";
 import { table } from "../../draw/shapes";
 import { numberWord } from "../../draw/words";
 
-/** A bunch of balloons on strings, tied to a weight on the floor. */
+/**
+ * A bunch of balloons on strings, tied to a weight on the floor.
+ *
+ * @category Objects
+ */
 export const balloons = /* @__PURE__ */ defineKind("balloons", "Balloons", (g, w, h, note) => {
   const unit = Math.min(w, h);
   const top = h * g.f(0.84, 0.9);

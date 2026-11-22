@@ -14,7 +14,11 @@ function cloud(g: Rand, x: number, y: number, cw: number, paint: string): string
   return el("path", { d, fill: paint });
 }
 
-/** A rainbow over fresh hills after rain, the storm moving off to one side. */
+/**
+ * A rainbow over fresh hills after rain, the storm moving off to one side.
+ *
+ * @category Landscapes
+ */
 export const rainbow = /* @__PURE__ */ defineKind("rainbow", "Rainbow", (g, w, h, note) => {
   const evening = g.chance(0.35);
   const unit = Math.min(w, h);

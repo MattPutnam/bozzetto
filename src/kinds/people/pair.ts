@@ -1,7 +1,11 @@
 import { defineKind, el, fill, hsl } from "../../draw/core";
 import { describe, figure, headBox, person } from "./shared";
 
-/** Two people side by side, head and shoulders, leaning in. Each varies on their own. */
+/**
+ * Two people side by side, head and shoulders, leaning in. Each varies on their own.
+ *
+ * @category People
+ */
 export const pair = /* @__PURE__ */ defineKind("pair", "Pair of friends", (g, w, h, note) => {
   const unit = Math.min(w, h);
   const rx = unit * g.f(0.125, 0.145);

@@ -1,7 +1,11 @@
 import { defineKind, el, fill, hsl, s } from "../../draw/core";
 import { arm, capital, describe, desk, figure, halfLength, hand, headBox, person } from "./shared";
 
-/** A half-length figure at a café table, holding a cup in both hands. */
+/**
+ * A half-length figure at a café table, holding a cup in both hands.
+ *
+ * @category People
+ */
 export const cafe = /* @__PURE__ */ defineKind("cafe", "Café", (g, w, h, note) => {
   const p = person(g.fork("person"));
   const { rx, ry, cx, cy, sw, shoulderY } = halfLength(g, p, w, h);

@@ -9,7 +9,11 @@ const LADYBUGS = [
   { shell: "#1f1a1a", spot: "#d8322b" },
 ] as const;
 
-/** A ladybug crawling across a leaf, seen from above. */
+/**
+ * A ladybug crawling across a leaf, seen from above.
+ *
+ * @category Animals
+ */
 export const ladybug = /* @__PURE__ */ defineKind("ladybug", "Ladybug", (g, w, h, note) => {
   const unit = Math.min(w, h);
   const colors = g.pick(LADYBUGS);

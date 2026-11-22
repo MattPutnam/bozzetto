@@ -9,4 +9,9 @@ import { surfboard } from "./surfboard";
 
 export { baseball, basketball, football, hockey, tennis, skateboard, surfboard };
 
+/**
+ * Every kind in the sports category: close-ups of gear, and boards hung on the wall.
+ *
+ * @category Categories
+ */
 export const sports = [baseball, basketball, football, hockey, tennis, skateboard, surfboard] as const;

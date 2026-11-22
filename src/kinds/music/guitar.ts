@@ -13,7 +13,11 @@ const cpt = (p0: Point, p1: Point, p2: Point, p3: Point, t: number): Point => {
 /** Where fret k sits, as a fraction of the scale length from the nut. */
 const fret = (k: number): number => 1 - 2 ** (-k / 12);
 
-/** A guitar on a floor stand, acoustic or electric, seen from the front. */
+/**
+ * A guitar on a floor stand, acoustic or electric, seen from the front.
+ *
+ * @category Music
+ */
 export const guitar = /* @__PURE__ */ defineKind(
   "guitar",
   "Guitar",

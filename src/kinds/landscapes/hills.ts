@@ -1,6 +1,10 @@
 import { defineKind, el, fill, hsl, lin, qpt, s } from "../../draw/core";
 
-/** Soft hills under a gradient sky and a sun, sometimes with a lone tree. */
+/**
+ * Soft hills under a gradient sky and a sun, sometimes with a lone tree.
+ *
+ * @category Landscapes
+ */
 export const hills = /* @__PURE__ */ defineKind("hills", "Rolling hills", { tree: [true, false] }, (g, w, h, note) => {
   const hue = g.f(0, 360);
   const sky = g.id("sky");

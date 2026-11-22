@@ -68,7 +68,11 @@ export * from "./holidays";
 export * from "./space";
 export * from "./patterns";
 
-/** Every category by name, for listing them (in a demo, say). */
+/**
+ * Every category by name, for listing them (in a demo, say). See the Kinds guide for every kind.
+ *
+ * @category Categories
+ */
 export const categories = {
   landscapes,
   art,
@@ -87,8 +91,12 @@ export const categories = {
   patterns,
 } as const;
 
-/** Every built-in kind. */
 // Built in a function marked pure: spreading arrays at load time would keep every kind in a bundle.
+/**
+ * Every built-in kind. Using it (or `placeholder` without a `kind`) carries every kind in a bundle.
+ *
+ * @category Categories
+ */
 export const kinds = /* @__PURE__ */ (() =>
   [
     ...landscapes,
@@ -108,10 +116,18 @@ export const kinds = /* @__PURE__ */ (() =>
     ...patterns,
   ] as const)();
 
-/** The id of any built-in kind, such as `"owl"` or `"ice-cream"`. */
+/**
+ * The id of any built-in kind, such as `"owl"` or `"ice-cream"`.
+ *
+ * @category Choosing kinds
+ */
 export type KindId = (typeof kinds)[number]["id"];
 
-/** Kinds with a face, which can be avatars. Unlike the categories, it overlaps them. */
+/**
+ * Kinds with a face, which can be avatars. Unlike the categories, it overlaps them.
+ *
+ * @category Categories
+ */
 export const faces = [
   portrait,
   reader,

@@ -1,7 +1,11 @@
 import { defineKind, el, mix, s } from "../../draw/core";
 import { contact, studio } from "./shared";
 
-/** A backpack seen from the front, with a zip pocket and its straps showing at the sides. */
+/**
+ * A backpack seen from the front, with a zip pocket and its straps showing at the sides.
+ *
+ * @category Products
+ */
 export const backpack = /* @__PURE__ */ defineKind("backpack", "Backpack", (g, w, h, note) => {
   const unit = Math.min(w, h);
   const style = g.pick(["daypack", "daypack", "rucksack"]);

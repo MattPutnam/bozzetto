@@ -108,7 +108,11 @@ function beamed(steps: readonly number[], beams: number, dx = 0, dy = 0): [strin
   return [d, [first[0] - HEAD_RX, top, x1, bottom]];
 }
 
-/** Music notes of different kinds, sizes and colors scattered over a soft ground. */
+/**
+ * Music notes of different kinds, sizes and colors scattered over a soft ground.
+ *
+ * @category Music
+ */
 export const notes = /* @__PURE__ */ defineKind("notes", "Music notes", (g, w, h, note) => {
   const unit = Math.min(w, h);
   const dark = g.chance(0.3);

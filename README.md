@@ -1,6 +1,6 @@
 # bozzetto
 
-Seeded placeholder images as tiny SVGs: landscapes, modern-art homages, people, animals, food and still lifes, each drawn from a handful of flat shapes and gradients, in any palette.
+Seeded placeholder images as tiny SVGs: landscapes, art, people, animals, food, still lifes, plants, buildings, vehicles, products, music, sports, holidays, space and patterns, each drawn from a handful of flat shapes and gradients, in any palette.
 
 A _bozzetto_ is a painter's small preliminary sketch, made before the real work. These are the stand-ins for your real pictures.
 
@@ -27,7 +27,7 @@ Every kind of picture is its own export, like icons in an icon library:
 import { owl, toDataUri, toSvg } from "bozzetto";
 
 img.src = toDataUri(owl, { seed: 3, size: "320x240" });
-container.innerHTML = toSvg(owl, { seed: 3 }); // inline markup; element ids are unique per picture
+container.innerHTML = toSvg(owl, { seed: 3 }); // inline markup; ids are unique, so many can share a page
 ```
 
 To fill a gallery, `placeholders` makes a list. Most options take a single value or a list to go through picture by picture:
@@ -51,13 +51,13 @@ const photos = placeholders(24, {
 
 ### Pictures
 
-`placeholder`, `placeholders` and `render(kind, options)` return pictures with what a gallery needs:
+`placeholder`, `placeholders`, `avatar`, `avatars` and `render(kind, options)` return pictures with what a gallery needs:
 
 ```ts
 for (const photo of placeholders(12, { kind: animals, size: ["400x300", "300x400"] })) {
   const img = new Image(photo.width, photo.height);
   img.src = photo.src; // a data URI; photo.svg is the markup, for inlining
-  img.alt = photo.alt; // "A fox with dark-tipped ears", "An owl on a branch under a crescent moon"
+  img.alt = photo.alt; // "A fox's face with pale cheeks and dark-tipped ears"
   img.style.objectPosition = `${photo.focus.x * 100}% ${photo.focus.y * 100}%`;
   img.style.background = photo.color; // the main background color, shown while it loads
   gallery.append(img);
@@ -73,12 +73,14 @@ for (const photo of placeholders(12, { kind: animals, size: ["400x300", "300x400
 | `focus`           | The point of interest (a face, the sun) as fractions of the width and height              |
 | `color`           | The main background color as `#rrggbb`                                                    |
 | `options`         | The value each of the kind's options took                                                 |
+| `darkColor`       | With `dark`: the main background color in dark mode                                       |
+| `frame`           | For kinds with a face: the head's bounds, as fractions (what an avatar frames)            |
 
 `toSvg` and `toDataUri` return just the markup or the data URI, for when that's all you need.
 
 ## Command line
 
-The `bozzetto` command writes pictures as SVG files, for fixtures, mockups and design tools:
+The `bozzetto` command writes pictures as SVG or PNG files, for fixtures, mockups and design tools:
 
 ```sh
 npx bozzetto owl > owl.svg
@@ -99,10 +101,10 @@ import { avatar, avatars, portrait } from "bozzetto";
 
 img.src = avatar({ seed: user.id, size: 48 }).src;
 avatar({ seed: user.id, kind: portrait.with({ glasses: true }), shape: "rounded" });
-avatars(20, { size: 64, palette: "pastel" }); // every face once before any repeats
+avatars(20, { size: 64, palette: "pastel" }); // no face repeats until every one has appeared
 ```
 
-The `faces` list holds the kinds that can be avatars: `portrait`, `cat`, `dog`, `fox`, `rabbit`, `owl`, `frog` and `penguin`. Shapes are `circle`, `rounded` and `square`, with transparent corners. React and Vue have an `<Avatar>` component, the web component takes an `avatar` attribute, and the command line has `--avatar`.
+The `faces` list holds the 40 kinds that can be avatars: the people (all but `walker`), most animals, `snowman` and `astronaut`. Shapes are `circle`, `rounded` and `square`, with transparent corners, and `margin` (default `0.12`) sets the space around the head. An avatar's alt text describes the whole picture it was cropped from. React and Vue have an `<Avatar>` component and `useAvatar` and `useAvatars`, the web component takes an `avatar` attribute, and the command line has `--avatar`.
 
 ## React, Vue and web components
 
@@ -126,6 +128,8 @@ Each renders an `<img>` with the picture's alt text and size, cropped around its
 In the browser, `toImageBlob(picture, { type, scale, quality })` draws a picture on a canvas and returns a PNG, WebP or JPEG `Blob`. In Node, `toPng` from `bozzetto/node` renders PNGs with [resvg](https://github.com/yisibl/resvg-js), an optional dependency:
 
 ```ts
+import { writeFile } from "node:fs/promises";
+import { owl, render } from "bozzetto";
 import { toPng } from "bozzetto/node"; // npm install @resvg/resvg-js
 
 await writeFile("owl.png", await toPng(render(owl, { seed: 3 }), { scale: 2 }));
@@ -155,7 +159,7 @@ Categories are plain arrays of kinds. Use them anywhere a list of kinds is accep
 | `space`      | `planets`, `nebula`, `galaxy`, `blackHole`, `astronaut`, `moon`                                                                                                                                                                                                                                                                                                                          |
 | `patterns`   | `terrazzo`, `marble`, `gingham`, `plaid`, `topography`, `gradient`                                                                                                                                                                                                                                                                                                                       |
 
-`kinds` lists every kind, and `categories` maps each category's name to its kinds. Kinds can also be named by id in strings, such as `"owl"` or `"ice-cream"`.
+`kinds` lists every kind, and `categories` maps each category's name to its kinds. Kinds can also be named by id in strings, such as `"owl"` or `"ice-cream"` (ids only: pass a category as the array itself, `animals`).
 
 Some kinds have options, fixed with `kind.with(...)`. Whatever you leave out still varies with the seed, and fixing one option never changes the picture's other choices:
 
@@ -202,9 +206,9 @@ placeholders(8, { kind: [portrait.with({ glasses: true }), hills.with({ tree: tr
 
 - **An adjustment** of each picture's own colors: `"vivid"`, `"pastel"`, `"muted"`, `"dusk"`, `"dim"` or `"grayscale"`.
 - **A built-in palette:** `"sunset"`, `"sea glass"`, `"riso"`, `"orchard"`, `"candy"`, `"sepia"` or `"mono"`.
-- **Your own colors:** `["#264653", "#2a9d8f", "#e9c46a"]` (hex, `rgb()` or `hsl()`), or the same palette as a code, `"264653-2a9d8f-e9c46a"`.
+- **Your own colors:** `["#264653", "#2a9d8f", "#e9c46a"]` (hex, `rgb()` or `hsl()`), or the same palette as a code, `"264653-2a9d8f-e9c46a"` (two or more colors).
 
-Color palettes are applied with `mapping: "balanced"` by default, which uses only your exact colors while keeping each picture's light and dark. `"ramp"` blends between your colors for softer shading, and `"nearest"` snaps every color to its closest match. `texture: "grain"` or `"paper"` adds a subtle surface.
+Color palettes are applied with `mapping: "balanced"` by default, which uses only your exact colors while keeping each picture's light and dark. `"ramp"` blends between your colors for softer shading, and `"nearest"` snaps every color to its closest match. Adjustments ignore `mapping`. `texture: "grain"` or `"paper"` adds a subtle surface.
 
 `dark: true` builds a dark-mode version into the picture: in dark mode it switches to it by itself, in an `<img>` or inline, using the `dim` adjustment (everything darker, every hue kept), or any palette you give, as in `dark: "sea glass"`. For inline SVG on pages with their own theme switch, `darkSelector: "html.dark"` follows your selector instead of the system setting.
 
@@ -222,44 +226,46 @@ Schemes are `monochrome`, `analogous`, `complementary`, `split-complementary`, `
 
 ## Options
 
-| Option     | Default     |                                                                             |
-| ---------- | ----------- | --------------------------------------------------------------------------- |
-| `kind`     | every kind  | A kind, an id, or a list (`placeholder` and `placeholders`)                 |
-| `size`     | `"400x300"` | `"WxH"` or `{ width, height }`                                              |
-| `seed`     | `1`         | A number or string                                                          |
-| `palette`  | none        | An adjustment, palette name, palette code, or list of colors                |
-| `mapping`  | `balanced`  | How a color palette is applied: `balanced`, `ramp` or `nearest`             |
-| `texture`  | none        | `grain` or `paper`                                                          |
-| `label`    | none        | Text in the bottom-right corner (single pictures)                           |
-| `numbered` | `false`     | Label pictures 1, 2, 3… (`placeholders`)                                    |
-| `order`    | `shuffle`   | How lists are gone through: `shuffle`, `cycle` or `random` (`placeholders`) |
+| Option         | Default     |                                                                             |
+| -------------- | ----------- | --------------------------------------------------------------------------- |
+| `kind`         | every kind  | A kind, an id, or a list (`placeholder` and `placeholders`)                 |
+| `size`         | `"400x300"` | `"WxH"` or `{ width, height }`                                              |
+| `seed`         | `1`         | A number or string                                                          |
+| `palette`      | none        | An adjustment, palette name, palette code, or list of colors                |
+| `mapping`      | `balanced`  | How a color palette is applied: `balanced`, `ramp` or `nearest`             |
+| `texture`      | none        | `grain` or `paper`                                                          |
+| `label`        | none        | Text in the bottom-right corner (single pictures)                           |
+| `dark`         | none        | `true` (the `dim` adjustment) or a palette, for a built-in dark mode        |
+| `darkSelector` | none        | A selector such as `"html.dark"` to follow instead of the system setting    |
+| `numbered`     | `false`     | Label pictures 1, 2, 3… (`placeholders`)                                    |
+| `order`        | `shuffle`   | How lists are gone through: `shuffle`, `cycle` or `random` (`placeholders`) |
 
-In `placeholders`, `kind`, `size`, `palette`, `mapping` and `texture` each take a single value or a list. A list made only of colors counts as one palette: `["#264653", "#e76f51"]` is one palette, while `["pastel", "riso"]` is two.
+In `placeholders`, `kind`, `size`, `palette`, `mapping` and `texture` each take a single value or a list. A list made only of colors counts as one palette: `["#264653", "#e76f51"]` is one palette, while `["pastel", "riso"]` is two. `undefined` in a `palette` or `texture` list leaves those pictures as they are: `[undefined, "pastel"]` alternates original and pastel.
 
 ### Your own kinds
 
-A kind is a function from a seeded random source and a size to the markup inside `<svg>`. It can also describe what it drew, with `note.alt(text)`, and point out its focus, with `note.focus(x, y)`:
+A kind is a function from a seeded random source and a size to the markup inside `<svg>`. It can also describe what it drew, with `note.alt(text)`, point out its focus, with `note.focus(x, y)`, and frame a face, with `note.frame(x, y, width, height)`, which lets it be an avatar:
 
 ```ts
 import { defineKind, placeholders, render, toDataUri } from "bozzetto";
 
-const dot = defineKind(
-  "dot",
-  "Dot",
-  (r, w, h) =>
-    `<rect width="${w}" height="${h}" fill="#eee"/><circle cx="${r.f(0, w)}" cy="${r.f(0, h)}" r="20" fill="tomato"/>`,
-);
+const dot = defineKind("dot", "Dot", (r, w, h, note) => {
+  const [x, y] = [r.f(20, w - 20), r.f(20, h - 20)];
+  note.alt("A single dot on a plain ground");
+  note.focus(x, y);
+  return `<rect width="${w}" height="${h}" fill="#eeeeee"/><circle cx="${x}" cy="${y}" r="20" fill="#ff6347"/>`;
+});
 
 img.src = toDataUri(dot, { seed: 1, palette: "riso" });
 render(dot).alt; // "A single dot on a plain ground"; without note.alt it would be the kind's name, "Dot"
 placeholders(6, { kind: [dot, "owl"] }); // custom kinds mix with built-in ones
 ```
 
-`r` has `f(min, max)`, `i(min, max)`, `pick(list)`, `chance(p)`, `next()`, and `id(name)` for gradient and mask ids that stay unique when several pictures are inlined on one page.
+`r` has `f(min, max)`, `i(min, max)`, `pick(list)`, `chance(p)`, `next()`, `id(name)` for gradient and mask ids that stay unique when several pictures are inlined on one page, `option(name, value)` to read an option, and `fork(name)` for a separate random source. A kind with options lists them before the draw function, as in `defineKind("dot", "Dot", { big: [true, false] }, (r, w, h, note) => …)`, and reads each with `r.option("big", r.chance(0.5))`. Palettes recolor `#rgb`, `#rrggbb` and `hsl(h s% l%)` colors (as the `hsl` helper writes them). Give a custom kind an id no built-in kind uses.
 
 ## Stability
 
-Pictures are part of the API. Within a major version, the same kind, seed, size and options always draw the same picture with the same alt text, and kind ids, options and categories are never renamed or removed. Minor versions can add kinds: a new kind takes its fair share of the seeds that choose from a list it joins (about one in however many kinds the list holds) and leaves every other seed's pick alone. Choose from your own list of kinds to keep every pick fixed. Redrawing a kind needs a new major version. The [stability guide](https://mattputnam.github.io/bozzetto/guide/stability) has the details.
+Pictures are part of the API. Within a major version, the same kind, seed, size and options always draw the same picture with the same alt text, and kind ids, options and categories are never renamed or removed. Minor versions can add kinds: when `placeholder` or `avatar` chooses from a list a new kind joins, the new kind takes its fair share of seeds (about one in however many kinds the list holds) and every other seed keeps its pick. `placeholders` and `avatars` keep each list's order, but a new kind slots into it, so from its place onward later pictures can move along (with `order: "random"`, only the new kind's fair share changes). Choose from your own list of kinds to keep every pick fixed. Redrawing a kind needs a new major version. The [stability guide](https://mattputnam.github.io/bozzetto/guide/stability) has the details.
 
 ## Develop
 

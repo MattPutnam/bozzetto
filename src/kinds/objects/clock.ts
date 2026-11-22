@@ -15,7 +15,11 @@ function timeWords(hour: number, minute: number): string {
     : `${MINUTE_WORDS[60 - minute]} to ${numberWord(next)}`;
 }
 
-/** A wall clock with its hands at a seeded time. */
+/**
+ * A wall clock with its hands at a seeded time.
+ *
+ * @category Objects
+ */
 export const clock = /* @__PURE__ */ defineKind("clock", "Wall clock", (g, w, h, note) => {
   const unit = Math.min(w, h);
   const cx = w / 2 + w * g.f(-0.06, 0.06);

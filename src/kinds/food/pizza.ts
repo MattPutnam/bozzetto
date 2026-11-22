@@ -2,7 +2,11 @@ import { defineKind, el, fill, type Point, s } from "../../draw/core";
 import { blob } from "../../draw/shapes";
 import { andList, numberWord } from "../../draw/words";
 
-/** A whole pizza from above, cut into slices, with toppings. */
+/**
+ * A whole pizza from above, cut into slices, with toppings.
+ *
+ * @category Food
+ */
 export const pizza = /* @__PURE__ */ defineKind(
   "pizza",
   "Pizza",

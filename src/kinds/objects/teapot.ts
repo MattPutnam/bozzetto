@@ -1,7 +1,11 @@
 import { defineKind, el, hsl, mix, s } from "../../draw/core";
 import { table } from "../../draw/shapes";
 
-/** A teapot on a table, sometimes with a cup of tea beside it. */
+/**
+ * A teapot on a table, sometimes with a cup of tea beside it.
+ *
+ * @category Objects
+ */
 export const teapot = /* @__PURE__ */ defineKind("teapot", "Teapot", (g, w, h, note) => {
   const unit = Math.min(w, h);
   const top = h * g.f(0.66, 0.74);

@@ -9,7 +9,11 @@ const PIGS = [
   { skin: "#d8854c", snout: "#eaa678", ear: "#bc6c38", name: "pig" },
 ] as const;
 
-/** A pig in a farmyard, side on with a curly tail, sometimes standing in a mud puddle. */
+/**
+ * A pig in a farmyard, side on with a curly tail, sometimes standing in a mud puddle.
+ *
+ * @category Animals
+ */
 export const pig = /* @__PURE__ */ defineKind("pig", "Pig", (g, w, h, note) => {
   const coat = g.pick(PIGS);
   const dir = g.pick([-1, 1]);

@@ -10,7 +10,11 @@ const COATS = [
   ["#5b4636", "#9c8067"],
 ] as const;
 
-/** A cat's face and shoulders. Coat, eyes, tabby stripes and muzzle vary. */
+/**
+ * A cat's face and shoulders. Coat, eyes, tabby stripes and muzzle vary.
+ *
+ * @category Animals
+ */
 export const cat = /* @__PURE__ */ defineKind(
   "cat",
   "Cat",

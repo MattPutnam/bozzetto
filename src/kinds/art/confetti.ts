@@ -1,7 +1,11 @@
 import { defineKind, el, fill, type Point, pts, s } from "../../draw/core";
 import { andList } from "../../draw/words";
 
-/** A playful scatter of squiggles, zigzags, triangles and dots, in 1980s Memphis style. */
+/**
+ * A playful scatter of squiggles, zigzags, triangles and dots, in 1980s Memphis style.
+ *
+ * @category Art
+ */
 export const confetti = /* @__PURE__ */ defineKind("confetti", "Memphis confetti", (g, w, h, note) => {
   const unit = Math.min(w, h);
   const palette = g.pick([

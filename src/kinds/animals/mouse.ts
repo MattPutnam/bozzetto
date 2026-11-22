@@ -8,7 +8,11 @@ const MICE = [
   { fur: "#7c6a5c", light: "#b8a594" },
 ] as const;
 
-/** A mouse with big round ears, by a wedge of cheese indoors or among wheat in a field. */
+/**
+ * A mouse with big round ears, by a wedge of cheese indoors or among wheat in a field.
+ *
+ * @category Animals
+ */
 export const mouse = /* @__PURE__ */ defineKind("mouse", "Mouse", (g, w, h, note) => {
   const unit = Math.min(w, h);
   const coat = g.pick(MICE);

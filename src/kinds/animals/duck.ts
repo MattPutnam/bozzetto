@@ -76,7 +76,11 @@ function duckFigure(x: number, wy: number, L: number, c: DuckColors): string {
   return out;
 }
 
-/** A duck on a pond, sometimes leading a line of ducklings. */
+/**
+ * A duck on a pond, sometimes leading a line of ducklings.
+ *
+ * @category Animals
+ */
 export const duck = /* @__PURE__ */ defineKind("duck", "Duck", (g, w, h, note) => {
   const unit = Math.min(w, h);
   const kind = g.pick(DUCKS);

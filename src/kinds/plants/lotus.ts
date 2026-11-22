@@ -11,7 +11,11 @@ function spiral(v: View, b: number, r: number, count: number, size: number, pain
   return el("path", { d, stroke: paint, "stroke-width": size, "stroke-linecap": "round" });
 }
 
-/** A sacred lotus held above the water among round leaves, sometimes with a bud. */
+/**
+ * A sacred lotus held above the water among round leaves, sometimes with a bud.
+ *
+ * @category Plants
+ */
 export const lotus = /* @__PURE__ */ defineKind("lotus", "Lotus", (g, w, h, note) => {
   const unit = Math.min(w, h);
   const water = g.id("water");

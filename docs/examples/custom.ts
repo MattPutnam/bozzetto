@@ -3,7 +3,7 @@ import { grid } from "./shared";
 
 // #region kind
 /** Balloons on a plain sky: a handful of circles on strings. */
-export const balloons = defineKind("balloons", "Balloons", (r, w, h, note) => {
+export const partyBalloons = defineKind("party-balloons", "Party balloons", (r, w, h, note) => {
   const count = r.i(3, 6);
   let shapes = `<rect width="${w}" height="${h}" fill="#cfe8ef"/>`;
   for (let k = 0; k < count; k++) {
@@ -22,8 +22,8 @@ export const balloons = defineKind("balloons", "Balloons", (r, w, h, note) => {
 
 export const examples = () => {
   // #region use
-  const pictures = placeholders(6, { kind: [balloons, owl], order: "cycle", palette: [undefined, "pastel"] });
-  // render(balloons, { seed: 2 }).alt is "A bunch of 5 balloons floating in a clear sky"
+  const pictures = placeholders(6, { kind: [partyBalloons, owl], order: "cycle", palette: [undefined, "pastel"] });
+  // render(partyBalloons, { seed: 2 }).alt is "A bunch of 5 balloons floating in a clear sky"
   // #endregion use
   return grid(
     pictures.map(picture => ({ picture })),

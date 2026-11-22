@@ -1,7 +1,11 @@
 import { defineKind, el, fill, hsl, lin, s } from "../../draw/core";
 import { bands, clipCircle, craters, outside, shadeDef, starCount, starDots } from "./shared";
 
-/** A planet system up close: a big banded or cratered planet, perhaps ringed, with moons and far planets. */
+/**
+ * A planet system up close: a big banded or cratered planet, perhaps ringed, with moons and far planets.
+ *
+ * @category Space
+ */
 export const planets = /* @__PURE__ */ defineKind("planets", "Planets", (g, w, h, note) => {
   const unit = Math.min(w, h);
   const skyHue = g.f(220, 280);

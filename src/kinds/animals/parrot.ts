@@ -132,7 +132,11 @@ function bigLeaf(x: number, y: number, a: number, len: number, wide: number, pai
   );
 }
 
-/** A macaw or a smaller parrot perched on a branch among big tropical leaves. */
+/**
+ * A macaw or a smaller parrot perched on a branch among big tropical leaves.
+ *
+ * @category Animals
+ */
 export const parrot = /* @__PURE__ */ defineKind("parrot", "Parrot", (g, w, h, note) => {
   const unit = Math.min(w, h);
   const p = g.pick(PARROTS);

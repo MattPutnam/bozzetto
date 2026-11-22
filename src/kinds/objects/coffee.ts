@@ -1,7 +1,11 @@
 import { defineKind, el, hsl, mix, s } from "../../draw/core";
 import { table } from "../../draw/shapes";
 
-/** A cup of coffee on a saucer, or a mug, with steam. */
+/**
+ * A cup of coffee on a saucer, or a mug, with steam.
+ *
+ * @category Objects
+ */
 export const coffee = /* @__PURE__ */ defineKind("coffee", "Coffee", (g, w, h, note) => {
   const unit = Math.min(w, h);
   const top = h * g.f(0.68, 0.76);

@@ -1,6 +1,10 @@
 import { defineKind, el, fill, hsl, lin, type Point, pts } from "../../draw/core";
 
-/** Three jagged ranges fading into the distance. */
+/**
+ * Three jagged ranges fading into the distance.
+ *
+ * @category Landscapes
+ */
 export const mountains = /* @__PURE__ */ defineKind("mountains", "Mountain ranges", (g, w, h, note) => {
   const hue = g.f(180, 260);
   const shift = g.f(-35, 30);

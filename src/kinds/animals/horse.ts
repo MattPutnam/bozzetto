@@ -16,7 +16,11 @@ const HORSES = [
   { coat: "#7d4a2b", mane: "#2a1d17", patch: "#f5f0e8" },
 ] as const;
 
-/** A horse side on in a paddock or meadow, standing, walking or grazing, with a flowing mane and tail. */
+/**
+ * A horse side on in a paddock or meadow, standing, walking or grazing, with a flowing mane and tail.
+ *
+ * @category Animals
+ */
 export const horse = /* @__PURE__ */ defineKind("horse", "Horse", (g, w, h, note) => {
   const coat = g.pick(HORSES);
   const dir = g.pick([-1, 1]);

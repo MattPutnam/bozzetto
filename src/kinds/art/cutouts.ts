@@ -32,7 +32,11 @@ function distance(a: string, b: string): number {
   return Math.hypot(p[0] - q[0], p[1] - q[1], p[2] - q[2]);
 }
 
-/** Flat, lobed shapes in bold colors, like cut paper. */
+/**
+ * Flat, lobed shapes in bold colors, like cut paper.
+ *
+ * @category Art
+ */
 export const cutouts = /* @__PURE__ */ defineKind("cutouts", "Paper cutouts", (g, w, h, note) => {
   const palette = g.pick([
     ["#1d4e89", "#e8563f", "#f2c14e", "#2a9d8f", "#111111"],

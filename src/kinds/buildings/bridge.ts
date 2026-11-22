@@ -1,7 +1,11 @@
 import { defineKind, el, hsl, type Point, s } from "../../draw/core";
 import { dot, dots, hill, LIT, shade, skyAt, timeOfDay, tone, veil, when } from "./shared";
 
-/** A stone arch bridge over a river, or a suspension bridge across a bay. */
+/**
+ * A stone arch bridge over a river, or a suspension bridge across a bay.
+ *
+ * @category Buildings
+ */
 export const bridge = /* @__PURE__ */ defineKind(
   "bridge",
   "Bridge",

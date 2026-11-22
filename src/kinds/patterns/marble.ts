@@ -1,7 +1,11 @@
 import { defineKind, el, fill, type Point, s } from "../../draw/core";
 import { curve } from "./shared";
 
-/** Soft, branching veins wandering across pale polished stone. */
+/**
+ * Soft, branching veins wandering across pale polished stone.
+ *
+ * @category Patterns
+ */
 export const marble = /* @__PURE__ */ defineKind("marble", "Marble", (g, w, h, note) => {
   const unit = Math.min(w, h);
   const scheme = g.pick([

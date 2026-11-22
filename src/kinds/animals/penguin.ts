@@ -1,6 +1,10 @@
 import { defineKind, el, facing, fill, hsl, lin, pts, s } from "../../draw/core";
 
-/** A penguin on the ice, sometimes with an emperor's golden neck. */
+/**
+ * A penguin on the ice, sometimes with an emperor's golden neck.
+ *
+ * @category Animals
+ */
 export const penguin = /* @__PURE__ */ defineKind("penguin", "Penguin", (g, w, h, note) => {
   const size = Math.min(w, h);
   const sky = g.id("sky");

@@ -4,7 +4,11 @@ import { room } from "./shared";
 /** Whether a black key follows white key k, counting white keys from C. */
 const blackAfter = (k: number): boolean => [0, 1, 3, 4, 5].includes(((k % 7) + 7) % 7);
 
-/** An upright piano against a wall, or a close-up of its keys at an angle. */
+/**
+ * An upright piano against a wall, or a close-up of its keys at an angle.
+ *
+ * @category Music
+ */
 export const piano = /* @__PURE__ */ defineKind("piano", "Piano", { view: ["upright", "keys"] }, (g, w, h, note) => {
   const unit = Math.min(w, h);
   const view = g.option("view", g.chance(0.55) ? "upright" : "keys");

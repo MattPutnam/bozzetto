@@ -4,7 +4,7 @@ layout: home
 hero:
   name: Bozzetto
   text: Placeholder pictures worth looking at
-  tagline: Seeded SVG landscapes, art, people, animals, food and still lifes, each drawn from a handful of shapes, in any palette, with alt text and a focal point.
+  tagline: Seeded SVG landscapes, art, people, animals, food, still lifes and more, each drawn from a handful of shapes, in any palette, with alt text and a focal point.
   image:
     src: /examples/galleries-hero.svg
     alt: A gallery wall of placeholder pictures in mixed shapes, from hills and portraits to donuts and owls
@@ -22,7 +22,7 @@ hero:
 
 features:
   - title: 191 kinds of picture
-    details: Landscapes and cities; abstract art and patterns; people; animals; food; houseplants and flowers; buildings and vehicles; products; music and sports gear; holidays; and space.
+    details: Landscapes and cities; abstract art and patterns; people; animals; food; still lifes; houseplants and flowers; buildings and vehicles; products; music and sports gear; holidays; and space.
     link: /guide/kinds
     linkText: Browse the kinds
   - title: Seeded and tiny

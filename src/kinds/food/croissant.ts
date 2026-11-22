@@ -62,7 +62,11 @@ function croissantShape(g: Rand, x: number, y: number, size: number, color: stri
   return out;
 }
 
-/** One or two croissants on a plate, sometimes with a cup of coffee beside them. */
+/**
+ * One or two croissants on a plate, sometimes with a cup of coffee beside them.
+ *
+ * @category Food
+ */
 export const croissant = /* @__PURE__ */ defineKind("croissant", "Croissant", (g, w, h, note) => {
   const unit = Math.min(w, h);
   const two = g.chance(0.4);

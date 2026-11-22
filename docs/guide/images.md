@@ -24,8 +24,8 @@ Try it with the **Save PNG** button in the [live example](./getting-started#try-
 
 ## File sizes
 
-A picture's flat shapes compress well: a 400×300 PNG is usually 5–20 KB, and WebP is smaller
-still. Textures are the exception. Grain and paper are fine noise, which doesn't compress, so a
+A picture's flat shapes compress well: most 400×300 PNGs are under 20 KB, and WebP is smaller
+still. Smooth gradients and fine patterns are larger, up to 80–140 KB. Textures are the exception. Grain and paper are fine noise, which doesn't compress, so a
 textured PNG can be 150 KB or more. Leave textures off, or use WebP or JPEG, when size matters.
 
 ## In Node
@@ -39,10 +39,11 @@ npm install bozzetto @resvg/resvg-js
 ```
 
 ```ts
-import { writeFile } from "node:fs/promises";
+import { mkdir, writeFile } from "node:fs/promises";
 import { animals, placeholders } from "bozzetto";
 import { toPng } from "bozzetto/node";
 
+await mkdir("fixtures", { recursive: true });
 for (const [k, picture] of placeholders(12, { kind: animals }).entries()) {
   await writeFile(`fixtures/${k + 1}-${picture.kind}.png`, await toPng(picture, { scale: 2 }));
 }

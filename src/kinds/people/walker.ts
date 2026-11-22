@@ -3,7 +3,11 @@ import { paint, person } from "./shared";
 
 const PLACES = ["beach", "park", "hill"] as const;
 
-/** A small figure walking through a landscape, seen from the side, sometimes with a dog. */
+/**
+ * A small figure walking through a landscape, seen from the side, sometimes with a dog.
+ *
+ * @category People
+ */
 export const walker = /* @__PURE__ */ defineKind(
   "walker",
   "Out for a walk",

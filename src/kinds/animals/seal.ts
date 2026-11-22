@@ -3,7 +3,11 @@ import { boxAround, pose, scaled, sky } from "./shared";
 
 const SEALS = ["#8a8f96", "#7d746c", "#9aa3ab", "#666d76", "#a39a8e"] as const;
 
-/** A seal lying on a rock or an ice floe by the sea, head raised, whiskers out. */
+/**
+ * A seal lying on a rock or an ice floe by the sea, head raised, whiskers out.
+ *
+ * @category Animals
+ */
 export const seal = /* @__PURE__ */ defineKind("seal", "Seal", { perch: ["rock", "ice"] }, (g, w, h, note) => {
   const unit = Math.min(w, h);
   const perch = g.option("perch", g.pick(["rock", "ice"] as const));

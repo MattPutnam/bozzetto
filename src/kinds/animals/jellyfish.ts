@@ -1,6 +1,10 @@
 import { defineKind, el, fill, hsl, lin, s } from "../../draw/core";
 
-/** A glowing jellyfish drifting in deep water, trailing its tentacles. */
+/**
+ * A glowing jellyfish drifting in deep water, trailing its tentacles.
+ *
+ * @category Animals
+ */
 export const jellyfish = /* @__PURE__ */ defineKind("jellyfish", "Jellyfish", (g, w, h, note) => {
   const unit = Math.min(w, h);
   const hue = g.pick([g.f(280, 340), g.f(180, 210), g.f(10, 40)]);

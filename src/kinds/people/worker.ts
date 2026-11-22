@@ -54,7 +54,11 @@ function plant(g: Rand, x: number, bottom: number, size: number): string {
   return out;
 }
 
-/** A half-length figure working at a laptop on a desk, sometimes with a mug or a plant. */
+/**
+ * A half-length figure working at a laptop on a desk, sometimes with a mug or a plant.
+ *
+ * @category People
+ */
 export const worker = /* @__PURE__ */ defineKind("worker", "At a laptop", (g, w, h, note) => {
   const p = person(g.fork("person"));
   const { rx, ry, cx, cy, sw, shoulderY } = halfLength(g, p, w, h);

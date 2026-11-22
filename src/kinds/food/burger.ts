@@ -5,7 +5,11 @@ import { sidePlate } from "./shared";
 
 const BUNS = ["#e7a456", "#d98c3f", "#c9772f", "#e3b06a"];
 
-/** A burger on a plate, seen from the side: bun, patty and a few fillings. */
+/**
+ * A burger on a plate, seen from the side: bun, patty and a few fillings.
+ *
+ * @category Food
+ */
 export const burger = /* @__PURE__ */ defineKind("burger", "Burger", (g, w, h, note) => {
   const unit = Math.min(w, h);
   let out = table(g, w, h, h * 0.64, hsl(g.f(0, 360), 30, 86), hsl(g.f(20, 40), 35, 62));

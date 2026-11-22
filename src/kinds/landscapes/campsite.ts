@@ -1,7 +1,11 @@
 import { defineKind, el, fill, hsl, lin, type Point, pts, s } from "../../draw/core";
 import { glowDef, pine, starDots } from "./shared";
 
-/** A tent beside a campfire under mountains or tall pines, at dusk or on a starry night. */
+/**
+ * A tent beside a campfire under mountains or tall pines, at dusk or on a starry night.
+ *
+ * @category Landscapes
+ */
 export const campsite = /* @__PURE__ */ defineKind("campsite", "Campsite", (g, w, h, note) => {
   const night = g.chance(0.55);
   const backdrop = g.pick(["mountains", "pines"] as const);

@@ -1,6 +1,10 @@
 import { defineKind, el, fill, hsl } from "../../draw/core";
 
-/** A soft mesh of colors melting into one another. */
+/**
+ * A soft mesh of colors melting into one another.
+ *
+ * @category Patterns
+ */
 export const gradient = /* @__PURE__ */ defineKind("gradient", "Mesh gradient", (g, w, h, note) => {
   const unit = Math.min(w, h);
   // Neighboring hues, soft and light, with the odd complementary accent.

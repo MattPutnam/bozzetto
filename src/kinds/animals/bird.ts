@@ -1,6 +1,10 @@
 import { defineKind, el, facing, fill, hsl, s } from "../../draw/core";
 
-/** A round songbird on a leafy branch, facing either way. */
+/**
+ * A round songbird on a leafy branch, facing either way.
+ *
+ * @category Animals
+ */
 export const bird = /* @__PURE__ */ defineKind("bird", "Bird on a branch", (g, w, h, note) => {
   const hue = g.f(0, 360);
   const body = hsl(hue, g.f(45, 70), g.f(40, 58));

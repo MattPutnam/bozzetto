@@ -1,7 +1,11 @@
 import { defineKind, el, fill, hsl, lin, type Point, qpt, s } from "../../draw/core";
 import { bands, clipCircle, earth, outside, shadeDef, starCount, starDots } from "./shared";
 
-/** A moon landscape: cratered ground, the Earth or a planet rising, sometimes a lander and footprints. */
+/**
+ * A moon landscape: cratered ground, the Earth or a planet rising, sometimes a lander and footprints.
+ *
+ * @category Space
+ */
 export const moon = /* @__PURE__ */ defineKind("moon", "Moon surface", (g, w, h, note) => {
   const unit = Math.min(w, h);
   const skyHue = g.f(220, 270);

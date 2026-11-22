@@ -1,6 +1,10 @@
 import { defineKind, el, facing, fill, hsl, type Point, s } from "../../draw/core";
 
-/** A snail with a spiral shell on a leaf. */
+/**
+ * A snail with a spiral shell on a leaf.
+ *
+ * @category Animals
+ */
 export const snail = /* @__PURE__ */ defineKind("snail", "Snail", (g, w, h, note) => {
   const size = Math.min(w, h);
   const gy = h * g.f(0.72, 0.8);

@@ -1,7 +1,11 @@
 import { defineKind, el, fill, hsl } from "../../draw/core";
 import { capitalize, numberWord } from "../../draw/words";
 
-/** Squares nested low in the frame in neighboring colors, after Albers. */
+/**
+ * Squares nested low in the frame in neighboring colors, after Albers.
+ *
+ * @category Art
+ */
 export const squares = /* @__PURE__ */ defineKind("squares", "Nested squares", (g, w, h, note) => {
   const hue = g.f(0, 360);
   const dir = g.pick([-1, 1]);

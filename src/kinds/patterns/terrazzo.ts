@@ -1,7 +1,11 @@
 import { defineKind, el, fill, mix, type Point, s } from "../../draw/core";
 import { tile } from "./shared";
 
-/** Chips of stone in a few colors scattered thickly over a pale ground. */
+/**
+ * Chips of stone in a few colors scattered thickly over a pale ground.
+ *
+ * @category Patterns
+ */
 export const terrazzo = /* @__PURE__ */ defineKind("terrazzo", "Terrazzo", (g, w, h, note) => {
   const unit = Math.min(w, h);
   const scheme = g.pick([

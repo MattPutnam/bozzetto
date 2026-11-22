@@ -1,7 +1,11 @@
 import { defineKind, el, fill, hsl, lin, type Point, pts, s } from "../../draw/core";
 import { along, AT, curve, daySky, lerp, tight, TIMES } from "./shared";
 
-/** Rice terraces stepping down a hillside, their paddies flooded with sky or planted with young rice. */
+/**
+ * Rice terraces stepping down a hillside, their paddies flooded with sky or planted with young rice.
+ *
+ * @category Landscapes
+ */
 export const terraces = /* @__PURE__ */ defineKind("terraces", "Rice terraces", (g, w, h, note) => {
   const time = g.pick(TIMES);
   const sky = daySky(g, time);

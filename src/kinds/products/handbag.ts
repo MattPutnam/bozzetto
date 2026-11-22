@@ -1,7 +1,11 @@
 import { defineKind, el, mix, pts, s } from "../../draw/core";
 import { contact, studio } from "./shared";
 
-/** A leather handbag: a tote with long handles, or a structured top-handle bag with a flap. */
+/**
+ * A leather handbag: a tote with long handles, or a structured top-handle bag with a flap.
+ *
+ * @category Products
+ */
 export const handbag = /* @__PURE__ */ defineKind("handbag", "Handbag", (g, w, h, note) => {
   const unit = Math.min(w, h);
   const style = g.pick(["tote", "top-handle"]);

@@ -1,7 +1,11 @@
 import { defineKind, el, fill, hsl, lin, type Point, s } from "../../draw/core";
 import { clipCircle, craters, earth, shadeDef, starCount, starDots } from "./shared";
 
-/** An astronaut floating in space, sometimes tethered to a station, with Earth or a moon behind. */
+/**
+ * An astronaut floating in space, sometimes tethered to a station, with Earth or a moon behind.
+ *
+ * @category Space
+ */
 export const astronaut = /* @__PURE__ */ defineKind(
   "astronaut",
   "Astronaut",

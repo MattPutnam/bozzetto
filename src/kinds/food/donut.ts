@@ -2,7 +2,11 @@ import { defineKind, el, fill, hsl, s } from "../../draw/core";
 import { blob, sprinkles } from "../../draw/shapes";
 import { SPRINKLES } from "./shared";
 
-/** A glazed donut from above, with sprinkles on some. */
+/**
+ * A glazed donut from above, with sprinkles on some.
+ *
+ * @category Food
+ */
 export const donut = /* @__PURE__ */ defineKind("donut", "Donut", (g, w, h, note) => {
   const unit = Math.min(w, h);
   const cx = w / 2 + w * g.f(-0.05, 0.05);

@@ -1,7 +1,11 @@
 import { defineKind, el, facing, hsl, mix, s } from "../../draw/core";
 import { cloud, local, PAINTS, skyAt, TIRE, veil } from "./shared";
 
-/** An airliner or a small propeller plane climbing through the sky. */
+/**
+ * An airliner or a small propeller plane climbing through the sky.
+ *
+ * @category Vehicles
+ */
 export const airplane = /* @__PURE__ */ defineKind(
   "airplane",
   "Airplane",

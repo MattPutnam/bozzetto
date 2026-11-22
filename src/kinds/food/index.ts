@@ -49,6 +49,11 @@ export {
   dumplings,
 };
 
+/**
+ * Every kind in the food category: dishes seen from above or on a plate, with toppings that vary.
+ *
+ * @category Categories
+ */
 export const food = [
   donut,
   pizza,

@@ -46,7 +46,11 @@ const DEER = [
   { coat: "#8a6046", pale: "#ece3d6" },
 ] as const;
 
-/** A deer in a forest clearing: a buck with antlers, a doe, or a spotted fawn, alert or grazing. */
+/**
+ * A deer in a forest clearing: a buck with antlers, a doe, or a spotted fawn, alert or grazing.
+ *
+ * @category Animals
+ */
 export const deer = /* @__PURE__ */ defineKind("deer", "Deer", (g, w, h, note) => {
   const coat = g.pick(DEER);
   const dir = g.pick([-1, 1]);

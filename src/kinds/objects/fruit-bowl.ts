@@ -2,7 +2,11 @@ import { defineKind, el, hsl, mix, s } from "../../draw/core";
 import { table } from "../../draw/shapes";
 import { andList, tally } from "../../draw/words";
 
-/** A bowl of apples, oranges, pears and bananas on a table. */
+/**
+ * A bowl of apples, oranges, pears and bananas on a table.
+ *
+ * @category Objects
+ */
 export const fruitBowl = /* @__PURE__ */ defineKind("fruit-bowl", "Fruit bowl", (g, w, h, note) => {
   const unit = Math.min(w, h);
   const top = h * g.f(0.6, 0.68);

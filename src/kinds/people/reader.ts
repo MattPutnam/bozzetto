@@ -1,7 +1,11 @@
 import { defineKind, el, fill, hsl, lin, s } from "../../draw/core";
 import { arm, capital, describe, figure, halfLength, hand, headBox, paint, person, type Tone } from "./shared";
 
-/** A half-length figure reading a book, in an armchair or by a window. */
+/**
+ * A half-length figure reading a book, in an armchair or by a window.
+ *
+ * @category People
+ */
 export const reader = /* @__PURE__ */ defineKind("reader", "Reading", (g, w, h, note) => {
   const p = person(g.fork("person"));
   // The side the window or lamp is on; the reader sits a little off to the other side.

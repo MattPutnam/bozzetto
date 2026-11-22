@@ -24,7 +24,11 @@ const COWS = [
   { coat: "#b8865a", muzzle: "#e8c8b0" },
 ] as const;
 
-/** A cow side on in a pasture, grazing or looking up, sometimes with horns or a bell. */
+/**
+ * A cow side on in a pasture, grazing or looking up, sometimes with horns or a bell.
+ *
+ * @category Animals
+ */
 export const cow = /* @__PURE__ */ defineKind("cow", "Cow", (g, w, h, note) => {
   const coat = g.pick(COWS);
   const dir = g.pick([-1, 1]);

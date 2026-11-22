@@ -11,6 +11,12 @@ import { gifts } from "./gifts";
 
 export { fireworks, hearts, eggBasket, fallLeaves, pumpkins, snowflakes, snowman, holidayTree, gifts };
 
+/**
+ * Every kind in the holidays category: scenes through the year, from fireworks and hearts to
+ * pumpkins and snowmen.
+ *
+ * @category Categories
+ */
 export const holidays = [
   fireworks,
   hearts,

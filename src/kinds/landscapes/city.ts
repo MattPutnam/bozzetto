@@ -1,6 +1,10 @@
 import { defineKind, el, fill, hex, hsl, lin } from "../../draw/core";
 
-/** Two rows of buildings against a dusk sky; some windows are lit. */
+/**
+ * Two rows of buildings against a dusk sky; some windows are lit.
+ *
+ * @category Landscapes
+ */
 export const city = /* @__PURE__ */ defineKind("city", "City at dusk", (g, w, h, note) => {
   const sky = g.id("sky");
   const win = g.id("win");

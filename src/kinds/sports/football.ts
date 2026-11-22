@@ -139,7 +139,11 @@ function footballBall(g: Rand, L: number, R: number): string {
   return out;
 }
 
-/** A football helmet and a ball resting on the grass of a field or on a locker-room bench. */
+/**
+ * A football helmet and a ball resting on the grass of a field or on a locker-room bench.
+ *
+ * @category Sports
+ */
 export const football = /* @__PURE__ */ defineKind("football", "Football", (g, w, h, note) => {
   const unit = Math.min(w, h);
   const where = g.pick(["grass", "grass", "bench"] as const);

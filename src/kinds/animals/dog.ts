@@ -10,7 +10,11 @@ const DOG_COATS = [
   { fur: "#f4f1ea", ear: "#2b2b2b", muzzle: "#ffffff", spots: true },
 ] as const;
 
-/** A dog's face: floppy or pointed ears, a muzzle, sometimes an eye patch, a tongue and a collar. */
+/**
+ * A dog's face: floppy or pointed ears, a muzzle, sometimes an eye patch, a tongue and a collar.
+ *
+ * @category Animals
+ */
 export const dog = /* @__PURE__ */ defineKind("dog", "Dog", (g, w, h, note) => {
   const coat = g.pick(DOG_COATS);
   const size = Math.min(w, h);

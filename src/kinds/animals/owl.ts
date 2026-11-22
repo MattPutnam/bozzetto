@@ -1,6 +1,10 @@
 import { defineKind, el, fill, hsl, lin, mix, s } from "../../draw/core";
 
-/** An owl on a branch at dusk, sometimes with the moon. Plumage, eyes and gaze vary. */
+/**
+ * An owl on a branch at dusk, sometimes with the moon. Plumage, eyes and gaze vary.
+ *
+ * @category Animals
+ */
 export const owl = /* @__PURE__ */ defineKind("owl", "Owl", (g, w, h, note) => {
   const hue = g.f(200, 290);
   const feather = g.pick(["#8a6a4f", "#6e6a66", "#b08a5e", "#d9d2c5", "#5a4636"]);

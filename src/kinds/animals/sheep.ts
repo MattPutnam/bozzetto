@@ -9,7 +9,11 @@ const SHEEP = [
   { wool: "#e6dccb", face: "#8a6a52", legs: "#6e5442" },
 ] as const;
 
-/** A woolly sheep in a field, grazing or looking up. */
+/**
+ * A woolly sheep in a field, grazing or looking up.
+ *
+ * @category Animals
+ */
 export const sheep = /* @__PURE__ */ defineKind("sheep", "Sheep", (g, w, h, note) => {
   const coat = g.pick(SHEEP);
   const dir = g.pick([-1, 1]);

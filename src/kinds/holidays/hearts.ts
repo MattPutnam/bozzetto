@@ -7,7 +7,11 @@ const HEART =
 
 type HeartStyle = "solid" | "outline" | "puffy" | "pattern" | "candy";
 
-/** Hearts of many sizes and styles, solid, outlined, glossy, patterned and candy, scattered for Valentine's Day. */
+/**
+ * Hearts of many sizes and styles, solid, outlined, glossy, patterned and candy, scattered for Valentine's Day.
+ *
+ * @category Holidays
+ */
 export const hearts = /* @__PURE__ */ defineKind("hearts", "Hearts", (g, w, h, note) => {
   const unit = Math.min(w, h);
   // The background: blush, cream, a deep wine or a pale pastel.

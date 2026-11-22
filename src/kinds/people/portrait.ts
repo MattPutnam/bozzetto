@@ -14,7 +14,11 @@ const HAIR = ["#2b1d16", "#4a2f1f", "#7b4a26", "#c58a3d", "#e3c27a", "#a33b20", 
 
 const STYLES = ["short", "long", "bun", "curly", "bald", "bob"] as const;
 
-/** Head and shoulders. Skin, hair color and style, head shape, brows, smile and glasses vary. */
+/**
+ * Head and shoulders. Skin, hair color and style, head shape, brows, smile and glasses vary.
+ *
+ * @category People
+ */
 export const portrait = /* @__PURE__ */ defineKind(
   "portrait",
   "Portrait",

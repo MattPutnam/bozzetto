@@ -11,7 +11,11 @@ function merlons(x0: number, x1: number, y: number, mh: number): string {
   return d;
 }
 
-/** A storybook castle on a hill, with towers, battlements, flags and a gate. */
+/**
+ * A storybook castle on a hill, with towers, battlements, flags and a gate.
+ *
+ * @category Buildings
+ */
 export const castle = /* @__PURE__ */ defineKind("castle", "Storybook castle", (g, w, h, note) => {
   const unit = Math.min(w, h);
   const time = timeOfDay(g);

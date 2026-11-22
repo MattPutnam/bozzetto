@@ -1,6 +1,10 @@
 import { defineKind, el, fill, s } from "../../draw/core";
 
-/** Parallel wavy bands whose ripples swell and drift from one band to the next, in the style of op art. */
+/**
+ * Parallel wavy bands whose ripples swell and drift from one band to the next, in the style of op art.
+ *
+ * @category Art
+ */
 export const waves = /* @__PURE__ */ defineKind("waves", "Op-art waves", (g, w, h, note) => {
   const unit = Math.min(w, h);
   const palette = g.pick([

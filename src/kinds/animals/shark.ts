@@ -3,7 +3,11 @@ import { boxAround, bubbles, pose, scaled, underwater } from "./shared";
 
 const SHARKS = ["#7f8fa0", "#6d7f94", "#8c98a6", "#5d7389", "#7a8a8a"] as const;
 
-/** A friendly shark cruising over the seabed in a side view, light rays falling from above. */
+/**
+ * A friendly shark cruising over the seabed in a side view, light rays falling from above.
+ *
+ * @category Animals
+ */
 export const shark = /* @__PURE__ */ defineKind("shark", "Shark", (g, w, h, note) => {
   const unit = Math.min(w, h);
   const dir = g.pick([-1, 1]);

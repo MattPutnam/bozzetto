@@ -21,7 +21,11 @@ function lilyPad(x: number, y: number, rx: number, ry: number, notch: number, pa
   });
 }
 
-/** A frog on a lily pad, with bulging eyes and a wide smile. */
+/**
+ * A frog on a lily pad, with bulging eyes and a wide smile.
+ *
+ * @category Animals
+ */
 export const frog = /* @__PURE__ */ defineKind("frog", "Frog", (g, w, h, note) => {
   const colors = g.pick(FROGS);
   const size = Math.min(w, h);

@@ -33,7 +33,11 @@ function strawberry(x: number, y: number, r: number, rot: number): string {
 
 const SMOOTHIES = ["#f28aa0", "#c2416b", "#8e5aa8", "#f6b941", "#9cc95a", "#f3e6cf", "#f39a6b", "#e8d27a"];
 
-/** A smoothie in a tall glass or a jar with a straw, layered or swirled, fruit on the rim and beside it. */
+/**
+ * A smoothie in a tall glass or a jar with a straw, layered or swirled, fruit on the rim and beside it.
+ *
+ * @category Food
+ */
 export const smoothie = /* @__PURE__ */ defineKind("smoothie", "Smoothie", (g, w, h, note) => {
   const unit = Math.min(w, h);
   const jar = g.chance(0.4);

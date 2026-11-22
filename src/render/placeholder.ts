@@ -7,7 +7,10 @@ import type { PaletteSpec } from "../color/palettes";
 
 /**
  * What to draw: a kind, a kind's id, or a list of them. Lists can nest, so categories mix with
- * single kinds: `[animals, donut]` is every animal plus the donut.
+ * single kinds: `[animals, donut]` is every animal plus the donut. A string is a built-in kind's id
+ * (`"ice-cream"`), not an export or category name: pass the category itself (`animals`).
+ *
+ * @category Choosing kinds
  */
 export type KindChoice = Kind | string | readonly KindChoice[];
 
@@ -27,6 +30,8 @@ export function kindsOf(choice: KindChoice, known: ReadonlyMap<string, Kind>): K
  * - `shuffle` (default): every value once, in a seeded order, then again in a new order.
  * - `cycle`: every value once, in the order given, and around again.
  * - `random`: an independent seeded pick each time, so values can repeat or be skipped.
+ *
+ * @category Choosing kinds
  */
 export type Order = "shuffle" | "cycle" | "random";
 
@@ -115,14 +120,28 @@ function kindPicker(kinds: readonly Kind[], order: Order, seed: number): (k: num
   };
 }
 
+/**
+ * How to draw one placeholder: as for `render`, plus the kinds to choose from.
+ *
+ * @category Choosing kinds
+ */
 export interface PlaceholderOptions extends RenderOptions {
   /** Default: any kind, chosen by the seed. */
   kind?: KindChoice;
 }
 
-/** A value, or a list of values that `placeholders` goes through picture by picture. */
+/**
+ * A value, or a list of values that `placeholders` goes through picture by picture.
+ *
+ * @category Choosing kinds
+ */
 export type OneOrMany<T> = T | readonly T[];
 
+/**
+ * How to draw a list of placeholders: each option takes one value or a list to go through.
+ *
+ * @category Choosing kinds
+ */
 export interface PlaceholdersOptions {
   /** Default: every kind. */
   kind?: KindChoice;
@@ -134,6 +153,7 @@ export interface PlaceholdersOptions {
    * keeps those pictures' own colors: `[undefined, "pastel"]` alternates original and pastel.
    */
   palette?: PaletteSpec | readonly (PaletteSpec | undefined)[];
+  /** A mapping, or a list of them, as for `StyleOptions.mapping`. */
   mapping?: OneOrMany<Mapping>;
   /** A texture, or a list; `undefined` in a list leaves those pictures plain. */
   texture?: Texture | readonly (Texture | undefined)[];

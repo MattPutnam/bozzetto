@@ -43,13 +43,13 @@ Usage
 
 Kinds
   Kind ids or names (owl, ice-cream, iceCream) and categories (animals, food),
-  in any mix. Default: every kind. Some kinds take options after a colon, such as
+  in any mix, or all. Default: every kind. Some kinds take options after a colon, such as
   cat:tabby,pupils=round. See them all with --list.
 
 Options
   -n, --count <n>        How many pictures. Default 1.
-  -s, --size <WxH>       Size, such as 400x300. Default 400x300. Repeat for a mix.
-      --seed <seed>      A number or text. Picture k uses seed + k. Default 1.
+  -s, --size <WxH>       Size, such as 400x300. Default 400x300 (64 for avatars). Repeat for a mix.
+      --seed <seed>      A number, or text (hashed). Picture k uses seed + k. Default 1.
   -p, --palette <name>   An adjustment (pastel), a palette (riso) or a palette code
                          (264653-e76f51-e9c46a). Repeat for a mix.
       --mapping <name>   How a palette is applied: ${MAPPINGS.join(", ")}. Repeat for a mix.
@@ -59,7 +59,7 @@ Options
   -f, --format <name>    svg (default), png, uri (data URIs, one per line) or json.
                          An --out file ending in .png means png. PNG needs @resvg/resvg-js.
       --scale <n>        For png: pixels per SVG pixel, such as 2 for high-density screens.
-  -o, --out <path>       A file for one picture, or a folder for several. The folder gets
+  -o, --out <path>       A file for one picture, or a folder for several (svg or png). The folder gets
                          one file per picture plus manifest.json with each picture's alt text,
                          focus, size and color. Without it, pictures go to standard output.
       --avatar           Avatars: faces framed around the head, round by default. Any face

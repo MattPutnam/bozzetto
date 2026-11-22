@@ -18,7 +18,11 @@ const glint = (x: number, y: number, len: number) => {
   return "M" + p.map(([px, py]) => s`${x + px} ${y + py}`).join("L") + "Z";
 };
 
-/** A glowing nebula: soft blurred clouds of two or three hues over stars, with a few bright glinting stars. */
+/**
+ * A glowing nebula: soft blurred clouds of two or three hues over stars, with a few bright glinting stars.
+ *
+ * @category Space
+ */
 export const nebula = /* @__PURE__ */ defineKind("nebula", "Nebula", (g, w, h, note) => {
   const unit = Math.min(w, h);
   // Two or three hues from the ones real nebulae glow in, never two alike.

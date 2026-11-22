@@ -55,7 +55,11 @@ function eggDecor(g: Rand, rx: number, ry: number, accent: string, second: strin
   );
 }
 
-/** A woven basket of painted eggs on the grass. */
+/**
+ * A woven basket of painted eggs on the grass.
+ *
+ * @category Holidays
+ */
 export const eggBasket = /* @__PURE__ */ defineKind("egg-basket", "Basket of eggs", (g, w, h, note) => {
   const unit = Math.min(w, h);
   const skyId = g.id("sky");

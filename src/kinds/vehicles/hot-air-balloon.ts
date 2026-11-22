@@ -48,7 +48,11 @@ const hues = (g: Rand): string[] => {
   return [hsl(base, 70, g.f(50, 60)), g.chance(0.4) ? hsl(45, 30, 95) : hsl(other, 70, g.f(55, 68))];
 };
 
-/** A hot-air balloon drifting over fields, among clouds. */
+/**
+ * A hot-air balloon drifting over fields, among clouds.
+ *
+ * @category Vehicles
+ */
 export const hotAirBalloon = /* @__PURE__ */ defineKind("hot-air-balloon", "Hot-air balloon", (g, w, h, note) => {
   const unit = Math.min(w, h);
   const time = g.pick(["day", "day", "day", "dusk"] as const);

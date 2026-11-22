@@ -41,7 +41,11 @@ const OCTOPI = [
   { skin: "#5aa0d8", name: "blue" },
 ] as const;
 
-/** An octopus sitting on the seabed, its arms curling over the sand. */
+/**
+ * An octopus sitting on the seabed, its arms curling over the sand.
+ *
+ * @category Animals
+ */
 export const octopus = /* @__PURE__ */ defineKind("octopus", "Octopus", (g, w, h, note) => {
   const unit = Math.min(w, h);
   const colors = g.pick(OCTOPI);

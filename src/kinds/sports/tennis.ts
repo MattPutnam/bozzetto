@@ -165,7 +165,11 @@ interface Lie {
   turn: number;
 }
 
-/** One or two tennis rackets and some balls, a close still life seen from above, on a court, a bench or a towel. */
+/**
+ * One or two tennis rackets and some balls, a close still life seen from above, on a court, a bench or a towel.
+ *
+ * @category Sports
+ */
 export const tennis = /* @__PURE__ */ defineKind("tennis", "Tennis", (g, w, h, note) => {
   // Lay everything out on a landscape canvas, turning it a quarter turn for tall pictures.
   const tall = h > w;

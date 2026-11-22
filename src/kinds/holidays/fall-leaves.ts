@@ -303,7 +303,11 @@ function ground(g: Rand, w: number, h: number, unit: number, id: string): [strin
   return [out.replace(/-?\d+\.\d+/g, v => (Math.abs(+v) >= 2 ? String(Math.round(+v)) : v)), where, dark];
 }
 
-/** Fallen autumn leaves of a few kinds, scattered and overlapping on a deck, grass or damp ground. */
+/**
+ * Fallen autumn leaves of a few kinds, scattered and overlapping on a deck, grass or damp ground.
+ *
+ * @category Holidays
+ */
 export const fallLeaves = /* @__PURE__ */ defineKind("fall-leaves", "Fall leaves", (g, w, h, note) => {
   const unit = Math.min(w, h);
   const [floor, where, dark] = ground(g, w, h, unit, g.id("tex"));

@@ -1,8 +1,12 @@
 /**
  * `bozzetto/react`: `<Placeholder>` and `<Avatar>` components and hooks for React 16.8 and later.
  *
- *     import { Placeholder } from "bozzetto/react";
- *     <Placeholder kind="owl" seed={3} size="320x240" palette="pastel" />
+ * ```tsx
+ * import { Placeholder } from "bozzetto/react";
+ * <Placeholder kind="owl" seed={3} size="320x240" palette="pastel" />
+ * ```
+ *
+ * @module bozzetto/react
  */
 import { createElement, useMemo, type CSSProperties, type ImgHTMLAttributes, type ReactElement } from "react";
 import {

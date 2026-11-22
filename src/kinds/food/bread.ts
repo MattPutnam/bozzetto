@@ -48,7 +48,11 @@ function flatKnife(x0: number, y: number, len: number, width: number, dir: numbe
   );
 }
 
-/** A loaf on a board: a scored round loaf, a baguette or a sandwich loaf, sometimes with slices and a knife. */
+/**
+ * A loaf on a board: a scored round loaf, a baguette or a sandwich loaf, sometimes with slices and a knife.
+ *
+ * @category Food
+ */
 export const bread = /* @__PURE__ */ defineKind("bread", "Bread", (g, w, h, note) => {
   const unit = Math.min(w, h);
   const loaf = g.pick(["boule", "boule", "baguette", "sliced"] as const);

@@ -2,8 +2,10 @@
  * `bozzetto/element`: the `<bozzetto-img>` web component, for any framework or none.
  * Importing this module registers the element.
  *
- *     <script type="module">import "bozzetto/element";</script>
- *     <bozzetto-img kind="owl" seed="3" size="320x240" palette="pastel"></bozzetto-img>
+ * ```html
+ * <script type="module">import "bozzetto/element";</script>
+ * <bozzetto-img kind="owl" seed="3" size="320x240" palette="pastel"></bozzetto-img>
+ * ```
  *
  * Attributes:
  * - `kind`: kind ids, export names or categories, separated by spaces, with options after a colon,
@@ -17,6 +19,8 @@
  *
  * The element is an inline block the picture's size until you size it with CSS; the picture then
  * fills it, cropped around its focus. The image is exposed as `::part(image)` for styling.
+ *
+ * @module bozzetto/element
  */
 import { avatar, placeholder, type AvatarShape, type Mapping, type Picture, type Size, type Texture } from "../index";
 import { focusStyle } from "./shared";
@@ -40,6 +44,11 @@ const ATTRIBUTES = [
 // Lets the module load where there's no DOM (server rendering), though the element only works in a browser.
 const Base = (typeof HTMLElement === "undefined" ? class {} : HTMLElement) as typeof HTMLElement;
 
+/**
+ * The `<bozzetto-img>` element, registered when this module is imported. It draws a placeholder,
+ * or an avatar, from its attributes (see this module's overview), and redraws when one changes.
+ * Unlike the React and Vue components it has no `darkSelector` or avatar `margin`.
+ */
 export class BozzettoImg extends Base {
   static observedAttributes = ATTRIBUTES;
   #picture: Picture | undefined;

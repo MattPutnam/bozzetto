@@ -1,7 +1,11 @@
 import { defineKind, el, facing, s } from "../../draw/core";
 import { baseFor, shade, softContact, sweepStudio, tint } from "./shared";
 
-/** Over-ear headphones standing on their ear cups, from the front or at three-quarters. */
+/**
+ * Over-ear headphones standing on their ear cups, from the front or at three-quarters.
+ *
+ * @category Products
+ */
 export const headphones = /* @__PURE__ */ defineKind("headphones", "Headphones", (g, w, h, note) => {
   const unit = Math.min(w, h);
   const view = g.pick(["three-quarter", "three-quarter", "front"] as const);

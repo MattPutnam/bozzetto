@@ -115,7 +115,11 @@ function disc(g: Rand, cx: number, cy: number, r: number, hole: string, print?: 
   return out;
 }
 
-/** A scattering of CD jewel cases seen from above on a desk, table or carpet, sometimes one open. */
+/**
+ * A scattering of CD jewel cases seen from above on a desk, table or carpet, sometimes one open.
+ *
+ * @category Music
+ */
 export const cds = /* @__PURE__ */ defineKind("cds", "CD cases", (g, w, h, note) => {
   const unit = Math.min(w, h);
   const q = unit * (w / h > 2.5 ? 0.5 : 0.36) * g.f(0.95, 1.05);

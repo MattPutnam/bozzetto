@@ -49,7 +49,11 @@ const PIES: PieFlavor[] = [
   { name: "coconut cream", filling: "#f5efdf", crust: GRAHAM, top: "cream" },
 ];
 
-/** A slice of pie on a plate, cut open to show its filling, sometimes with cream or a fork. */
+/**
+ * A slice of pie on a plate, cut open to show its filling, sometimes with cream or a fork.
+ *
+ * @category Food
+ */
 export const pie = /* @__PURE__ */ defineKind("pie", "Slice of pie", (g, w, h, note) => {
   const unit = Math.min(w, h);
   const flavor = g.pick(PIES);

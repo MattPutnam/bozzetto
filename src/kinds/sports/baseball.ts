@@ -427,7 +427,11 @@ function cap(g: Rand): string {
   return out;
 }
 
-/** A bat, a ball, a glove and a cap on the grass: all four, or three of them. */
+/**
+ * A bat, a ball, a glove and a cap on the grass: all four, or three of them.
+ *
+ * @category Sports
+ */
 export const baseball = /* @__PURE__ */ defineKind("baseball", "Baseball", (g, w, h, note) => {
   const unit = Math.min(w, h);
   let out = grass(g, w, h);

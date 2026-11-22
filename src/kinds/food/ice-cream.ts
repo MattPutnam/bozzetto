@@ -3,7 +3,11 @@ import { numberWord } from "../../draw/words";
 
 const SCOOPS = ["#f7c6d0", "#7b4a35", "#fff4dd", "#b8e0b0", "#f6d365", "#c9a7eb", "#f28b66"];
 
-/** One to three scoops on a waffle cone, maybe with a cherry. */
+/**
+ * One to three scoops on a waffle cone, maybe with a cherry.
+ *
+ * @category Food
+ */
 export const iceCream = /* @__PURE__ */ defineKind("ice-cream", "Ice cream", (g, w, h, note) => {
   const unit = Math.min(w, h);
   const cx = w / 2 + w * g.f(-0.04, 0.04);

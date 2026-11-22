@@ -96,7 +96,11 @@ function acacia(g: Rand, x: number, y: number, ht: number, bark: string, leaf: r
   return out;
 }
 
-/** Open grassland with flat-topped acacias under a big sky, animals small on the horizon. */
+/**
+ * Open grassland with flat-topped acacias under a big sky, animals small on the horizon.
+ *
+ * @category Landscapes
+ */
 export const savanna = /* @__PURE__ */ defineKind("savanna", "Savanna", (g, w, h, note) => {
   const time = g.pick(["day", "golden", "sunset"] as const);
   const unit = Math.min(w, h);

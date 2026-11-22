@@ -10,7 +10,11 @@ const WINGS = [
   { name: "purple", wing: "#9b6fd8", edge: "#2a1a44", spot: "#f7d154" },
 ] as const;
 
-/** A butterfly with open wings, resting on a flower or fluttering beside it. */
+/**
+ * A butterfly with open wings, resting on a flower or fluttering beside it.
+ *
+ * @category Animals
+ */
 export const butterfly = /* @__PURE__ */ defineKind("butterfly", "Butterfly", (g, w, h, note) => {
   const unit = Math.min(w, h);
   const colors = g.pick(WINGS);

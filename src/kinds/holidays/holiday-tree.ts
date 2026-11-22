@@ -16,7 +16,11 @@ const star = (cx: number, cy: number, r: number, paint: string): string =>
     fill: paint,
   });
 
-/** A decorated evergreen by a window in a cozy room: baubles, string lights, a topper and gifts underneath. */
+/**
+ * A decorated evergreen by a window in a cozy room: baubles, string lights, a topper and gifts underneath.
+ *
+ * @category Holidays
+ */
 export const holidayTree = /* @__PURE__ */ defineKind("holiday-tree", "Holiday tree", (g, w, h, note) => {
   const unit = Math.min(w, h);
   const wallHue = g.pick([g.f(-20, 45), g.f(-20, 45), g.f(190, 235), g.f(250, 285)]);

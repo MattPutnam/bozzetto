@@ -1,7 +1,11 @@
 import { defineKind, el, fill, s } from "../../draw/core";
 import { andList, numberWord } from "../../draw/words";
 
-/** Nigiri and maki on a dark plate, with chopsticks. */
+/**
+ * Nigiri and maki on a dark plate, with chopsticks.
+ *
+ * @category Food
+ */
 export const sushi = /* @__PURE__ */ defineKind("sushi", "Sushi", (g, w, h, note) => {
   const unit = Math.min(w, h);
   const bg = g.pick(["#d9cbb5", "#c9d6d0", "#e6ddd0", "#3a3f3a"]);

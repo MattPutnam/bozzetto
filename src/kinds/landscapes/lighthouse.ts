@@ -1,7 +1,11 @@
 import { defineKind, el, facing, fill, hsl, lin, type Point, pts, s } from "../../draw/core";
 import { along, daySky, seaAndSky } from "./shared";
 
-/** A striped lighthouse on a grassy cliff above the sea, by day, at dusk or with its beam lit at night. */
+/**
+ * A striped lighthouse on a grassy cliff above the sea, by day, at dusk or with its beam lit at night.
+ *
+ * @category Landscapes
+ */
 export const lighthouse = /* @__PURE__ */ defineKind("lighthouse", "Lighthouse", (g, w, h, note) => {
   const time = g.pick(["day", "dusk", "night"] as const);
   const unit = Math.min(w, h);

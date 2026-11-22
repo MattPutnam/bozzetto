@@ -1,7 +1,11 @@
 import { defineKind, el, fill, hsl } from "../../draw/core";
 import { tile } from "./shared";
 
-/** A woven check of two crossing sets of translucent stripes. */
+/**
+ * A woven check of two crossing sets of translucent stripes.
+ *
+ * @category Patterns
+ */
 export const gingham = /* @__PURE__ */ defineKind("gingham", "Gingham", (g, w, h, note) => {
   const unit = Math.min(w, h);
   const hue = g.pick([0, 12, 200, 215, 140, 165, 45, 280, 340, 25]);

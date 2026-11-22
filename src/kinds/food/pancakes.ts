@@ -18,7 +18,11 @@ function berry(g: Rand, x: number, y: number, r: number, kind: "blueberry" | "ra
   return out;
 }
 
-/** A stack of pancakes on a plate, with butter, syrup and berries. */
+/**
+ * A stack of pancakes on a plate, with butter, syrup and berries.
+ *
+ * @category Food
+ */
 export const pancakes = /* @__PURE__ */ defineKind("pancakes", "Pancakes", (g, w, h, note) => {
   const unit = Math.min(w, h);
   let out = table(g, w, h, h * 0.56, hsl(g.f(0, 360), 30, 86), hsl(g.f(20, 40), 35, 62));

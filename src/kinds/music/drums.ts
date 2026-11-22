@@ -17,6 +17,8 @@ const FINISHES: readonly [number, number, number][] = [
 /**
  * A drum kit seen from the audience: the bass drum at the front, rack toms on top of it, the snare
  * and hi-hat on our right, a floor tom on our left, and crash and ride cymbals on stands.
+ *
+ * @category Music
  */
 export const drums = /* @__PURE__ */ defineKind("drums", "Drum kit", (g, w, h, note) => {
   const racks = g.pick([1, 2, 2]);

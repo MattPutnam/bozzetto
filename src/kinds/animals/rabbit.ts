@@ -8,7 +8,11 @@ const RABBITS = [
   { fur: "#e3d3bd", inner: "#f4b6c2" },
 ] as const;
 
-/** A rabbit in a meadow: tall or lop ears, pink nose, whiskers. */
+/**
+ * A rabbit in a meadow: tall or lop ears, pink nose, whiskers.
+ *
+ * @category Animals
+ */
 export const rabbit = /* @__PURE__ */ defineKind("rabbit", "Rabbit", (g, w, h, note) => {
   const coat = g.pick(RABBITS);
   const size = Math.min(w, h);

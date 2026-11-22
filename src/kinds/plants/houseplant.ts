@@ -22,7 +22,11 @@ function monsteraLeaf(g: Rand, len: number, width: number, slits: number): strin
   return pts([[0, 0], ...right, [0, -len], ...left]);
 }
 
-/** A leafy houseplant in a pot on the floor: a monstera, a fern or a snake plant. */
+/**
+ * A leafy houseplant in a pot on the floor: a monstera, a fern or a snake plant.
+ *
+ * @category Plants
+ */
 export const houseplant = /* @__PURE__ */ defineKind("houseplant", "Houseplant", (g, w, h, note) => {
   const unit = Math.min(w, h);
   const top = h * g.f(0.8, 0.86);

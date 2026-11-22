@@ -4,6 +4,11 @@
  */
 import type { Picture } from "./render";
 
+/**
+ * How `toImageBlob` encodes a picture.
+ *
+ * @category Drawing
+ */
 export interface ImageOptions {
   /** `image/png` (default), `image/webp` or `image/jpeg`. WebP isn't supported by every browser. */
   type?: "image/png" | "image/webp" | "image/jpeg";
@@ -25,6 +30,8 @@ export function sizeOf(input: Picture | string): { width: number; height: number
 /**
  * A picture as an image file, drawn with a canvas: PNG by default, or WebP or JPEG.
  * Works in browsers; for Node, use `toPng` from `bozzetto/node`.
+ *
+ * @category Drawing
  */
 export async function toImageBlob(input: Picture | string, options: ImageOptions = {}): Promise<Blob> {
   if (typeof Image === "undefined" || typeof document === "undefined") {

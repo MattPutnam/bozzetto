@@ -2,7 +2,11 @@ import { defineKind, el, hsl, pts, s } from "../../draw/core";
 import { table } from "../../draw/shapes";
 import { glow } from "./shared";
 
-/** A lit lamp in the evening: a table lamp on a table, or a floor lamp. */
+/**
+ * A lit lamp in the evening: a table lamp on a table, or a floor lamp.
+ *
+ * @category Objects
+ */
 export const lamp = /* @__PURE__ */ defineKind("lamp", "Lamp", { stand: ["table", "floor"] }, (g, w, h, note) => {
   const unit = Math.min(w, h);
   const floorLamp = g.option("stand", g.chance(0.35) ? "floor" : "table") === "floor";

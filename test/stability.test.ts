@@ -10,7 +10,7 @@
 import { createHash } from "node:crypto";
 import { readFileSync, writeFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { avatar, cat, hills, kinds, placeholders, render, type Kind } from "../src";
+import { avatar, cat, categories, faces, hills, kinds, placeholders, render, type Kind } from "../src";
 
 const FILE = new URL("./fixtures/fingerprints.json", import.meta.url);
 const SIZES = ["400x300", "300x400", "960x240"] as const;
@@ -32,6 +32,10 @@ function kindPrint(kind: Kind): string {
 /** Everything else the promise covers: choosing kinds, avatars, palettes, textures and dark mode. */
 function extras(): Record<string, string> {
   return {
+    // Names, categories and faces are part of the promise too.
+    categories: digest(Object.entries(categories).map(([name, list]) => `${name}: ${list.map(k => k.id).join(" ")}`)),
+    faces: digest(faces.map(k => k.id)),
+    "fixed options": digest([render(cat.with({ tabby: true }), { seed: 3 }).svg]),
     placeholders: digest(placeholders(48, { seed: 7 }).map(p => p.kind)),
     "placeholders random": digest(placeholders(48, { seed: 7, order: "random" }).map(p => p.kind)),
     avatars: digest(Array.from({ length: 48 }, (_, k) => avatar({ seed: `user-${k}` }).svg)),

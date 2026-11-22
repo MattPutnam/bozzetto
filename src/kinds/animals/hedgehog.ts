@@ -1,7 +1,11 @@
 import { defineKind, el, facing, hsl, mix, type Point, pts, s } from "../../draw/core";
 import { sky, turn, turnBox } from "./shared";
 
-/** A hedgehog on the forest floor among fallen leaves. */
+/**
+ * A hedgehog on the forest floor among fallen leaves.
+ *
+ * @category Animals
+ */
 export const hedgehog = /* @__PURE__ */ defineKind("hedgehog", "Hedgehog", (g, w, h, note) => {
   const unit = Math.min(w, h);
   const dir = g.pick([1, -1]);

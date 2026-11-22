@@ -89,7 +89,11 @@ const otterShape = (x: number, y: number, L: number, dir: number, paint: string)
     opacity: "0.45",
   });
 
-/** A kelp forest: tall fronds swaying up toward a bright surface, fish among them, rocks below. */
+/**
+ * A kelp forest: tall fronds swaying up toward a bright surface, fish among them, rocks below.
+ *
+ * @category Landscapes
+ */
 export const kelp = /* @__PURE__ */ defineKind("kelp", "Kelp forest", (g, w, h, note) => {
   const unit = Math.min(w, h);
   const hue = g.f(165, 195);

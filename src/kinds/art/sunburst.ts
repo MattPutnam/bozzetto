@@ -1,7 +1,11 @@
 import { defineKind, el, fill, type Point, s } from "../../draw/core";
 import { capitalize, numberWord } from "../../draw/words";
 
-/** Rays fanning out from a point, often around a round sun, like a 1960s sunburst. */
+/**
+ * Rays fanning out from a point, often around a round sun, like a 1960s sunburst.
+ *
+ * @category Art
+ */
 export const sunburst = /* @__PURE__ */ defineKind("sunburst", "Sunburst", (g, w, h, note) => {
   const unit = Math.min(w, h);
   const palette = g.pick([

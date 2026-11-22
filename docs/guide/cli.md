@@ -1,6 +1,6 @@
 # Command line
 
-The `bozzetto` command writes pictures as SVG files, for test fixtures, mockups and design tools.
+The `bozzetto` command writes pictures as SVG or PNG files, for test fixtures, mockups and design tools.
 It comes with the package; run it with `npx`:
 
 ```bash
@@ -28,29 +28,34 @@ npx bozzetto portrait:hair=curly,glasses -n 4 -o portraits/
 
 ## Options
 
-| Option                |                                                                               |
-| --------------------- | ----------------------------------------------------------------------------- |
-| `-n`, `--count <n>`   | How many pictures. Default 1                                                  |
-| `-s`, `--size <WxH>`  | Size, such as `400x300`. Repeat for a mix                                     |
-| `--seed <seed>`       | A number or text. Picture _k_ uses seed + _k_                                 |
-| `-p`, `--palette <p>` | An adjustment, palette name or palette code. Repeat for a mix                 |
-| `--mapping <m>`       | `balanced`, `ramp` or `nearest`. Repeat for a mix                             |
-| `--texture <t>`       | `grain` or `paper`. Repeat for a mix                                          |
-| `--order <o>`         | `shuffle` (default), `cycle` or `random`                                      |
-| `--numbered`          | Number the pictures in the corner                                             |
-| `-f`, `--format <f>`  | `svg` (default), `png`, `uri` (one data URI per line) or `json`               |
-| `--scale <n>`         | For `png`: pixels per SVG pixel, such as `2`                                  |
-| `-o`, `--out <path>`  | A file for one picture, or a folder for several                               |
-| `--avatar`            | [Avatars](./avatars): `--size` is one number; any face unless kinds are given |
-| `--shape <s>`         | For avatars: `circle` (default), `rounded` or `square`                        |
-| `--dark`              | Build in a dark-mode version (the `dim` adjustment)                           |
-| `--dark-palette <p>`  | The dark version's palette instead                                            |
-| `--list`              | List the kinds, categories and palettes                                       |
+| Option                |                                                                                 |
+| --------------------- | ------------------------------------------------------------------------------- |
+| `-n`, `--count <n>`   | How many pictures. Default 1                                                    |
+| `-s`, `--size <WxH>`  | Size, such as `400x300`. Default `400x300` (`64` for avatars). Repeat for a mix |
+| `--seed <seed>`       | A number or text. Picture _k_ uses seed + _k_. Default 1                        |
+| `-p`, `--palette <p>` | An adjustment, palette name or palette code. Repeat for a mix                   |
+| `--mapping <m>`       | `balanced`, `ramp` or `nearest`. Repeat for a mix                               |
+| `--texture <t>`       | `grain` or `paper`. Repeat for a mix                                            |
+| `--order <o>`         | `shuffle` (default), `cycle` or `random`                                        |
+| `--numbered`          | Number the pictures in the corner                                               |
+| `-f`, `--format <f>`  | `svg` (default), `png`, `uri` (one data URI per line) or `json`                 |
+| `--scale <n>`         | For `png`: pixels per SVG pixel, such as `2`                                    |
+| `-o`, `--out <path>`  | A file for one picture, or a folder for several                                 |
+| `--avatar`            | [Avatars](./avatars): `--size` is one number; any face unless kinds are given   |
+| `--shape <s>`         | For avatars: `circle` (default), `rounded` or `square`                          |
+| `--dark`              | Build in a dark-mode version (the `dim` adjustment)                             |
+| `--dark-palette <p>`  | The dark version's palette instead                                              |
+| `--list`              | List the kinds, categories and palettes                                         |
+| `-h`, `--help`        | Show the help                                                                   |
+| `-v`, `--version`     | Show the version                                                                |
+
+A seed made only of digits is a number; anything else, such as `user-42`, is text and is hashed.
 
 ## Folders and the manifest
 
-With several pictures, `-o fixtures/` writes one SVG per picture (`1-bird.svg`, `2-cat.svg`, …)
-and a `manifest.json` describing them:
+With several pictures, `-o fixtures/` writes one SVG per picture (`1-bird.svg`, `2-cat.svg`, …,
+numbered with leading zeros from ten pictures on, as in `01-donut.svg`) and a `manifest.json`
+describing them. A path ending in `/` is always a folder, even for one picture:
 
 ```json
 [
@@ -68,6 +73,7 @@ and a `manifest.json` describing them:
 ```
 
 A test or a design tool can read the manifest to know each picture's size, alt text and focus.
+Kinds with options also get an `options` entry with the value each option took.
 
 ## PNG
 
@@ -79,4 +85,5 @@ In a folder's manifest, `width` and `height` are the PNG's pixel size.
 
 Without `-o`, one picture goes to standard output as SVG. For several, choose `--format uri`
 (one data URI per line) or `--format json` (everything in the manifest, plus each picture's
-markup).
+markup). Both go to standard output, so redirect them to save a file: with several pictures, `-o`
+always names a folder of SVG or PNG files.

@@ -8,4 +8,10 @@ import { moon } from "./moon";
 
 export { planets, nebula, galaxy, blackHole, astronaut, moon };
 
+/**
+ * Every kind in the space category: planets, nebulae, galaxies, black holes, astronauts and the
+ * surface of a moon.
+ *
+ * @category Categories
+ */
 export const space = [planets, nebula, galaxy, blackHole, astronaut, moon] as const;

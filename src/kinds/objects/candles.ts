@@ -3,7 +3,11 @@ import { table } from "../../draw/shapes";
 import { capitalize, numberWord } from "../../draw/words";
 import { glow } from "./shared";
 
-/** A few lit candles of different heights on a table in a dim room. */
+/**
+ * A few lit candles of different heights on a table in a dim room.
+ *
+ * @category Objects
+ */
 export const candles = /* @__PURE__ */ defineKind("candles", "Candles", (g, w, h, note) => {
   const unit = Math.min(w, h);
   const top = h * g.f(0.74, 0.8);

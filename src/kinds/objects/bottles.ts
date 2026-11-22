@@ -46,7 +46,11 @@ const SHAPE: Record<string, [number, number]> = {
   box: [1.1, 1.8],
 };
 
-/** Bottles, jars and boxes in muted colors, grouped in two rows after Morandi's still lifes. */
+/**
+ * Bottles, jars and boxes in muted colors, grouped in two rows after Morandi's still lifes.
+ *
+ * @category Objects
+ */
 export const bottles = /* @__PURE__ */ defineKind("bottles", "Bottles", (g, w, h, note) => {
   const unit = Math.min(w, h);
   const top = h * g.f(0.6, 0.68);

@@ -9,8 +9,18 @@ import type { KindChoice, Order } from "./placeholder";
 import { render, type Picture } from "./render";
 import type { StyleOptions } from "../color/style";
 
+/**
+ * An avatar's outline: `circle` (default), `rounded` (a rounded square) or `square`.
+ *
+ * @category Avatars
+ */
 export type AvatarShape = "circle" | "rounded" | "square";
 
+/**
+ * How to draw an avatar: its face, size, shape and margin, plus the colors and texture to style it with.
+ *
+ * @category Avatars
+ */
 export interface AvatarOptions extends StyleOptions {
   /** Default: any kind with a face (the `faces` category), chosen by the seed. */
   kind?: KindChoice;
@@ -24,6 +34,11 @@ export interface AvatarOptions extends StyleOptions {
   margin?: number;
 }
 
+/**
+ * How to draw a list of avatars: as for one avatar, plus how to go through the list of kinds.
+ *
+ * @category Avatars
+ */
 export interface AvatarsOptions extends AvatarOptions {
   /** How a list of kinds is gone through: `shuffle` (default), `cycle` or `random`, as in `placeholders`. */
   order?: Order;

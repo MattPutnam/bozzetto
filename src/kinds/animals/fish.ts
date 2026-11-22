@@ -1,6 +1,10 @@
 import { defineKind, el, facing, fill, hsl, lin, s } from "../../draw/core";
 
-/** A fish among weeds and bubbles. Color, stripes and direction vary. */
+/**
+ * A fish among weeds and bubbles. Color, stripes and direction vary.
+ *
+ * @category Animals
+ */
 export const fish = /* @__PURE__ */ defineKind("fish", "Fish", (g, w, h, note) => {
   const waterHue = g.f(180, 215);
   const hue = g.f(0, 360);

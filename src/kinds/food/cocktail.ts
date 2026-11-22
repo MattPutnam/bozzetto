@@ -12,7 +12,11 @@ const GARNISHES: Record<string, string[]> = {
   tumbler: ["citrus", "cherry", "mint"],
 };
 
-/** A cocktail on a bar or table: a coupe, martini glass, highball or tumbler, with a garnish and sometimes ice. */
+/**
+ * A cocktail on a bar or table: a coupe, martini glass, highball or tumbler, with a garnish and sometimes ice.
+ *
+ * @category Food
+ */
 export const cocktail = /* @__PURE__ */ defineKind("cocktail", "Cocktail", (g, w, h, note) => {
   const unit = Math.min(w, h);
   const type = g.pick(["coupe", "martini", "highball", "tumbler"] as const);

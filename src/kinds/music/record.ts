@@ -7,7 +7,7 @@ function sleeveArt(g: Rand, x: number, y: number, q: number): string {
   const base = hsl(hue, g.f(30, 60), g.f(55, 75));
   const a = hsl(hue + g.f(120, 240), g.f(45, 70), g.f(40, 60));
   const b = hsl(hue + g.f(30, 90), g.f(40, 70), g.f(25, 45));
-  const id = g.id("art");
+  const id = g.id(`art-${Math.round(x)}-${Math.round(y)}`); // one per sleeve, since a picture can show several
   const style = g.pick(["sun", "blocks", "rings"]);
   let art = el("rect", { x, y, width: q, height: q, fill: base });
   if (style === "sun") {
@@ -92,7 +92,11 @@ function vinyl(g: Rand, cx: number, cy: number, r: number): string {
   return out;
 }
 
-/** A vinyl record playing on a turntable seen from above, or sliding out of its sleeve on a shelf. */
+/**
+ * A vinyl record playing on a turntable seen from above, or sliding out of its sleeve on a shelf.
+ *
+ * @category Music
+ */
 export const record = /* @__PURE__ */ defineKind(
   "record",
   "Vinyl record",

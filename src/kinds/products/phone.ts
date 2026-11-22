@@ -1,7 +1,11 @@
 import { defineKind, el, hsl, type Point, pts } from "../../draw/core";
 import { baseFor, shade, softContact, sweepStudio, tint } from "./shared";
 
-/** A smartphone on a small stand, showing its screen or its back and cameras. */
+/**
+ * A smartphone on a small stand, showing its screen or its back and cameras.
+ *
+ * @category Products
+ */
 export const phone = /* @__PURE__ */ defineKind("phone", "Smartphone", (g, w, h, note) => {
   const unit = Math.min(w, h);
   const side = g.pick(["screen", "screen", "back"] as const);

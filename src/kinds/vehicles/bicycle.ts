@@ -1,7 +1,11 @@
 import { defineKind, el, facing, hsl, mix, type Point } from "../../draw/core";
 import { hill, local, PAINTS, shade, skyAt, timeOfDay, TIRE, tree, veil, when } from "./shared";
 
-/** A bicycle standing on a park path. */
+/**
+ * A bicycle standing on a park path.
+ *
+ * @category Vehicles
+ */
 export const bicycle = /* @__PURE__ */ defineKind("bicycle", "Bicycle", (g, w, h, note) => {
   const unit = Math.min(w, h);
   const time = timeOfDay(g);

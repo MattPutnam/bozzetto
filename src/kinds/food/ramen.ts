@@ -9,7 +9,11 @@ const BROTHS: readonly [string, string][] = [
   ["#d9563a", "spicy"],
 ];
 
-/** A bowl of ramen from above: noodles in broth, with toppings around them. */
+/**
+ * A bowl of ramen from above: noodles in broth, with toppings around them.
+ *
+ * @category Food
+ */
 export const ramen = /* @__PURE__ */ defineKind("ramen", "Ramen", (g, w, h, note) => {
   const unit = Math.min(w, h);
   const cx = w / 2;

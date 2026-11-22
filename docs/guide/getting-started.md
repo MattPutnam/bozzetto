@@ -29,14 +29,16 @@ Every option, live. The ring marks the picture's focal point.
 
 ## Options
 
-| Option    | Default     |                                                                 |
-| --------- | ----------- | --------------------------------------------------------------- |
-| `size`    | `"400x300"` | `"WxH"` or `{ width, height }`                                  |
-| `seed`    | `1`         | A number, or any text (such as a user id), which is hashed      |
-| `palette` | none        | An adjustment, a palette name or code, or a list of colors      |
-| `mapping` | `balanced`  | How a color palette is applied: `balanced`, `ramp` or `nearest` |
-| `texture` | none        | `grain` or `paper`                                              |
-| `label`   | none        | Text in the bottom-right corner, such as a number               |
+| Option         | Default     |                                                                                  |
+| -------------- | ----------- | -------------------------------------------------------------------------------- |
+| `size`         | `"400x300"` | `"WxH"` or `{ width, height }`                                                   |
+| `seed`         | `1`         | A number, or any text (such as a user id), which is hashed                       |
+| `palette`      | none        | An adjustment, a palette name or code, or a list of colors                       |
+| `mapping`      | `balanced`  | How a color palette is applied: `balanced`, `ramp` or `nearest`                  |
+| `texture`      | none        | `grain` or `paper`                                                               |
+| `label`        | none        | Text in the bottom-right corner, such as a number                                |
+| `dark`         | none        | A built-in dark mode: `true`, or a palette (see [dark mode](./colors#dark-mode)) |
+| `darkSelector` | none        | A selector to follow instead of the system setting, for inline SVG               |
 
 ## Choosing for me
 
@@ -46,10 +48,12 @@ you give it:
 ```ts
 import { animals, placeholder } from "bozzetto";
 
-const avatar = placeholder({ kind: animals, seed: user.id, size: "128x128" });
-img.src = avatar.src;
-img.alt = avatar.alt;
+const picture = placeholder({ kind: animals, seed: user.id, size: "128x128" });
+img.src = picture.src;
+img.alt = picture.alt;
 ```
+
+For a face framed around its head, use [`avatar`](./avatars) instead.
 
 `placeholder` and `placeholders` can choose any kind, so they bundle every kind. Import kinds
 directly when bundle size matters.

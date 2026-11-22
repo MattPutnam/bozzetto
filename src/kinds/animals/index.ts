@@ -83,6 +83,12 @@ export {
   seal,
 };
 
+/**
+ * Every kind in the animals category: pets, farm and wild animals, birds, and small creatures of
+ * garden, pond and sea.
+ *
+ * @category Categories
+ */
 export const animals = [
   cat,
   bird,

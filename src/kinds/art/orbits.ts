@@ -1,7 +1,11 @@
 import { defineKind, el, fill, hsl } from "../../draw/core";
 import { numberWord } from "../../draw/words";
 
-/** A large haloed circle among small circles, rings and thin lines. */
+/**
+ * A large haloed circle among small circles, rings and thin lines.
+ *
+ * @category Art
+ */
 export const orbits = /* @__PURE__ */ defineKind("orbits", "Orbiting circles", (g, w, h, note) => {
   const dark = g.chance(0.55);
   const ink = dark ? "#efe7d6" : "#1c1c22";

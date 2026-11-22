@@ -59,7 +59,11 @@ function arm(g: Rand, style: "dendrite" | "fern" | "plate" | "stellar" | "simple
   return [lines, plates];
 }
 
-/** A scattering of six-fold snowflakes of different sizes and designs on a wintry sky. */
+/**
+ * A scattering of six-fold snowflakes of different sizes and designs on a wintry sky.
+ *
+ * @category Holidays
+ */
 export const snowflakes = /* @__PURE__ */ defineKind("snowflakes", "Snowflakes", (g, w, h, note) => {
   const unit = Math.min(w, h);
   const mood = g.pick(["icy", "twilight", "pale"] as const);

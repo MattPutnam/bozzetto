@@ -1,7 +1,11 @@
 import { defineKind, el, fill, hsl, lin, type Point, pts, s } from "../../draw/core";
 import { AT, curve, daySky, lerp, TIMES } from "./shared";
 
-/** A still mountain lake that mirrors the peaks and sky above it. */
+/**
+ * A still mountain lake that mirrors the peaks and sky above it.
+ *
+ * @category Landscapes
+ */
 export const lake = /* @__PURE__ */ defineKind("lake", "Mountain lake", (g, w, h, note) => {
   const time = g.pick(TIMES);
   const sky = daySky(g, time);

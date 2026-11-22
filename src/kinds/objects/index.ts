@@ -14,6 +14,11 @@ import { armchair } from "./armchair";
 
 export { fruitBowl, flowers, coffee, books, bottles, teapot, lamp, clock, candles, balloons, camera, armchair };
 
+/**
+ * Every kind in the objects category: still lifes on a table or shelf.
+ *
+ * @category Categories
+ */
 export const objects = [
   fruitBowl,
   flowers,

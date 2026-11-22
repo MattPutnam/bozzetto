@@ -4,17 +4,37 @@
  * Because this works on the markup, every kind gets it for free, built-in or custom.
  */
 
-import { el } from "../draw/core";
+import { el, hash } from "../draw/core";
 import { lchToHex, oklabToLch, rgbToOklab } from "./color";
 import { ADJUSTMENTS, resolvePalette, type Adjustment, type PaletteSpec } from "./palettes";
 
 export { ADJUSTMENTS, PALETTES } from "./palettes";
 
+/**
+ * A texture laid over a picture: `grain` (fine noise) or `paper` (lit noise, like watercolor paper).
+ *
+ * @category Color
+ */
 export type Texture = "grain" | "paper";
+/**
+ * How a list of colors is applied to a picture: see `StyleOptions.mapping`.
+ *
+ * @category Color
+ */
 export type Mapping = "ramp" | "balanced" | "nearest";
 
+/**
+ * Every mapping, with the default first.
+ *
+ * @category Color
+ */
 export const MAPPINGS: readonly Mapping[] = ["balanced", "ramp", "nearest"];
 
+/**
+ * How to style a picture: its colors, texture and dark-mode colors.
+ *
+ * @category Color
+ */
 export interface StyleOptions {
   /**
    * The colors to use: an adjustment's name (`vivid`, `pastel`, `muted`, `dusk`, `dim`, `grayscale`),
@@ -30,6 +50,7 @@ export interface StyleOptions {
    * - `nearest` snaps each color to its closest palette color. Bold, but areas can merge.
    */
   mapping?: Mapping;
+  /** `grain` (fine noise) or `paper` (lit noise, like watercolor paper), laid over the picture. */
   texture?: Texture;
   /**
    * A dark-mode version, built into the picture: in dark mode it switches to these colors by
@@ -169,7 +190,13 @@ function balanced(svg: string, colors: readonly string[]): (c: RGB) => string {
   };
 }
 
-/** Recolors a picture's markup. Masks are left alone, since their black and white are structural. */
+/**
+ * Recolors and textures a picture's markup with `palette`, `mapping` and `texture`, for SVG you
+ * already have. `dark` and `darkSelector` apply only through `render` (and the functions built on
+ * it). Masks are left alone, since their black and white are structural.
+ *
+ * @category Color
+ */
 export function stylize(svg: string, options: StyleOptions = {}): string {
   const masks: string[] = [];
   let body = svg.replace(/<mask[\s\S]*?<\/mask>/g, m => `\uE000${masks.push(m) - 1}\uE000`);
@@ -223,7 +250,7 @@ function adjust(adjustment: Adjustment): (c: RGB) => string {
 function addTexture(svg: string, texture: Texture): string {
   const width = svg.match(/width="([\d.]+)"/)?.[1] ?? "400";
   const height = svg.match(/height="([\d.]+)"/)?.[1] ?? "300";
-  const id = `tx${((svg.length * 2654435761) >>> 0).toString(36)}`;
+  const id = `tx${hash(`${texture}:${svg}`).toString(36)}`;
   const region = { id, x: "0", y: "0", width: "100%", height: "100%" };
   // Grain: fine grey noise blended over the picture. Paper: lit noise, like the tooth of watercolor paper.
   const filter =

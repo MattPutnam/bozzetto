@@ -31,6 +31,12 @@ export {
   stripes,
 };
 
+/**
+ * Every kind in the art category: loose homages to familiar 20th-century styles, from a few
+ * rectangles, circles and blobs.
+ *
+ * @category Categories
+ */
 export const art = [
   field,
   grid,

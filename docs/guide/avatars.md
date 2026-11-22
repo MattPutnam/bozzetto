@@ -17,12 +17,14 @@ img.src = avatar({ seed: user.id, size: 48 }).src;
 ```
 
 An avatar is an ordinary [picture](./pictures): `src`, `svg`, `alt` and the rest. Its alt text is
-the face's own, such as "A tabby cat's face with round pupils".
+the whole picture's, so it can mention things outside the crop, such as "A long-tailed macaw
+perched on a branch among tropical leaves, facing right".
 
 ## Faces
 
-The `faces` list holds the kinds that can be avatars: `portrait`, `cat`, `dog`, `fox`, `rabbit`,
-`owl`, `frog` and `penguin`. With no `kind`, the seed picks one of them; pass a kind or a list to
+The `faces` list holds the 40 kinds that can be avatars: the people (`portrait`, `reader`,
+`worker`, `cafe`, `pair` and `group`), most animals, `snowman` and `astronaut`. A kind without a
+face, such as `hills`, throws. With no `kind`, the seed picks one of them; pass a kind or a list to
 narrow it, options included:
 
 ```ts
@@ -35,14 +37,16 @@ avatar({ seed: user.id, kind: portrait.with({ glasses: true }) });
 
 ## Options
 
-| Option                          | Default  |                                                  |
-| ------------------------------- | -------- | ------------------------------------------------ |
-| `kind`                          | any face | A face kind, or a list of them                   |
-| `seed`                          | `1`      | A number, or any text such as a user id          |
-| `size`                          | `64`     | Width and height in px: avatars are square       |
-| `shape`                         | `circle` | `circle`, `rounded` or `square`                  |
-| `margin`                        | `0.12`   | Space around the head, as a fraction of its size |
-| `palette`, `mapping`, `texture` | none     | As for any picture: see [palettes](./colors)     |
+| Option                          | Default   |                                                                                 |
+| ------------------------------- | --------- | ------------------------------------------------------------------------------- |
+| `kind`                          | any face  | A face kind, or a list of them                                                  |
+| `seed`                          | `1`       | A number, or any text such as a user id                                         |
+| `size`                          | `64`      | Width and height in px: avatars are square                                      |
+| `shape`                         | `circle`  | `circle`, `rounded` or `square`                                                 |
+| `margin`                        | `0.12`    | Space around the head, as a fraction of its size                                |
+| `palette`, `mapping`, `texture` | none      | As for any picture: see [palettes](./colors)                                    |
+| `dark`, `darkSelector`          | none      | A built-in [dark mode](./colors#dark-mode)                                      |
+| `order`                         | `shuffle` | How `avatars` goes through the kinds, as in [`placeholders`](./galleries#order) |
 
 <<< @/examples/avatars.ts#shapes
 
@@ -53,8 +57,8 @@ you use them.
 
 ## Lists
 
-`avatars(count, options)` makes a list, using every face once (in a seeded order) before any
-repeats, like [`placeholders`](./galleries):
+`avatars(count, options)` makes a list. Like [`placeholders`](./galleries), it uses every face
+once, in a seeded order, before any repeats (with the default `order: "shuffle"`):
 
 <<< @/examples/avatars.ts#styled
 

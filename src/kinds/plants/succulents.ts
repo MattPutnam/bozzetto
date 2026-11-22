@@ -383,7 +383,11 @@ function succulentPot(
   return out;
 }
 
-/** Two to four potted succulents side by side on a table or windowsill. */
+/**
+ * Two to four potted succulents side by side on a table or windowsill.
+ *
+ * @category Plants
+ */
 export const succulents = /* @__PURE__ */ defineKind("succulents", "Succulents", (g, w, h, note) => {
   const unit = Math.min(w, h);
   const top = h * g.f(0.78, 0.84);

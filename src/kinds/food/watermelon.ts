@@ -2,7 +2,11 @@ import { defineKind, el, fill, hsl, s } from "../../draw/core";
 import { capitalize, numberWord } from "../../draw/words";
 import { topPlate } from "./shared";
 
-/** Wedges of watermelon on a plate, seen from above. */
+/**
+ * Wedges of watermelon on a plate, seen from above.
+ *
+ * @category Food
+ */
 export const watermelon = /* @__PURE__ */ defineKind("watermelon", "Watermelon", (g, w, h, note) => {
   const unit = Math.min(w, h);
   const cx = w / 2;

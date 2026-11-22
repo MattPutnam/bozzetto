@@ -371,7 +371,11 @@ function jersey(g: Rand): { out: string; number: number } {
 
 type Piece = "ball" | "shoes" | "jersey";
 
-/** A basketball, a pair of high-tops and a jersey laid out on a court floor. */
+/**
+ * A basketball, a pair of high-tops and a jersey laid out on a court floor.
+ *
+ * @category Sports
+ */
 export const basketball = /* @__PURE__ */ defineKind("basketball", "Basketball", (g, w, h, note) => {
   const unit = Math.min(w, h);
   const pieces = ["ball", "shoes", "jersey"] as const;

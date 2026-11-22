@@ -54,7 +54,11 @@ function crescentDumpling(x: number, y: number, len: number, color: string, rot:
   );
 }
 
-/** Dumplings from above: in a bamboo steamer, or in rows on a plate, with dipping sauce and chopsticks. */
+/**
+ * Dumplings from above: in a bamboo steamer, or in rows on a plate, with dipping sauce and chopsticks.
+ *
+ * @category Food
+ */
 export const dumplings = /* @__PURE__ */ defineKind("dumplings", "Dumplings", (g, w, h, note) => {
   const unit = Math.min(w, h);
   const wide = w >= h;

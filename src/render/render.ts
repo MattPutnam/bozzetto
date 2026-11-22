@@ -4,17 +4,27 @@ import { el, hash, makeRand, seedToInt, type Kind, type OptionValue } from "../d
 import { withDarkMode } from "../color/dark";
 import { stylize, type StyleOptions } from "../color/style";
 
-/** A finished picture, with what a gallery needs to lay it out and describe it. */
+/**
+ * A finished picture, with what a gallery needs to lay it out and describe it.
+ *
+ * @category Drawing
+ */
 export interface Picture {
   /** A `data:image/svg+xml` URI, for an `<img src>` or CSS `url()`. */
   readonly src: string;
-  /** The SVG markup, for inlining. Element ids are unique to this picture. */
+  /**
+   * The SVG markup, for inlining. Element ids are unique to the kind, its fixed options, seed, size
+   * and styling, so different pictures can share a page; two copies of one picture share ids, which
+   * is harmless because their contents match.
+   */
   readonly svg: string;
+  /** The width in px. */
   readonly width: number;
+  /** The height in px. */
   readonly height: number;
   /** The id of the kind that drew it, such as `"owl"`. */
   readonly kind: string;
-  /** A short description for screen readers, such as "An owl on a branch under a crescent moon". */
+  /** A short description for screen readers, such as "An owl perched on a branch at dusk". */
   readonly alt: string;
   /** The point of interest as fractions of the width and height, for `object-position` or cropping. */
   readonly focus: { readonly x: number; readonly y: number };
@@ -26,7 +36,7 @@ export interface Picture {
   readonly options: Readonly<Record<string, OptionValue>>;
   /**
    * The bounds of the subject's head, as fractions of the width and height, for kinds with a face
-   * (the ones `avatar` takes); undefined for others.
+   * (the ones `avatar` takes); undefined for others, and on avatars themselves.
    */
   readonly frame?: { readonly x: number; readonly y: number; readonly width: number; readonly height: number };
 }
@@ -34,9 +44,16 @@ export interface Picture {
 /**
  * A picture's size in px, as `"400x300"` or `{ width: 400, height: 300 }`.
  * (There's no bare-number form, so a list of sizes can't be mistaken for a width and a height.)
+ *
+ * @category Drawing
  */
 export type Size = `${number}x${number}` | { readonly width: number; readonly height: number };
 
+/**
+ * How to draw a picture: its size, seed and label, plus the colors and texture to style it with.
+ *
+ * @category Drawing
+ */
 export interface RenderOptions extends StyleOptions {
   /** Default `"400x300"`. */
   size?: Size;
@@ -46,7 +63,11 @@ export interface RenderOptions extends StyleOptions {
   label?: string | number;
 }
 
-/** The width and height a size stands for. Throws on anything that isn't a valid size. */
+/**
+ * The width and height a size stands for. Throws on anything that isn't a valid size.
+ *
+ * @category Drawing
+ */
 export function resolveSize(size: Size = "400x300"): { width: number; height: number } {
   const parsed =
     typeof size === "string"
@@ -58,13 +79,21 @@ export function resolveSize(size: Size = "400x300"): { width: number; height: nu
   return { width: parsed[0], height: parsed[1] };
 }
 
-/** Draws a picture, with its alt text, focus and background color. */
+/**
+ * Draws a picture, with its alt text, focus and background color.
+ *
+ * @category Drawing
+ */
 export function render(kind: Kind, options: RenderOptions = {}): Picture {
   const { width, height } = resolveSize(options.size);
   const seed = seedToInt(options.seed);
-  // Fixed options are part of the id prefix, so two variants of a kind with one seed can share a page.
+  // Fixed options and styling are part of the id prefix, so variants of a kind with one seed (other
+  // options, palettes, textures or dark colors) can share a page without borrowing each other's
+  // gradients. Plain pictures leave styling out, so their ids don't depend on it.
   const fixed = Object.keys(kind.fixed ?? {}).length ? `:${JSON.stringify(kind.fixed)}` : "";
-  const prefix = `bz${hash(`${kind.id}${fixed}:${seed}:${width}x${height}`).toString(36)}-`;
+  const styled = [options.palette, options.mapping, options.texture, options.dark, options.darkSelector];
+  const style = styled.some(v => v !== undefined) ? `:${JSON.stringify(styled)}` : "";
+  const prefix = `bz${hash(`${kind.id}${fixed}${style}:${seed}:${width}x${height}`).toString(36)}-`;
   let alt = kind.name;
   let focus = { x: 0.5, y: 0.5 };
   let frame: Picture["frame"];
@@ -133,12 +162,20 @@ export function render(kind: Kind, options: RenderOptions = {}): Picture {
   };
 }
 
-/** The full SVG markup for one picture. */
+/**
+ * The full SVG markup for one picture.
+ *
+ * @category Drawing
+ */
 export function toSvg(kind: Kind, options: RenderOptions = {}): string {
   return render(kind, options).svg;
 }
 
-/** The picture as a `data:image/svg+xml` URI, ready for an `<img src>` or CSS `url()`. */
+/**
+ * The picture as a `data:image/svg+xml` URI, ready for an `<img src>` or CSS `url()`.
+ *
+ * @category Drawing
+ */
 export function toDataUri(kind: Kind, options: RenderOptions = {}): string {
   return render(kind, options).src;
 }

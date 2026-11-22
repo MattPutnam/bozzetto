@@ -2,7 +2,11 @@ import { defineKind, el, facing, hsl, type Point, pts, s } from "../../draw/core
 import { smoothClosed } from "../../draw/shapes";
 import { PETALS, sky, turn, turnBox } from "./shared";
 
-/** A turtle plodding across a meadow or a beach, its head out of its shell. */
+/**
+ * A turtle plodding across a meadow or a beach, its head out of its shell.
+ *
+ * @category Animals
+ */
 export const turtle = /* @__PURE__ */ defineKind("turtle", "Turtle", (g, w, h, note) => {
   const unit = Math.min(w, h);
   const beach = g.chance(0.4);

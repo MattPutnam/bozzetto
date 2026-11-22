@@ -50,7 +50,11 @@ function boat(g: Rand, x: number, y: number, len: number, dir: number, hull: str
   return facing(x, dir) + out + "</g>";
 }
 
-/** Narrow gabled houses along a city canal, a little arched bridge, boats and reflections. */
+/**
+ * Narrow gabled houses along a city canal, a little arched bridge, boats and reflections.
+ *
+ * @category Landscapes
+ */
 export const canal = /* @__PURE__ */ defineKind("canal", "Canal houses", (g, w, h, note) => {
   const time = g.chance(0.6) ? "day" : g.pick(TIMES);
   const sky = daySky(g, time);

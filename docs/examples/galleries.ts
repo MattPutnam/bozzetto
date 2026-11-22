@@ -18,7 +18,7 @@ export const wall = () => {
 
 export const each = () => {
   // #region each
-  // Every animal plus the donut, once each, in a seeded order.
+  // Twelve different picks from every animal plus the donut: none repeats until all have appeared.
   const pictures = placeholders(12, { kind: [animals, donut], seed: 2 });
   // #endregion each
   return grid(

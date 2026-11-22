@@ -223,7 +223,11 @@ function surfArt(g: Rand, style: SurfArt, wid: number, len: number, outline: str
   return out;
 }
 
-/** Surfboards on a wall, deck side out: on rack arms one above another, or hung upright in a row. */
+/**
+ * Surfboards on a wall, deck side out: on rack arms one above another, or hung upright in a row.
+ *
+ * @category Sports
+ */
 export const surfboard = /* @__PURE__ */ defineKind("surfboard", "Surfboard", { wall: WALLS }, (g, w, h, note) => {
   const unit = Math.min(w, h);
   const wallType = g.option("wall", g.pick(WALLS));

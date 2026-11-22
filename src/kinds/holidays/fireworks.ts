@@ -124,7 +124,11 @@ function burst(g: Rand, style: Style, r: number, main: string, second: string, d
   return out;
 }
 
-/** Fireworks bursting in a night sky over a city skyline, a harbor or wooded hills. */
+/**
+ * Fireworks bursting in a night sky over a city skyline, a harbor or wooded hills.
+ *
+ * @category Holidays
+ */
 export const fireworks = /* @__PURE__ */ defineKind("fireworks", "Fireworks", (g, w, h, note) => {
   const unit = Math.min(w, h);
   const skyHue = g.f(222, 262);

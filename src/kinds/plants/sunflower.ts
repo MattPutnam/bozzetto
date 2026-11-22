@@ -13,7 +13,11 @@ import {
   type View,
 } from "./shared";
 
-/** A sunflower head close up: two rings of rays around a seed head, on a leafy stem. */
+/**
+ * A sunflower head close up: two rings of rays around a seed head, on a leafy stem.
+ *
+ * @category Plants
+ */
 export const sunflower = /* @__PURE__ */ defineKind("sunflower", "Sunflower", (g, w, h, note) => {
   const unit = Math.min(w, h);
   const look = g.pick(["sky", "sky", "garden", "warm"] as const);

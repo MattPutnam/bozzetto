@@ -2,7 +2,11 @@ import { defineKind, el, facing, mix, type Point, qpt, s } from "../../draw/core
 import { andList } from "../../draw/words";
 import { flipFrame, flipX, savanna, tube } from "./shared";
 
-/** An elephant on the savanna, side on, with its trunk hanging or raised. */
+/**
+ * An elephant on the savanna, side on, with its trunk hanging or raised.
+ *
+ * @category Animals
+ */
 export const elephant = /* @__PURE__ */ defineKind("elephant", "Elephant", (g, w, h, note) => {
   const skin = g.pick(["#8e8f94", "#9a948e", "#7f838b", "#a29a95"]);
   const far = mix(skin, "#000000", 0.15);

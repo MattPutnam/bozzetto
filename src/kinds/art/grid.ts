@@ -3,7 +3,11 @@ import { capitalize, numberWord } from "../../draw/words";
 
 const OFF_WHITE = "#f3f0e6";
 
-/** The canvas split again and again into rectangles, a few of them filled with primaries. */
+/**
+ * The canvas split again and again into rectangles, a few of them filled with primaries.
+ *
+ * @category Art
+ */
 export const grid = /* @__PURE__ */ defineKind("grid", "Primary grid", (g, w, h, note) => {
   type Cell = { x: number; y: number; w: number; h: number };
   const cells: Cell[] = [{ x: 0, y: 0, w, h }];

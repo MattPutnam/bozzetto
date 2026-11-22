@@ -9,7 +9,13 @@
 import { makeRand, seedToInt } from "../draw/core";
 import { hexToLch, lchToHex, lightnessOf, parseColor, toHex, type LCH } from "./color";
 
-/** A list of colors in any form `parseColor` reads, a built-in palette's or adjustment's name, or a palette code. */
+/**
+ * What a `palette` option takes: an adjustment's name (such as `pastel`), a built-in palette's name
+ * (such as `riso`), a palette code (`264653-e9c46a-e76f51`), or a list of colors, each as `#rgb`,
+ * `#rrggbb`, `rgb(…)` or `hsl(…)`.
+ *
+ * @category Color
+ */
 export type PaletteSpec = readonly string[] | string;
 
 /**
@@ -17,10 +23,22 @@ export type PaletteSpec = readonly string[] | string;
  * keeps its variety: brighter (`vivid`), lighter and softer (`pastel`), greyer (`muted`),
  * darker and cooler (`dusk`), dimmer for dark pages with every hue kept (`dim`), or without color
  * (`grayscale`).
+ *
+ * @category Color
  */
 export const ADJUSTMENTS = ["vivid", "pastel", "muted", "dusk", "dim", "grayscale"] as const;
+/**
+ * An adjustment's name: `vivid`, `pastel`, `muted`, `dusk`, `dim` or `grayscale`.
+ *
+ * @category Color
+ */
 export type Adjustment = (typeof ADJUSTMENTS)[number];
 
+/**
+ * The built-in palettes by name, each a list of `#rrggbb` colors from dark to light.
+ *
+ * @category Color
+ */
 export const PALETTES: Record<string, readonly string[]> = {
   sunset: ["#2d1e2f", "#7a3b52", "#d1495b", "#edae49", "#f9e0a8"],
   "sea glass": ["#0b2e3b", "#1b6a73", "#4fa3a5", "#a7d7c5", "#eef6ee"],
@@ -31,7 +49,11 @@ export const PALETTES: Record<string, readonly string[]> = {
   mono: ["#0e2523", "#40968f", "#9fd1cc", "#eef6f5"],
 };
 
-/** Every name a palette option accepts: adjustments first, then color palettes. */
+/**
+ * Every name a palette option accepts: adjustments first, then color palettes.
+ *
+ * @category Color
+ */
 export const PALETTE_NAMES: readonly string[] = [...ADJUSTMENTS, ...Object.keys(PALETTES)];
 
 /**
@@ -42,6 +64,8 @@ export const PALETTE_NAMES: readonly string[] = [...ADJUSTMENTS, ...Object.keys(
  * - split-complementary: the base plus the two neighbors of its opposite; contrast with less tension
  * - triadic: three evenly spaced hues; lively
  * - tetradic: four evenly spaced hues; the most varied
+ *
+ * @category Color
  */
 export const SCHEMES = {
   monochrome: [0],
@@ -52,8 +76,18 @@ export const SCHEMES = {
   tetradic: [0, 90, 180, 270],
 } as const satisfies Record<string, readonly number[]>;
 
+/**
+ * A color-wheel scheme for `makePalette`: see `SCHEMES`.
+ *
+ * @category Color
+ */
 export type Scheme = keyof typeof SCHEMES;
 
+/**
+ * How `makePalette` builds a palette. Every option has a default, so `makePalette()` works too.
+ *
+ * @category Color
+ */
 export interface PaletteOptions {
   /** A starting color, which appears in the palette exactly, or a hue in degrees. Default: chosen by the seed. */
   base?: string | number;
@@ -85,6 +119,8 @@ function shiftToward(h: number, target: number, amount: number): number {
  * Hues come from the scheme, spread across the lightness steps so each hue appears both dark
  * and light. Like a painter's palette, light colors lean slightly warm and dark ones slightly
  * cool, and the darkest and lightest are less saturated than the middle.
+ *
+ * @category Color
  */
 export function makePalette(options: PaletteOptions = {}): string[] {
   const rand = makeRand(seedToInt(options.seed ?? 1) ^ 0x5bd1e995);
@@ -138,7 +174,11 @@ export function makePalette(options: PaletteOptions = {}): string[] {
   return colors;
 }
 
-/** A pleasing palette chosen entirely by the seed: scheme, hue, contrast and vibrance. */
+/**
+ * A pleasing palette chosen entirely by the seed: scheme, hue, contrast and vibrance.
+ *
+ * @category Color
+ */
 export function randomPalette(seed: number | string, options: Omit<PaletteOptions, "seed"> = {}): string[] {
   const rand = makeRand(seedToInt(seed) ^ 0x27d4eb2f);
   const schemes = Object.keys(SCHEMES) as Scheme[];
@@ -152,7 +192,11 @@ export function randomPalette(seed: number | string, options: Omit<PaletteOption
   });
 }
 
-/** A palette as a short, URL-safe code, such as `264653-2a9d8f-e9c46a`. */
+/**
+ * A palette as a short, URL-safe code, such as `264653-2a9d8f-e9c46a`. A code needs two or more colors to read back.
+ *
+ * @category Color
+ */
 export function encodePalette(colors: readonly string[]): string {
   return colors
     .map(c => {
@@ -163,18 +207,30 @@ export function encodePalette(colors: readonly string[]): string {
     .join("-");
 }
 
-/** The colors in a palette code, or undefined if it isn't one. */
+/**
+ * The colors in a palette code, or undefined if it isn't one.
+ *
+ * @category Color
+ */
 export function decodePalette(code: string): string[] | undefined {
   const parts = code.trim().replace(/^#/, "").split("-");
   if (parts.length < 2 || !parts.every(p => /^[0-9a-f]{6}$/i.test(p))) return undefined;
   return parts.map(p => `#${p.toLowerCase()}`);
 }
 
-/** The colors a palette spec stands for, as `#rrggbb`. Throws on anything it can't read. */
+/**
+ * The colors of a built-in palette's name, a palette code or a list of colors, as `#rrggbb`.
+ * Throws on anything it can't read, and on an adjustment's name: adjustments change a picture's own
+ * colors, so they have no fixed colors to list.
+ *
+ * @category Color
+ */
 export function resolvePalette(spec: PaletteSpec): string[] {
   if (typeof spec === "string") {
     const named = PALETTES[spec];
     if (named) return [...named];
+    if ((ADJUSTMENTS as readonly string[]).includes(spec))
+      throw new Error(`bozzetto: "${spec}" is an adjustment of a picture's own colors, so it has no colors to list.`);
     const decoded = decodePalette(spec);
     if (decoded) return decoded;
     throw new Error(`bozzetto: "${spec}" is neither a palette name (${PALETTE_NAMES.join(", ")}) nor a palette code.`);

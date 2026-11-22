@@ -1,7 +1,11 @@
 import { defineKind, el, fill, hsl, mix, s } from "../../draw/core";
 import { blob } from "../../draw/shapes";
 
-/** A fried egg in a pan or on a plate, sometimes with bacon. */
+/**
+ * A fried egg in a pan or on a plate, sometimes with bacon.
+ *
+ * @category Food
+ */
 export const egg = /* @__PURE__ */ defineKind("egg", "Fried egg", (g, w, h, note) => {
   const unit = Math.min(w, h);
   const cx = w / 2;

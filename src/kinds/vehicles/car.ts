@@ -8,7 +8,11 @@ const wheel = (u: ReturnType<typeof local>, x: number, y: number, r: number, whi
   u.circle(x, y, r * 0.5, { fill: CHROME }) +
   u.circle(x, y, r * 0.17, { fill: "#8a9099" });
 
-/** A rounded retro car driving along a country road. */
+/**
+ * A rounded retro car driving along a country road.
+ *
+ * @category Vehicles
+ */
 export const car = /* @__PURE__ */ defineKind("car", "Retro car", (g, w, h, note) => {
   const unit = Math.min(w, h);
   const time = timeOfDay(g);

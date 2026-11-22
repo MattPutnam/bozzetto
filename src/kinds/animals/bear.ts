@@ -10,7 +10,11 @@ const BEARS = {
   polar: [{ fur: "#f1ede2", muzzle: "#f8f6ef", pad: "#3a3634" }],
 } as const;
 
-/** A bear sitting up: brown or black in a pine wood, or a polar bear on the snow. */
+/**
+ * A bear sitting up: brown or black in a pine wood, or a polar bear on the snow.
+ *
+ * @category Animals
+ */
 export const bear = /* @__PURE__ */ defineKind(
   "bear",
   "Bear",

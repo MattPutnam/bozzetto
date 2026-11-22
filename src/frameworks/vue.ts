@@ -1,8 +1,12 @@
 /**
  * `bozzetto/vue`: `<Placeholder>` and `<Avatar>` components and composables for Vue 3.
  *
- *     import { Placeholder } from "bozzetto/vue";
- *     <Placeholder kind="owl" :seed="3" size="320x240" palette="pastel" />
+ * ```vue
+ * import { Placeholder } from "bozzetto/vue";
+ * <Placeholder kind="owl" :seed="3" size="320x240" palette="pastel" />
+ * ```
+ *
+ * @module bozzetto/vue
  */
 import { computed, defineComponent, h, toValue, type ComputedRef, type MaybeRefOrGetter, type PropType } from "vue";
 import {
@@ -52,8 +56,9 @@ function pictureVNode(p: Picture, inline: boolean, alt: string | undefined, shap
 /**
  * A placeholder picture as an `<img>`, with its alt text and size. It's cropped around the
  * picture's focus when you size it with `object-fit: cover`, and shows the picture's color while
- * loading. Other attributes, such as `class`, fall through to the `<img>`; `alt` replaces the
- * picture's own alt text.
+ * loading. Its props are `PlaceholderOptions` (`kind`, `seed`, `size`, `palette`, `mapping`,
+ * `texture`, `label`, `dark`, `darkSelector`) plus `inline`. Other attributes, such as `class`,
+ * fall through to the `<img>`; `alt` replaces the picture's own alt text.
  */
 export const Placeholder = defineComponent({
   name: "Placeholder",
@@ -105,7 +110,9 @@ export function useAvatars(
 
 /**
  * An avatar as an `<img>`: a face framed around its head, round by default, with its alt text.
- * Pass a user id as `seed` to give each user their own. Other attributes fall through.
+ * Pass a user id as `seed` to give each user their own. Its props are `AvatarOptions` (`kind`,
+ * `seed`, `size`, `shape`, `margin`, `palette`, `mapping`, `texture`, `dark`, `darkSelector`) plus
+ * `inline`. Other attributes fall through.
  */
 export const Avatar = defineComponent({
   name: "Avatar",
