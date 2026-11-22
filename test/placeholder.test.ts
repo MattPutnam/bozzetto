@@ -225,6 +225,15 @@ describe("choosing kinds as the list grows", () => {
 });
 
 describe("edge cases", () => {
+  it("rejects unknown names instead of drawing something else", () => {
+    expect(() => render(owl, { texture: "grainy" as never })).toThrow('texture can be grain, paper, not "grainy"');
+    expect(() => render(owl, { palette: "riso", mapping: "bogus" as never })).toThrow(
+      "mapping can be balanced, ramp, nearest",
+    );
+    expect(() => placeholders(2, { order: "bogus" as never })).toThrow("order can be shuffle, cycle, random");
+    expect(() => placeholders(2, { texture: [undefined, "rough" as never] })).toThrow('not "rough"');
+  });
+
   it("rejects a count that isn't a whole number of at least 0", () => {
     for (const count of [NaN, -1, 2.5]) expect(() => placeholders(count), String(count)).toThrow(/count must be/);
     expect(placeholders(0)).toEqual([]);

@@ -4,7 +4,7 @@
  * The picture is drawn on a square canvas, then the SVG's viewBox is set to a square around the
  * head the kind reports with `note.frame`. Nothing is redrawn, so an avatar stays sharp at any size.
  */
-import { el, hash, n, type Kind } from "../draw/core";
+import { checkOneOf, el, hash, n, type Kind } from "../draw/core";
 import type { KindChoice, Order } from "./placeholder";
 import { render, type Picture } from "./render";
 import type { StyleOptions } from "../color/style";
@@ -15,6 +15,9 @@ import type { StyleOptions } from "../color/style";
  * @category Avatars
  */
 export type AvatarShape = "circle" | "rounded" | "square";
+
+/** Every avatar shape. */
+export const SHAPES: readonly AvatarShape[] = ["circle", "rounded", "square"];
 
 /**
  * How to draw an avatar: its face, size, shape and margin, plus the colors and texture to style it with.
@@ -58,6 +61,7 @@ export function makeAvatar(
     const margin = options.margin ?? 0.12;
     if (!(margin >= 0 && Number.isFinite(margin)))
       throw new Error("bozzetto: an avatar's margin must be a number of at least 0.");
+    checkOneOf(options.shape, SHAPES, "an avatar's shape");
     const kind = resolveKind(options.kind ?? faces, options.seed);
     const picture = render(kind, {
       size: { width: CANVAS, height: CANVAS },

@@ -17,13 +17,14 @@ import {
   seedToInt,
   type Kind,
   type Mapping,
-  type Order,
   type Picture,
   type Size,
-  type Texture,
 } from "../index";
 import { seedFromText } from "../draw/core";
 import { parseAvatarSize, parseKinds } from "../render/names";
+import { TEXTURES } from "../color/style";
+import { ORDERS } from "../render/placeholder";
+import { SHAPES } from "../render/avatar";
 import { toPng } from "../node";
 
 export interface Io {
@@ -34,8 +35,6 @@ export interface Io {
 }
 
 const FORMATS = ["svg", "png", "uri", "json"] as const;
-const ORDERS: readonly Order[] = ["shuffle", "cycle", "random"];
-const TEXTURES: readonly Texture[] = ["grain", "paper"];
 
 const HELP = `bozzetto: seeded placeholder pictures as SVG or PNG
 
@@ -117,8 +116,6 @@ const describe = (picture: Picture, seed: number, file?: string) => ({
   color: picture.color,
   ...(Object.keys(picture.options).length ? { options: picture.options } : {}),
 });
-
-const SHAPES = ["circle", "rounded", "square"] as const;
 
 /** Avatars for the command line: `--size` is one number ("48", or a square size such as "48x48"). */
 function avatarsFor(

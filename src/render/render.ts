@@ -2,7 +2,7 @@
 import { parseColor, toHex } from "../color/color";
 import { el, hash, makeRand, n, seedToInt, type Kind, type OptionValue } from "../draw/core";
 import { withDarkMode } from "../color/dark";
-import { stylize, type StyleOptions } from "../color/style";
+import { checkStyle, stylize, type StyleOptions } from "../color/style";
 
 /**
  * A finished picture, with what a gallery needs to lay it out and describe it.
@@ -86,6 +86,7 @@ export function resolveSize(size: Size = "400x300"): { width: number; height: nu
  */
 export function render(kind: Kind, options: RenderOptions = {}): Picture {
   const { width, height } = resolveSize(options.size);
+  checkStyle(options);
   const seed = seedToInt(options.seed);
   // Fixed options and styling are part of the id prefix, so variants of a kind with one seed (other
   // options, palettes, textures or dark colors) can share a page without borrowing each other's

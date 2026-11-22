@@ -1,5 +1,5 @@
 /** Choosing kinds and options for one picture or a whole list. */
-import { hash, makeRand, seedToInt, type Kind } from "../draw/core";
+import { checkOneOf, hash, makeRand, seedToInt, type Kind } from "../draw/core";
 import { parseColor } from "../color/color";
 import { render, type Picture, type RenderOptions, type Size } from "./render";
 import type { Mapping, Texture } from "../color/style";
@@ -35,6 +35,9 @@ export function kindsOf(choice: KindChoice, known: ReadonlyMap<string, Kind>): K
  * @category Choosing kinds
  */
 export type Order = "shuffle" | "cycle" | "random";
+
+/** Every order. */
+export const ORDERS: readonly Order[] = ["shuffle", "cycle", "random"];
 
 /** Picks value `k` of a list for one option, deterministically from the seed and the option's name. */
 function picker<T>(values: readonly T[], order: Order, seed: number, name: string): (k: number) => T {
@@ -204,6 +207,7 @@ export function makePlaceholders(all: readonly Kind[]) {
   /** `count` pictures, going through each option's list of values. */
   const placeholders = (count: number, options: PlaceholdersOptions = {}): Picture[] => {
     checkCount(count);
+    checkOneOf(options.order, ORDERS, "order");
     const base = seedToInt(options.seed);
     const order = options.order ?? "shuffle";
     const kindAt = kindPicker(pool(options.kind), order, base);
@@ -228,6 +232,7 @@ export function makePlaceholders(all: readonly Kind[]) {
   /** The kinds `placeholders` would use for `count` pictures: the same order, for lists of other things. */
   const kindsFor = (count: number, options: { kind?: KindChoice; order?: Order; seed?: number | string } = {}) => {
     checkCount(count);
+    checkOneOf(options.order, ORDERS, "order");
     const kindAt = kindPicker(pool(options.kind), options.order ?? "shuffle", seedToInt(options.seed));
     return Array.from({ length: count }, (_, k) => kindAt(k));
   };

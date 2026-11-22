@@ -65,6 +65,13 @@ describe("<bozzetto-img>", () => {
     expect(make({ avatar: "", seed: "alice", size: "48x48" }).picture?.width).toBe(48);
   });
 
+  it("logs a clear error for a misspelled texture", () => {
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+    expect(make({ kind: "owl", texture: "grian" }).picture).toBeUndefined();
+    expect(error).toHaveBeenCalledWith(expect.stringContaining('texture can be grain, paper, not "grian"'));
+    error.mockRestore();
+  });
+
   it("refuses an avatar size that isn't square", () => {
     const error = vi.spyOn(console, "error").mockImplementation(() => {});
     expect(make({ avatar: "", size: "48x64" }).picture).toBeUndefined();

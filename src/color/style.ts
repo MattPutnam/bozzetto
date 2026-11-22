@@ -4,7 +4,7 @@
  * Because this works on the markup, every kind gets it for free, built-in or custom.
  */
 
-import { el, hash } from "../draw/core";
+import { checkOneOf, el, hash } from "../draw/core";
 import { COLOR as PAINTED_COLOR, lchToHex, oklabToLch, parseColor, rgbToOklab, toHex } from "./color";
 import { ADJUSTMENTS, resolvePalette, type Adjustment, type PaletteSpec } from "./palettes";
 
@@ -16,6 +16,9 @@ export { ADJUSTMENTS, PALETTES } from "./palettes";
  * @category Color
  */
 export type Texture = "grain" | "paper";
+
+/** Every texture. */
+export const TEXTURES: readonly Texture[] = ["grain", "paper"];
 /**
  * How a list of colors is applied to a picture: see `StyleOptions.mapping`.
  *
@@ -180,12 +183,19 @@ function balanced(svg: string, colors: readonly string[]): (c: RGB) => string {
  * @category Color
  */
 export function stylize(svg: string, options: StyleOptions = {}): string {
+  checkStyle(options);
   const masks: string[] = [];
   let body = svg.replace(/<mask[\s\S]*?<\/mask>/g, m => `\uE000${masks.push(m) - 1}\uE000`);
   const recolor = recolorer(body, options);
   if (recolor) body = body.replace(PAINTED, chunk => chunk.replace(COLOR, m => recolor(parse(m))));
   body = body.replace(/\uE000(\d+)\uE000/g, (_, k) => masks[Number(k)]);
   return options.texture ? addTexture(body, options.texture) : body;
+}
+
+/** Throws on a mapping or texture that isn't one of the known names. */
+export function checkStyle(options: StyleOptions): void {
+  checkOneOf(options.mapping, MAPPINGS, "mapping");
+  checkOneOf(options.texture, TEXTURES, "texture");
 }
 
 function recolorer(svg: string, o: StyleOptions): ((c: RGB) => string) | undefined {

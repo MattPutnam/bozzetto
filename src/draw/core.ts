@@ -169,6 +169,15 @@ export function defineKind(id: string, name: string, optionsOrDraw: OptionSpec |
     : makeKind(id, name, optionsOrDraw, draw!, {});
 }
 
+/**
+ * Throws unless `value` is undefined or one of `allowed`, so an unknown name (from JavaScript, or
+ * an HTML attribute) is an error rather than quietly drawing something else.
+ */
+export function checkOneOf(value: unknown, allowed: readonly string[], name: string): void {
+  if (value !== undefined && !allowed.includes(value as string))
+    throw new Error(`bozzetto: ${name} can be ${allowed.join(", ")}, not ${JSON.stringify(value)}.`);
+}
+
 /** FNV-1a, for turning string seeds and id prefixes into integers. */
 export function hash(text: string): number {
   let h = 0x811c9dc5;

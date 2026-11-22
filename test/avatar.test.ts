@@ -93,6 +93,10 @@ describe("avatar inputs", () => {
   it("rejects a margin or size that would break the picture", () => {
     for (const margin of [NaN, -0.1, Infinity]) expect(() => avatar({ margin }), String(margin)).toThrow(/margin/);
     for (const size of [0, NaN, Infinity]) expect(() => avatar({ size }), String(size)).toThrow(/size/);
+    expect(() => avatar({ shape: "oval" as never })).toThrow(
+      `an avatar's shape can be circle, rounded, square, not "oval"`,
+    );
+    expect(() => avatars(2, { order: "bogus" as never })).toThrow("order can be");
     expect(avatar({ margin: 0 }).svg).toMatch(/viewBox="[\d.]+ [\d.]+ [\d.]+ [\d.]+"/);
   });
 
