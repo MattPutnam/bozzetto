@@ -39,6 +39,12 @@ describe("color", () => {
 });
 
 describe("makePalette", () => {
+  it("rejects numbers that aren't finite, rather than drawing NaN", () => {
+    for (const name of ["count", "contrast", "vibrance", "base"])
+      for (const value of [NaN, Infinity])
+        expect(() => makePalette({ [name]: value }), `${name} ${value}`).toThrow(`makePalette's ${name}`);
+  });
+
   it("gives valid colors, dark to light, for every scheme and count", () => {
     for (const scheme of Object.keys(SCHEMES) as Scheme[]) {
       for (let count = 2; count <= 9; count++) {

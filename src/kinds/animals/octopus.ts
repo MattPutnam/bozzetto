@@ -163,7 +163,7 @@ export const octopus = /* @__PURE__ */ defineKind("octopus", "Octopus", (g, w, h
       "stroke-width": "1.5",
       opacity: "0.6",
     });
-  note.alt(`A ${sleepy ? "sleepy " : ""}octopus sitting on the sandy seabed`);
+  note.alt(`${sleepy ? "A sleepy" : "An"} octopus sitting on the sandy seabed`);
   note.focus(cx, my + ry * 0.15);
   // Head.
   note.frame(cx - rx * 1.1, my - ry * 1.08, rx * 2.2, ry * 1.85);

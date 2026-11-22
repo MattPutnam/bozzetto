@@ -14,6 +14,11 @@ const image = (element: HTMLElement) => element.shadowRoot!.querySelector<HTMLEl
 afterEach(() => document.body.replaceChildren());
 
 describe("<bozzetto-img>", () => {
+  it("reads number seeds as the API does, negative and fractional ones included", () => {
+    for (const seed of ["-1", "1.5"])
+      expect(make({ kind: "owl", seed }).picture?.svg, seed).toBe(render(owl, { seed: Number(seed) }).svg);
+  });
+
   it("draws its picture as an image in its shadow root", () => {
     const element = make({ kind: "owl", seed: "3", size: "320x240" });
     const expected = render(owl, { seed: 3, size: "320x240" });

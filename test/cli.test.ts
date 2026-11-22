@@ -23,6 +23,15 @@ async function cli(...args: string[]) {
 }
 
 describe("bozzetto", () => {
+  it("reads number seeds as the API does, negative ones included", async () => {
+    for (const seed of ["-1", "1.5", "7"]) {
+      const expected = render(owl, { seed: Number(seed) }).svg + "\n";
+      expect((await cli("owl", "--seed", seed)).stdout, seed).toBe(expected);
+      expect((await cli("owl", `--seed=${seed}`)).stdout, seed).toBe(expected);
+    }
+    expect((await cli("owl", "--seed", "user-42")).stdout).toBe(render(owl, { seed: "user-42" }).svg + "\n");
+  });
+
   it("writes one picture to standard output", async () => {
     const { code, stdout } = await cli("owl", "--seed", "3", "--size", "320x240", "--palette", "riso");
     expect(code).toBe(0);
@@ -159,6 +168,9 @@ describe("bozzetto", () => {
       [["cat:wings"], 'cat has no option "wings"'],
       [["cat:pupils=plaid"], "cat's pupils can be slit, round"],
       [["animals:tabby"], "options go on a single kind"],
+      [["-n", "2", "-o", "x.png"], "names a file, but 2 pictures need a folder"],
+      [["-o", "pic.svg", "-f", "png"], "is a .svg file, but --format is png"],
+      [["-o", "pic.png", "-f", "svg"], "is a .png file, but --format is svg"],
     ] as const) {
       const { code, stderr } = await cli(...args);
       expect(code, args.join(" ")).toBe(1);

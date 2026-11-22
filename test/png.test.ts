@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { avatar, faces, hills, kinds, night, render, toImageBlob } from "../src";
+import { avatar, faces, hills, kinds, night, octopus, render, toImageBlob } from "../src";
 import { toPng } from "../src/node";
 import { forResvg } from "../src/node/resvg-fix";
 
@@ -9,6 +9,23 @@ function pngSize(bytes: Uint8Array): { width: number; height: number } {
   return { width: view.getUint32(16), height: view.getUint32(20) };
 }
 const SIGNATURE = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
+
+describe("forResvg", () => {
+  it("keeps a texture's opacity, so a textured PNG is no stronger than its SVG", () => {
+    for (const texture of ["grain", "paper"] as const) {
+      const svg = render(hills, { seed: 2, texture }).svg;
+      const layer = (markup: string) => /<rect[^>]*\sfilter="[^"]*"[^>]*>/.exec(markup)?.[0];
+      expect(layer(forResvg(svg)), texture).toBe(layer(svg));
+      expect(layer(svg), texture).toMatch(/\sopacity="/);
+    }
+  });
+});
+
+describe("octopus", () => {
+  it("says an octopus, not a octopus", () => {
+    for (let seed = 1; seed <= 40; seed++) expect(render(octopus, { seed }).alt).toMatch(/^(An|A sleepy) octopus/);
+  });
+});
 
 describe("toPng", () => {
   it("makes a PNG the picture's size", async () => {

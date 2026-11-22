@@ -189,6 +189,14 @@ export function seedToInt(seed: number | string = 1): number {
   return typeof seed === "string" ? hash(seed) : Math.floor(seed) >>> 0;
 }
 
+/**
+ * A seed typed as text, as in an attribute or on the command line: a number such as "3", "-1" or
+ * "1.5" is read as that number, so it draws what the same number does in code; other text is hashed.
+ */
+export function seedFromText(text: string): number | string {
+  return /^-?\d+(?:\.\d+)?$/.test(text) ? Number(text) : text;
+}
+
 /** mulberry32: small, fast, and good enough for pictures. */
 export function mulberry32(seed: number): () => number {
   let a = seed >>> 0;

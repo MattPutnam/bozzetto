@@ -8,9 +8,9 @@
  * dark mode. Class names are unique to the picture, so many can share a page.
  */
 import { hash } from "../draw/core";
+import { COLOR } from "./color";
 
-const COLOR = String.raw`hsl\(\d+(?:\.\d+)? \d+(?:\.\d+)?% \d+(?:\.\d+)?%\)|#(?:[0-9a-fA-F]{6}|[0-9a-fA-F]{3})`;
-const PAINT = new RegExp(String.raw`\s(fill|stroke|stop-color|color)="(${COLOR})"`, "g");
+const PAINT = new RegExp(String.raw`\s(fill|stroke|stop-color|color)="(${COLOR.source})"`, "g");
 const PROPERTY = { fill: "f", stroke: "s", "stop-color": "p", color: "c" } as const;
 const TAG = /<[a-zA-Z][^>]*>/g;
 const MASK = /<mask[\s\S]*?<\/mask>/g;

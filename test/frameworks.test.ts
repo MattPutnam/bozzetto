@@ -3,7 +3,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { createSSRApp, h } from "vue";
 import { renderToString } from "vue/server-renderer";
 import { describe, expect, it } from "vitest";
-import { animals, cat, render } from "../src";
+import { animals, cat, defineKind, render } from "../src";
 import { optionsKey } from "../src/frameworks/shared";
 import { Placeholder as ReactPlaceholder, usePlaceholders } from "../src/frameworks/react";
 import { Placeholder as VuePlaceholder } from "../src/frameworks/vue";
@@ -23,6 +23,13 @@ describe("optionsKey", () => {
     );
     expect(optionsKey({ kind: cat.with({ tabby: true }) })).not.toBe(optionsKey({ kind: cat.with({ tabby: false }) }));
     expect(optionsKey({ kind: [animals, "donut"] })).toBe(optionsKey({ kind: [animals, "donut"] }));
+  });
+
+  it("tells apart custom kinds that share an id", () => {
+    const red = defineKind("mine", "Mine", (_, w, h) => `<rect width="${w}" height="${h}" fill="#f00"/>`);
+    const blue = defineKind("mine", "Mine", (_, w, h) => `<rect width="${w}" height="${h}" fill="#00f"/>`);
+    expect(optionsKey({ kind: red })).not.toBe(optionsKey({ kind: blue }));
+    expect(optionsKey({ kind: red })).toBe(optionsKey({ kind: red }));
   });
 });
 

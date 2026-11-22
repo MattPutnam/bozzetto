@@ -7,7 +7,7 @@
  * shadow or a clipped pattern out of view, and a far-off detail can fall outside a narrow picture.
  *
  * The SVG is rewritten so every layer touches the canvas, without changing how it looks:
- * - a plain shape's `opacity` becomes `fill-opacity` and `stroke-opacity`, which need no layer;
+ * - a plain, unfiltered shape's `opacity` becomes `fill-opacity` and `stroke-opacity`, which need no layer;
  * - a clipped or masked shape, and a translucent `use` or pattern-filled shape (whose fill-opacity
  *   draws a little differently), moves its clip, mask or opacity to a group
  *   around it (with its transform, which a clip is measured after; clips and masks in bozzetto use
@@ -95,6 +95,9 @@ export function forResvg(svg: string): string {
   const rewritten = svg
     .replace(SHAPE, (whole: string, tag: string, before: string, opacity: string, after: string, close: string) => {
       const attrs = before + after;
+      // A filtered shape (a texture) keeps its opacity: resvg draws those, and fill-opacity would
+      // only fade its fill, not the filter's result.
+      if (/\sfilter="/.test(attrs)) return whole;
       // A pattern fill draws a little differently with fill-opacity, so it's wrapped below instead.
       const paint = /\sfill="url\(#([^)]+)\)"/.exec(attrs)?.[1];
       if (paint && patterns.has(paint)) return whole;

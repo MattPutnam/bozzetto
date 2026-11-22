@@ -5,7 +5,7 @@
  */
 
 import { el, hash } from "../draw/core";
-import { lchToHex, oklabToLch, parseColor, rgbToOklab, toHex } from "./color";
+import { COLOR as PAINTED_COLOR, lchToHex, oklabToLch, parseColor, rgbToOklab, toHex } from "./color";
 import { ADJUSTMENTS, resolvePalette, type Adjustment, type PaletteSpec } from "./palettes";
 
 export { ADJUSTMENTS, PALETTES } from "./palettes";
@@ -68,7 +68,7 @@ export interface StyleOptions {
 
 type RGB = [number, number, number];
 
-const COLOR = /hsl\((\d+(?:\.\d+)?) (\d+(?:\.\d+)?)% (\d+(?:\.\d+)?)%\)|#(?:[0-9a-fA-F]{6}|[0-9a-fA-F]{3})\b/g;
+const COLOR = new RegExp(PAINTED_COLOR.source, "g");
 
 /** A color the COLOR pattern matched: always readable, since the pattern only finds valid colors. */
 const parse = (text: string): RGB => parseColor(text)!;

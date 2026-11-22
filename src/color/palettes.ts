@@ -123,6 +123,11 @@ function shiftToward(h: number, target: number, amount: number): number {
  * @category Color
  */
 export function makePalette(options: PaletteOptions = {}): string[] {
+  for (const name of ["count", "contrast", "vibrance", "base"] as const) {
+    const value = options[name];
+    if (typeof value === "number" && !Number.isFinite(value))
+      throw new Error(`bozzetto: makePalette's ${name} must be a finite number, not ${value}.`);
+  }
   const rand = makeRand(seedToInt(options.seed ?? 1) ^ 0x5bd1e995);
   const count = clamp(Math.round(options.count ?? 5), 2, 9);
   const hues: readonly number[] = SCHEMES[options.scheme ?? "analogous"];
@@ -149,7 +154,7 @@ export function makePalette(options: PaletteOptions = {}): string[] {
   const start = (((hues.indexOf(0) - middle) % hues.length) + hues.length) % hues.length;
 
   const colors = Array.from({ length: count }, (_, k) => {
-    const t = count === 1 ? 0.5 : k / (count - 1);
+    const t = k / (count - 1);
     const lightness = darkest + (lightest - darkest) * t + lightJitter[k];
     const leaning = t > 0.5 ? 85 : 265;
     const hue = shiftToward(baseHue + hues[(start + k) % hues.length] + hueJitter[k], leaning, Math.abs(t - 0.5) * 24);

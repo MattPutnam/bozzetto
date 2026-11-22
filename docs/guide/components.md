@@ -113,8 +113,8 @@ Drawn live on this page:
 </div>
 
 Attributes are text, so `kind` is written like on the [command line](./cli#kinds): ids, export
-names or categories separated by spaces, with options after a colon. A `seed` of only digits is a
-number, as on the command line. The element changes picture when an attribute changes. It has no
+names or categories separated by spaces, with options after a colon. A `seed` written as a number,
+such as `3` or `-1`, is that number, as on the command line. The element changes picture when an attribute changes. It has no
 `darkSelector`, and its avatars have no `margin`: use React or Vue, or the functions, for those.
 
 The element is an inline block the picture's size until you size it with CSS; then the picture

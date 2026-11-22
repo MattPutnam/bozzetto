@@ -49,7 +49,11 @@ npx bozzetto portrait:hair=curly,glasses -n 4 -o portraits/
 | `-h`, `--help`        | Show the help                                                                   |
 | `-v`, `--version`     | Show the version                                                                |
 
-A seed made only of digits is a number; anything else, such as `user-42`, is text and is hashed.
+A seed written as a number, such as `3`, `-1` or `1.5`, is that number (and draws what the same
+number does in code); anything else, such as `user-42`, is text and is hashed.
+
+With `-o`, a name ending in `.svg` or `.png` is a single file, in that format; with `-n` above 1,
+`-o` names a folder.
 
 ## Folders and the manifest
 

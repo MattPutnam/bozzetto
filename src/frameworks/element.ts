@@ -24,6 +24,7 @@
  * @module bozzetto/element
  */
 import { avatar, placeholder, type AvatarShape, type Mapping, type Picture, type Size, type Texture } from "../index";
+import { seedFromText } from "../draw/core";
 import { focusStyle } from "./shared";
 import { parseKinds } from "../render/names";
 
@@ -78,7 +79,7 @@ export class BozzettoImg extends Base {
     try {
       const common = {
         kind: attr("kind") ? parseKinds(attr("kind")!) : undefined,
-        seed: seed === undefined ? undefined : /^\d+$/.test(seed) ? Number(seed) : seed,
+        seed: seed === undefined ? undefined : seedFromText(seed),
         palette: attr("palette"),
         mapping: attr("mapping") as Mapping | undefined,
         texture: attr("texture") as Texture | undefined,

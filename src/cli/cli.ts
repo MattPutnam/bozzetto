@@ -22,6 +22,7 @@ import {
   type Size,
   type Texture,
 } from "../index";
+import { seedFromText } from "../draw/core";
 import { parseKinds } from "../render/names";
 import { toPng } from "../node";
 
@@ -164,7 +165,14 @@ async function main(args: readonly string[], io: Io): Promise<number> {
   let parsed;
   try {
     parsed = parseArgs({
-      args: [...args],
+      // A negative seed after --seed is its value, not an option: `--seed -1` means `--seed=-1`.
+      args: args.flatMap((arg, k) =>
+        args[k - 1] === "--seed" && /^-\d/.test(arg)
+          ? []
+          : arg === "--seed" && /^-\d/.test(args[k + 1] ?? "")
+            ? [`--seed=${args[k + 1]}`]
+            : [arg],
+      ),
       allowPositionals: true,
       options: {
         count: { type: "string", short: "n" },
@@ -208,7 +216,7 @@ async function main(args: readonly string[], io: Io): Promise<number> {
 
   const count = o.count === undefined ? 1 : Number(o.count);
   if (!Number.isInteger(count) || count < 1) throw new UsageError(`--count must be a whole number of at least 1.`);
-  const seed = o.seed === undefined ? 1 : /^\d+$/.test(o.seed) ? Number(o.seed) : o.seed;
+  const seed = o.seed === undefined ? 1 : seedFromText(o.seed);
   const format = oneOf(o.format ?? (o.out?.toLowerCase().endsWith(".png") ? "png" : "svg"), FORMATS, "--format");
   const scale = o.scale === undefined ? 1 : Number(o.scale);
   if (!(scale > 0)) throw new UsageError(`--scale must be a number more than 0.`);
@@ -234,6 +242,10 @@ async function main(args: readonly string[], io: Io): Promise<number> {
   // placeholders numbers seeds from the base seed: picture k uses base + k, with text seeds hashed first.
   const seedOf = (k: number) => (seedToInt(seed) + k) >>> 0;
 
+  const extension = /\.(svg|png)$/i.exec(o.out ?? "")?.[1].toLowerCase();
+  if (extension && count > 1) throw new UsageError(`--out ${o.out} names a file, but ${count} pictures need a folder.`);
+  if (extension && extension !== format)
+    throw new UsageError(`--out ${o.out} is a .${extension} file, but --format is ${format}.`);
   if (o.out !== undefined && (count > 1 || o.out.endsWith("/"))) {
     // A folder: one file per picture, plus a manifest.
     if (format === "uri" || format === "json") throw new UsageError(`--out <folder> writes svg or png files.`);
