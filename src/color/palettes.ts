@@ -6,7 +6,7 @@
  * so a palette picker can regenerate as controls change, lock swatches, and share a palette as
  * a short code.
  */
-import { makeRand, own, seedToInt } from "../draw/core";
+import { checkOneOf, makeRand, own, seedToInt, withoutNulls } from "../draw/core";
 import { hexToLch, lchToHex, lightnessOf, parseColor, toHex, type LCH } from "./color";
 
 /**
@@ -122,7 +122,9 @@ function shiftToward(h: number, target: number, amount: number): number {
  *
  * @category Color
  */
-export function makePalette(options: PaletteOptions = {}): string[] {
+export function makePalette(given: PaletteOptions = {}): string[] {
+  const options = withoutNulls(given);
+  checkOneOf(options.scheme, Object.keys(SCHEMES), "makePalette's scheme");
   for (const name of ["count", "contrast", "vibrance", "base"] as const) {
     const value = options[name];
     if (typeof value === "number" && !Number.isFinite(value))

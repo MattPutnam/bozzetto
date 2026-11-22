@@ -1,5 +1,5 @@
 /** Choosing kinds and options for one picture or a whole list. */
-import { checkOneOf, hash, makeRand, seedToInt, type Kind } from "../draw/core";
+import { checkOneOf, hash, makeRand, seedToInt, withoutNulls, type Kind } from "../draw/core";
 import { parseColor } from "../color/color";
 import { render, type Picture, type RenderOptions, type Size } from "./render";
 import type { Mapping, Texture } from "../color/style";
@@ -190,22 +190,25 @@ function checkCount(count: number): void {
 export function makePlaceholders(all: readonly Kind[]) {
   const known = new Map(all.map(k => [k.id, k]));
   const pool = (choice: KindChoice | undefined) => {
-    const list = choice === undefined ? all : kindsOf(choice, known);
+    const list = choice === undefined || choice === null ? all : kindsOf(choice, known);
     if (list.length === 0) throw new Error("bozzetto: `kind` is an empty list.");
     return list;
   };
 
   /** The kind a seed picks from a choice. The same seed always picks the same kind. */
-  const resolveKind = (choice: KindChoice | undefined, seed: number | string = 1): Kind => {
-    return kindPicker(pool(choice), "random", mix32(seedToInt(seed) ^ 0x9e3779b9))(0);
+  const resolveKind = (choice: KindChoice | undefined, seed?: number | string): Kind => {
+    return kindPicker(pool(choice), "random", mix32(seedToInt(seed ?? 1) ^ 0x9e3779b9))(0);
   };
 
   /** One picture, its kind chosen by the seed when given a list. */
-  const placeholder = (options: PlaceholderOptions = {}): Picture =>
-    render(resolveKind(options.kind, options.seed), options);
+  const placeholder = (given: PlaceholderOptions = {}): Picture => {
+    const options = withoutNulls(given);
+    return render(resolveKind(options.kind, options.seed), options);
+  };
 
   /** `count` pictures, going through each option's list of values. */
-  const placeholders = (count: number, options: PlaceholdersOptions = {}): Picture[] => {
+  const placeholders = (count: number, given: PlaceholdersOptions = {}): Picture[] => {
+    const options = withoutNulls(given);
     checkCount(count);
     checkOneOf(options.order, ORDERS, "order");
     const base = seedToInt(options.seed);
@@ -230,7 +233,8 @@ export function makePlaceholders(all: readonly Kind[]) {
   };
 
   /** The kinds `placeholders` would use for `count` pictures: the same order, for lists of other things. */
-  const kindsFor = (count: number, options: { kind?: KindChoice; order?: Order; seed?: number | string } = {}) => {
+  const kindsFor = (count: number, given: { kind?: KindChoice; order?: Order; seed?: number | string } = {}) => {
+    const options = withoutNulls(given);
     checkCount(count);
     checkOneOf(options.order, ORDERS, "order");
     const kindAt = kindPicker(pool(options.kind), options.order ?? "shuffle", seedToInt(options.seed));

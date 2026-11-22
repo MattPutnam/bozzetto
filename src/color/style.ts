@@ -4,7 +4,7 @@
  * Because this works on the markup, every kind gets it for free, built-in or custom.
  */
 
-import { checkOneOf, el, hash } from "../draw/core";
+import { checkOneOf, el, hash, withoutNulls } from "../draw/core";
 import { COLOR as PAINTED_COLOR, lchToHex, oklabToLch, parseColor, rgbToOklab, toHex } from "./color";
 import { ADJUSTMENTS, resolvePalette, type Adjustment, type PaletteSpec } from "./palettes";
 
@@ -182,7 +182,8 @@ function balanced(svg: string, colors: readonly string[]): (c: RGB) => string {
  *
  * @category Color
  */
-export function stylize(svg: string, options: StyleOptions = {}): string {
+export function stylize(svg: string, given: StyleOptions = {}): string {
+  const options = withoutNulls(given);
   checkStyle(options);
   const masks: string[] = [];
   let body = svg.replace(/<mask[\s\S]*?<\/mask>/g, m => `\uE000${masks.push(m) - 1}\uE000`);

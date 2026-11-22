@@ -4,7 +4,7 @@
  * The picture is drawn on a square canvas, then the SVG's viewBox is set to a square around the
  * head the kind reports with `note.frame`. Nothing is redrawn, so an avatar stays sharp at any size.
  */
-import { checkOneOf, el, hash, n, type Kind } from "../draw/core";
+import { checkOneOf, el, hash, n, withoutNulls, type Kind } from "../draw/core";
 import type { KindChoice, Order } from "./placeholder";
 import { render, type Picture } from "./render";
 import type { StyleOptions } from "../color/style";
@@ -54,7 +54,8 @@ export function makeAvatar(
   resolveKind: (choice: KindChoice | undefined, seed?: number | string) => Kind,
   faces: readonly Kind[],
 ): (options?: AvatarOptions) => Picture {
-  return (options = {}) => {
+  return (given = {}) => {
+    const options = withoutNulls(given);
     const size = options.size ?? 64;
     if (!(size > 0 && Number.isFinite(size)))
       throw new Error("bozzetto: an avatar's size must be a number more than 0.");

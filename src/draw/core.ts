@@ -170,6 +170,16 @@ export function defineKind(id: string, name: string, optionsOrDraw: OptionSpec |
 }
 
 /**
+ * Options with `null` values left out, so `null` (as React and Vue code often passes for "none")
+ * means the same as leaving an option out.
+ */
+export function withoutNulls<T extends object>(options: T): T {
+  return Object.values(options).includes(null)
+    ? (Object.fromEntries(Object.entries(options).filter(([, value]) => value !== null)) as T)
+    : options;
+}
+
+/**
  * Throws unless `value` is undefined or one of `allowed`, so an unknown name (from JavaScript, or
  * an HTML attribute) is an error rather than quietly drawing something else.
  */

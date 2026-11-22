@@ -39,6 +39,13 @@ describe("color", () => {
 });
 
 describe("makePalette", () => {
+  it("names the schemes when given one it doesn't know, and treats null as missing", () => {
+    expect(() => makePalette({ scheme: "pentadic" as never })).toThrow(
+      "makePalette's scheme can be monochrome, analogous",
+    );
+    expect(makePalette({ scheme: null as never, count: null as never })).toEqual(makePalette());
+  });
+
   it("rejects numbers that aren't finite, rather than drawing NaN", () => {
     for (const name of ["count", "contrast", "vibrance", "base"])
       for (const value of [NaN, Infinity])

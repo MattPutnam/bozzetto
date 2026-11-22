@@ -19,7 +19,7 @@
  *
  * @module bozzetto
  */
-import { seedToInt, type Kind } from "./draw/core";
+import { seedToInt, withoutNulls, type Kind } from "./draw/core";
 import { faces, kinds } from "./kinds";
 import { makeAvatar, type AvatarOptions, type AvatarsOptions } from "./render/avatar";
 import {
@@ -113,7 +113,8 @@ export function avatar(options?: AvatarOptions): Picture {
  *
  * @category Avatars
  */
-export function avatars(count: number, options: AvatarsOptions = {}): Picture[] {
+export function avatars(count: number, given: AvatarsOptions = {}): Picture[] {
+  const options = withoutNulls(given);
   const { order, ...rest } = options;
   const base = seedToInt(options.seed);
   return choose()

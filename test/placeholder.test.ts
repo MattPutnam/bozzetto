@@ -234,6 +234,18 @@ describe("edge cases", () => {
     expect(() => placeholders(2, { texture: [undefined, "rough" as never] })).toThrow('not "rough"');
   });
 
+  it("treats null like a missing option, as React and Vue code passes it", () => {
+    const none = null as never;
+    expect(render(owl, { seed: 2, label: none, texture: none, mapping: none, palette: none, size: none }).svg).toBe(
+      render(owl, { seed: 2 }).svg,
+    );
+    expect(render(owl, { seed: none }).svg).toBe(render(owl).svg);
+    expect(placeholder({ kind: none, seed: 4 }).svg).toBe(placeholder({ seed: 4 }).svg);
+    expect(placeholders(3, { order: none, texture: [none, "grain"], seed: none }).map(p => p.svg)).toEqual(
+      placeholders(3, { texture: [undefined, "grain"] }).map(p => p.svg),
+    );
+  });
+
   it("rejects a count that isn't a whole number of at least 0", () => {
     for (const count of [NaN, -1, 2.5]) expect(() => placeholders(count), String(count)).toThrow(/count must be/);
     expect(placeholders(0)).toEqual([]);

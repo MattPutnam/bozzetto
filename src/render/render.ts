@@ -1,6 +1,6 @@
 /** Turning a kind into a finished picture: size, seed, label, and the colors and texture to style it with. */
 import { parseColor, toHex } from "../color/color";
-import { el, hash, makeRand, n, seedToInt, type Kind, type OptionValue } from "../draw/core";
+import { el, hash, makeRand, n, seedToInt, withoutNulls, type Kind, type OptionValue } from "../draw/core";
 import { withDarkMode } from "../color/dark";
 import { checkStyle, stylize, type StyleOptions } from "../color/style";
 
@@ -84,7 +84,8 @@ export function resolveSize(size: Size = "400x300"): { width: number; height: nu
  *
  * @category Drawing
  */
-export function render(kind: Kind, options: RenderOptions = {}): Picture {
+export function render(kind: Kind, given: RenderOptions = {}): Picture {
+  const options = withoutNulls(given);
   const { width, height } = resolveSize(options.size);
   checkStyle(options);
   const seed = seedToInt(options.seed);

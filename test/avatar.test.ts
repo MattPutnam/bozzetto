@@ -97,6 +97,9 @@ describe("avatar inputs", () => {
       `an avatar's shape can be circle, rounded, square, not "oval"`,
     );
     expect(() => avatars(2, { order: "bogus" as never })).toThrow("order can be");
+    const none = null as never;
+    expect(avatar({ seed: 5, shape: none, size: none, margin: none, kind: none }).svg).toBe(avatar({ seed: 5 }).svg);
+    expect(avatars(2, { seed: none, order: none }).map(a => a.svg)).toEqual(avatars(2).map(a => a.svg));
     expect(avatar({ margin: 0 }).svg).toMatch(/viewBox="[\d.]+ [\d.]+ [\d.]+ [\d.]+"/);
   });
 
