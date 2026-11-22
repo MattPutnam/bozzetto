@@ -225,6 +225,23 @@ describe("choosing kinds as the list grows", () => {
 });
 
 describe("edge cases", () => {
+  it("rejects a count that isn't a whole number of at least 0", () => {
+    for (const count of [NaN, -1, 2.5]) expect(() => placeholders(count), String(count)).toThrow(/count must be/);
+    expect(placeholders(0)).toEqual([]);
+  });
+
+  it("keeps the label white and on top, whatever the palette, texture or dark mode", () => {
+    for (const options of [
+      { palette: "dusk" },
+      { palette: ["#000", "#333"] },
+      { texture: "paper" },
+      { dark: true },
+    ] as const) {
+      const svg = render(owl, { seed: 2, label: 3, ...options }).svg;
+      expect(svg, JSON.stringify(options)).toMatch(/<text [^>]*fill="#fff"[^>]*>3<\/text><\/svg>$/);
+    }
+  });
+
   it("finds the background color at sizes that aren't whole numbers", () => {
     for (const kind of kinds) {
       const picture = render(kind, { size: "400.04x300.02" });

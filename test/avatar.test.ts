@@ -1,7 +1,7 @@
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import { avatar, avatars, cat, faces, hills, kinds, render } from "../src";
+import { avatar, avatars, cat, faces, hills, kinds, render, stylize } from "../src";
 import { Avatar } from "../src/frameworks/react";
 
 const viewBox = (svg: string) => /viewBox="([^"]+)"/.exec(svg)![1].split(" ").map(Number);
@@ -85,11 +85,31 @@ describe("avatar", () => {
 
   it("refuses kinds without a face", () => {
     expect(() => avatar({ kind: hills })).toThrow(/hills can't be an avatar/);
-    expect(() => avatar({ size: 0 })).toThrow(/size must be more than 0/);
+    expect(() => avatar({ size: 0 })).toThrow(/size must be a number more than 0/);
+  });
+});
+
+describe("avatar inputs", () => {
+  it("rejects a margin or size that would break the picture", () => {
+    for (const margin of [NaN, -0.1, Infinity]) expect(() => avatar({ margin }), String(margin)).toThrow(/margin/);
+    for (const size of [0, NaN, Infinity]) expect(() => avatar({ size }), String(size)).toThrow(/size/);
+    expect(avatar({ margin: 0 }).svg).toMatch(/viewBox="[\d.]+ [\d.]+ [\d.]+ [\d.]+"/);
+  });
+
+  it("textures over the avatar's own view when stylized afterwards", () => {
+    const a = avatar({ seed: 3 });
+    const [x, y, w, h] = /viewBox="([^"]+)"/.exec(a.svg)![1].split(" ");
+    const layer = /<rect[^>]*\sfilter="[^"]*"[^>]*>/.exec(stylize(a.svg, { texture: "grain" }))![0];
+    expect(layer).toContain(`x="${x}" y="${y}" width="${w}" height="${h}"`);
   });
 });
 
 describe("avatars", () => {
+  it("rejects a count that isn't a whole number of at least 0", () => {
+    for (const count of [NaN, -1, 2.5]) expect(() => avatars(count), String(count)).toThrow(/count must be/);
+    expect(avatars(0)).toEqual([]);
+  });
+
   it("uses every face once before repeating, and seeds like placeholders", () => {
     const list = avatars(faces.length, { seed: 10, size: 32 });
     expect(new Set(list.map(p => p.kind)).size).toBe(faces.length);

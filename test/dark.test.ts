@@ -60,13 +60,22 @@ describe("dark", () => {
   it("follows a selector instead of the system setting, for pages with their own theme switch", () => {
     const plain = render(owl, { seed: 2, dark: true }).svg;
     const svg = render(owl, { seed: 2, dark: true, darkSelector: "[data-theme=dark]" }).svg;
-    expect(svg).toMatch(/\[data-theme=dark\] \.bzd[a-z0-9]+-[fsp]\d+\{/);
+    expect(svg).toMatch(/:is\(\[data-theme=dark\]\) \.bzd[a-z0-9]+-[fsp]\d+\{/);
     expect(svg).not.toContain("prefers-color-scheme");
     // The same dark colors, under the selector.
-    const selectorRules = /<style>(.*?)<\/style>/.exec(svg)![1].replaceAll("[data-theme=dark] ", "");
+    const selectorRules = /<style>(.*?)<\/style>/.exec(svg)![1].replaceAll(":is([data-theme=dark]) ", "");
     expect(unprefixed(`@media (prefers-color-scheme: dark){${selectorRules}}`)).toBe(
       unprefixed(/<style>(.*?)<\/style>/.exec(plain)![1]),
     );
+  });
+
+  it("scopes every rule to a selector list, so none reaches the page", () => {
+    const css = /<style>(.*?)<\/style>/.exec(
+      render(owl, { seed: 2, dark: true, darkSelector: ".dark, .night" }).svg,
+    )![1];
+    const rules = css.split("}").filter(Boolean);
+    expect(rules.length).toBeGreaterThan(0);
+    for (const rule of rules) expect(rule).toMatch(/^:is\(\.dark, \.night\) \.bzd[a-z0-9]+-[fspc]\d+\{/);
   });
 
   it("leaves masks alone and uses class names unique to the picture", () => {

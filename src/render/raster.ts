@@ -34,11 +34,12 @@ export function sizeOf(input: Picture | string): { width: number; height: number
  * @category Drawing
  */
 export async function toImageBlob(input: Picture | string, options: ImageOptions = {}): Promise<Blob> {
+  const scale = options.scale ?? 1;
+  if (!(scale > 0 && Number.isFinite(scale))) throw new Error("bozzetto: scale must be a number more than 0.");
   if (typeof Image === "undefined" || typeof document === "undefined") {
     throw new Error("bozzetto: toImageBlob needs a browser page. In Node, use toPng from bozzetto/node.");
   }
   const { width, height } = sizeOf(input);
-  const scale = options.scale ?? 1;
   const svg = typeof input === "string" ? input : input.svg;
   const image = new Image();
   image.decoding = "async";

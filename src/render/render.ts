@@ -108,7 +108,7 @@ export function render(kind: Kind, options: RenderOptions = {}): Picture {
   let frame: Picture["frame"];
   const clamp = (v: number) => Math.round(Math.max(0, Math.min(1, v)) * 1000) / 1000;
   const chosen: Record<string, OptionValue> = {};
-  let body = kind.draw(makeRand(seed, prefix, kind.fixed ?? {}, chosen), width, height, {
+  const body = kind.draw(makeRand(seed, prefix, kind.fixed ?? {}, chosen), width, height, {
     alt: text => (alt = text),
     focus: (x, y) => (focus = { x: clamp(x / width), y: clamp(y / height) }),
     frame: (x, y, w, h) => {
@@ -118,10 +118,13 @@ export function render(kind: Kind, options: RenderOptions = {}): Picture {
       frame = { x: left, y: top, width: clamp((x + w) / width) - left, height: clamp((y + h) / height) - top };
     },
   });
+  // The label goes on last, after styling, so palettes and dark mode leave it white and textures
+  // don't cover it.
+  let label = "";
   if (options.label !== undefined && options.label !== "") {
     const fontSize = Math.min(width, height) * 0.093;
     const pad = fontSize * 0.57;
-    body += el(
+    label = el(
       "text",
       {
         x: width - pad,
@@ -155,6 +158,7 @@ export function render(kind: Kind, options: RenderOptions = {}): Picture {
     darkColor = backgroundColor(dark, width, height);
     svg = withDarkMode(svg, dark, options.darkSelector);
   }
+  if (label) svg = svg.replace(/<\/svg>$/, `${label}</svg>`);
   return {
     src: `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`,
     svg,

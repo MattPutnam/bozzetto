@@ -30,7 +30,7 @@ export interface AvatarOptions extends StyleOptions {
   size?: number;
   /** `circle` (default), `rounded` or `square`. Corners outside the shape are transparent. */
   shape?: AvatarShape;
-  /** Space around the head, as a fraction of its size. Default 0.12. */
+  /** Space around the head, as a fraction of its size: 0 or more. Default 0.12. */
   margin?: number;
 }
 
@@ -53,8 +53,11 @@ export function makeAvatar(
 ): (options?: AvatarOptions) => Picture {
   return (options = {}) => {
     const size = options.size ?? 64;
-    if (!(size > 0)) throw new Error("bozzetto: an avatar's size must be more than 0.");
+    if (!(size > 0 && Number.isFinite(size)))
+      throw new Error("bozzetto: an avatar's size must be a number more than 0.");
     const margin = options.margin ?? 0.12;
+    if (!(margin >= 0 && Number.isFinite(margin)))
+      throw new Error("bozzetto: an avatar's margin must be a number of at least 0.");
     const kind = resolveKind(options.kind ?? faces, options.seed);
     const picture = render(kind, {
       size: { width: CANVAS, height: CANVAS },

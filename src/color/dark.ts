@@ -58,7 +58,8 @@ export function withDarkMode(light: string, dark: string, selector?: string): st
     })
     .join("");
   const css = selector
-    ? rules.replace(/\.(bzd[a-z0-9]+-[fspc]\d+)\{/g, `${selector} .$1{`)
+    ? // In :is(), so a selector list such as ".dark, .night" scopes every rule, not only its last part.
+      rules.replace(/\.(bzd[a-z0-9]+-[fspc]\d+)\{/g, `:is(${selector}) .$1{`)
     : `@media (prefers-color-scheme: dark){${rules}}`;
   // The style goes first inside the root element, so it applies to everything after it.
   return classed.replace(/^(<svg[^>]*>)/, `$1<style>${css}</style>`);

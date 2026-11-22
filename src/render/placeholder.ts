@@ -177,6 +177,12 @@ export interface PlaceholdersOptions {
   order?: Order;
 }
 
+/** Throws unless `count` is a whole number of at least 0, so a bad count isn't an empty list. */
+function checkCount(count: number): void {
+  if (!(Number.isInteger(count) && count >= 0))
+    throw new Error(`bozzetto: the count must be a whole number of at least 0, not ${count}.`);
+}
+
 /** Builds the functions behind `placeholder` and `placeholders` for a set of known kinds. */
 export function makePlaceholders(all: readonly Kind[]) {
   const known = new Map(all.map(k => [k.id, k]));
@@ -197,6 +203,7 @@ export function makePlaceholders(all: readonly Kind[]) {
 
   /** `count` pictures, going through each option's list of values. */
   const placeholders = (count: number, options: PlaceholdersOptions = {}): Picture[] => {
+    checkCount(count);
     const base = seedToInt(options.seed);
     const order = options.order ?? "shuffle";
     const kindAt = kindPicker(pool(options.kind), order, base);
@@ -220,6 +227,7 @@ export function makePlaceholders(all: readonly Kind[]) {
 
   /** The kinds `placeholders` would use for `count` pictures: the same order, for lists of other things. */
   const kindsFor = (count: number, options: { kind?: KindChoice; order?: Order; seed?: number | string } = {}) => {
+    checkCount(count);
     const kindAt = kindPicker(pool(options.kind), options.order ?? "shuffle", seedToInt(options.seed));
     return Array.from({ length: count }, (_, k) => kindAt(k));
   };

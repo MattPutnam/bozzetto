@@ -6,13 +6,13 @@
  * Reference: Björn Ottosson, "A perceptual color space for image processing" (2020).
  */
 
-/** sRGB channels in 0–255. */
 /**
  * A color as pictures write it: `hsl(h s% l%)` or `#rrggbb`/`#rgb`. One pattern for everything
  * that finds colors in markup (styling, dark mode), so they always agree on what a color is.
  */
 export const COLOR = /hsl\(\d+(?:\.\d+)? \d+(?:\.\d+)?% \d+(?:\.\d+)?%\)|#(?:[0-9a-fA-F]{6}|[0-9a-fA-F]{3})\b/;
 
+/** sRGB channels in 0–255. */
 export type RGB = [number, number, number];
 /** OKLab: lightness 0–1, then the green–red and blue–yellow axes. */
 export type Lab = [number, number, number];

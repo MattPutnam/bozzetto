@@ -96,4 +96,9 @@ describe("toImageBlob", () => {
   it("explains that it needs a browser", async () => {
     await expect(toImageBlob(render(hills))).rejects.toThrow(/needs a browser page/);
   });
+
+  it("rejects a bad scale before drawing anything", async () => {
+    for (const scale of [0, -1, NaN, Infinity])
+      await expect(toImageBlob(render(hills), { scale }), String(scale)).rejects.toThrow(/scale must be a number/);
+  });
 });

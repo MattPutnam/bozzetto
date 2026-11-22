@@ -230,8 +230,12 @@ function adjust(adjustment: Adjustment): (c: RGB) => string {
 }
 
 function addTexture(svg: string, texture: Texture): string {
-  const width = svg.match(/width="([\d.]+)"/)?.[1] ?? "400";
-  const height = svg.match(/height="([\d.]+)"/)?.[1] ?? "300";
+  // The layer covers the root's viewBox (an avatar's is offset), or else its width and height.
+  const root = /<svg\b[^>]*>/.exec(svg)?.[0] ?? "";
+  const view = /\sviewBox="([-\d.]+)[\s,]+([-\d.]+)[\s,]+([\d.]+)[\s,]+([\d.]+)"/.exec(root);
+  const [x, y, width, height] = view
+    ? view.slice(1)
+    : ["0", "0", /\swidth="([\d.]+)"/.exec(root)?.[1] ?? "400", /\sheight="([\d.]+)"/.exec(root)?.[1] ?? "300"];
   const id = `tx${hash(`${texture}:${svg}`).toString(36)}`;
   const region = { id, x: "0", y: "0", width: "100%", height: "100%" };
   // Grain: fine grey noise blended over the picture. Paper: lit noise, like the tooth of watercolor paper.
@@ -254,6 +258,8 @@ function addTexture(svg: string, texture: Texture): string {
           ),
         );
   const layer = el("rect", {
+    x: Number(x) ? x : undefined,
+    y: Number(y) ? y : undefined,
     width,
     height,
     filter: `url(#${id})`,
